@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "554461206153",
+    "project_id": "madarsaconnect-c96d3",
+    "storage_bucket": "madarsaconnect-c96d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554461206153:android:b9a7b42bf4903287949858",
+        "android_client_info": {
+          "package_name": "com.cocode.madarsaconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVWC3BrTZRqN6XE8KM_AfBSnmZ6sz1Aug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
