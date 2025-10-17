@@ -19,5 +19,3 @@ String image5 = "assets/icons/passwordIcon.webp";
 String image6 = "assets/images/from.svg";
 
 
-
-

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/uppercase.dart';
@@ -52,6 +53,8 @@ class _AddStudentState extends State<AddStudent> {
   int _selectedCourseDuration = 0;
   bool isButtonActive = false;
   bool isLoading = false;
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -211,17 +214,19 @@ class _AddStudentState extends State<AddStudent> {
     final counterRef = FirebaseFirestore.instance
         .collection('counters')
         .doc('students');
+
     return FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(counterRef);
+
       if (!snapshot.exists) {
         transaction.set(counterRef, {'currentSUC': 1});
-        return 'SUC0000001'.toLowerCase();
+        return 'suc1';
       }
       int current =
           int.tryParse(snapshot.data()?['currentSUC'].toString() ?? '0') ?? 0;
       int next = current + 1;
       transaction.update(counterRef, {'currentSUC': next});
-      return 'SUC${next.toString().padLeft(7, '0')}'.toLowerCase();
+      return 'suc$next';
     });
   }
 
@@ -432,12 +437,13 @@ class _AddStudentState extends State<AddStudent> {
       String phone = rawPhone.startsWith('+') ? rawPhone : '+91$rawPhone';
 
       if (email == null || email.isEmpty) {
-        if (phone.isEmpty) {
+        if (rawPhone.isEmpty) {
           throw Exception(
             "Either Email or Phone Number is required for student registration.",
           );
         }
-        email = "$phone@mc.com";
+        String cleanPhone = rawPhone.replaceAll(RegExp(r'^\+?91'), '');
+        email = "$cleanPhone@mc.com";
       }
 
       tempApp = await Firebase.initializeApp(
@@ -586,6 +592,7 @@ class _AddStudentState extends State<AddStudent> {
     _yearController.addListener(updateButtonState);
     loadStateDistrictData();
     fetchCoursesFromHead();
+    _loadBannerAd();
   }
 
   @override
@@ -605,6 +612,7 @@ class _AddStudentState extends State<AddStudent> {
     _motherNameController.dispose();
     _fatherNameController.dispose();
     loadStateDistrictData();
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -622,6 +630,28 @@ class _AddStudentState extends State<AddStudent> {
           _courseController.text.isNotEmpty &&
           _yearController.text.isNotEmpty;
     });
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-2465407468425782/4540095010',
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd?.load();
   }
 
   void _showSuccessDialog() {
@@ -673,29 +703,41 @@ class _AddStudentState extends State<AddStudent> {
                       ),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 50.0),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pop();
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            width: double.infinity,
-                            height: MediaQuery.of(context).size.height * 0.060,
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Text(
-                              "Done",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 17,
+                        child: Column(
+                          children: [
+                            if (_isBannerAdReady && _bannerAd != null)
+                              SizedBox(
+                                width: _bannerAd!.size.width.toDouble(),
+                                height: _bannerAd!.size.height.toDouble(),
+                                child: AdWidget(ad: _bannerAd!),
+                              ),
+                            if (_isBannerAdReady) const SizedBox(height: 20),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).pop();
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                width: double.infinity,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.060,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Text(
+                                  "Done",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 17,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ],

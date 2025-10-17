@@ -1,51 +1,50 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
+const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
 
-const cors = require("cors")({ origin: true }); // CORS for Flutter / web
-
 exports.resetStudentPassword = functions.https.onRequest(async (req, res) => {
-  cors(req, res, async () => {
-    try {
-      // Method check
-      if (req.method !== "POST") {
-        return res.status(405).send({ error: "Only POST requests are allowed." });
-      }
+  cors(req, res, async () => {
+    try {
+      // Method check
+      if (req.method !== "POST") {
+        return res.status(405).send({ error: "Only POST requests are allowed." });
+      }
 
-      const idToken = req.headers.authorization?.split("Bearer ")[1];
-      if (!idToken) {
-        return res.status(401).send({ error: "User must be signed in." });
-      }
+      const idToken = req.headers.authorization?.split("Bearer ")[1];
+      if (!idToken) {
+        return res.status(401).send({ error: "User must be signed in." });
+      }
 
-      // Verify token
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      const callerUid = decodedToken.uid;
+      // Verify token
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const callerUid = decodedToken.uid;
 
-      const { studentUid } = req.body;
-      if (!studentUid || typeof studentUid !== "string") {
-        return res.status(400).send({ error: "Invalid studentUid." });
-      }
+      const { studentUid } = req.body;
+      if (!studentUid || typeof studentUid !== "string") {
+        return res.status(400).send({ error: "Invalid studentUid." });
+      }
 
-      // Check if caller is authorized
-      const callerDoc = await admin.firestore().collection("Heads").doc(callerUid).get();
-      if (!callerDoc.exists) {
-        return res.status(403).send({ error: "Permission denied." });
-      }
+      // Check if caller is authorized
+      const callerDoc = await admin.firestore().collection("Heads").doc(callerUid).get();
+      if (!callerDoc.exists) {
+        return res.status(403).send({ error: "Permission denied." });
+      }
 
-      // Reset password
-      const newPassword = "mc@12345";
-      await admin.auth().updateUser(studentUid, { password: newPassword });
+      // Reset password
+      const newPassword = "mc@12345";
+      await admin.auth().updateUser(studentUid, { password: newPassword });
 
-      console.log(`Password reset for ${studentUid} by ${callerUid}`);
-      return res.status(200).send({ success: true, message: "Student password reset successfully." });
+      console.log(`Password reset for ${studentUid} by ${callerUid}`);
+      return res.status(200).send({ success: true, message: "Student password reset successfully." });
 
-    } catch (err) {
-      console.error("Error resetting password:", err);
-      return res.status(500).send({ error: "Internal server error." });
-    }
-  });
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      return res.status(500).send({ error: "Internal server error." });
+    }
+  });
 });
 
 // ==========================
@@ -244,3 +243,108 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
 
 });
 
+
+exports.getGuestAuthToken = onCall(async (request) => {
+  const data = request.data;
+  console.log("INFO: Data received from client:", data);
+
+  const deviceId = data?.deviceId;
+
+  if (!deviceId) {
+    console.error("ERROR: Device ID not found in payload. Payload received:", data);
+    throw new HttpsError(
+      "invalid-argument",
+      "Device ID is required but was not received by the function."
+    );
+  }
+
+  console.log(`INFO: Device ID extracted successfully: ${deviceId}`);
+
+  const firestore = getFirestore();
+  const guestRef = firestore.collection("guests").doc(deviceId);
+  let firebaseUid;
+
+  try {
+    const guestDoc = await guestRef.get();
+
+    if (guestDoc.exists) {
+      firebaseUid = guestDoc.data().firebaseUid;
+      console.log(`INFO: Returning existing UID: ${firebaseUid} for device: ${deviceId}`);
+    } else {
+      const newUser = await getAuth().createUser({});
+      firebaseUid = newUser.uid;
+      console.log(`INFO: Created new UID: ${firebaseUid} for device: ${deviceId}`);
+
+      await guestRef.set({
+        firebaseUid: firebaseUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    const customToken = await getAuth().createCustomToken(firebaseUid);
+    return { token: customToken };
+  } catch (error) {
+    console.error("CRITICAL ERROR in getGuestAuthToken:", error);
+    throw new HttpsError(
+      "internal",
+      "An unexpected error occurred on the server.",
+      error.message
+    );
+  }
+});
+
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+
+// Explicit service account credential
+initializeApp({
+  credential: cert(require("./service-account.json"))
+});
+
+exports.getGuestAuthToken = onCall(async (request) => {
+  const data = request.data;
+  console.log("INFO: Data received from client:", data);
+
+  const deviceId = data?.deviceId;
+  if (!deviceId) {
+    console.error("ERROR: Device ID missing in payload:", data);
+    throw new HttpsError(
+      "invalid-argument",
+      "Device ID is required but not provided."
+    );
+  }
+
+  const firestore = getFirestore();
+  const guestRef = firestore.collection("guests").doc(deviceId);
+  let firebaseUid;
+
+  try {
+    const guestDoc = await guestRef.get();
+
+    if (guestDoc.exists) {
+      firebaseUid = guestDoc.data().firebaseUid;
+      console.log(`Returning existing UID: ${firebaseUid} for device: ${deviceId}`);
+    } else {
+      const newUser = await getAuth().createUser({});
+      firebaseUid = newUser.uid;
+      console.log(`Created new UID: ${firebaseUid} for device: ${deviceId}`);
+
+      await guestRef.set({
+        firebaseUid: firebaseUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    const customToken = await getAuth().createCustomToken(firebaseUid);
+    return { token: customToken };
+  } catch (error) {
+    console.error("CRITICAL ERROR in getGuestAuthToken:", error);
+    throw new HttpsError(
+      "internal",
+      "An unexpected error occurred on the server.",
+      error.message
+    );
+  }
+});

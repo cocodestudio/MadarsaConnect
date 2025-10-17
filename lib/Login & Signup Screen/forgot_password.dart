@@ -128,9 +128,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       } else if (e.code == 'invalid-email') {
         message = 'The email address is not valid.';
       }
-      CustomPopup.show(context,(message));
+      CustomPopup.show(context, (message));
     } catch (e) {
-      CustomPopup.show(context,'An unexpected error occurred. Please check your connection.',
+      CustomPopup.show(
+        context,
+        'An unexpected error occurred. Please check your connection.',
       );
     } finally {
       if (mounted) {
@@ -144,6 +146,25 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.grey.withOpacity(0.2),
+        surfaceTintColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 26),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Forgot Password',
+          style: TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy-Bold',
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+      ),
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -151,41 +172,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           bottom: false,
           child: Column(
             children: [
-              // Custom AppBar
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: size.width * 0.04,
-                  vertical: size.height * 0.013,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, size: 26),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Forgot Password',
-                      style: TextStyle(
-                        fontSize: size.width * 0.048,
-                        fontFamily: 'Gilroy-Bold',
-                      ),
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 26),
-                  ],
-                ),
-              ),
               Expanded(
                 child: Stack(
                   children: [

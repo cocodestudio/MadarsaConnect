@@ -14,6 +14,7 @@ import 'package:madarsaConnect/Head%20Screen/fees_manage.dart';
 import 'package:madarsaConnect/Home%20Screen/change_password.dart';
 import 'package:madarsaConnect/Home%20Screen/madarsa_management.dart';
 import 'package:madarsaConnect/Home%20Screen/notification_settings.dart';
+import 'package:madarsaConnect/Home%20Screen/personal_details.dart';
 import 'package:madarsaConnect/Login%20&%20Signup%20Screen/loginpage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,6 +24,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:madarsaConnect/Data/loader.dart';
 import 'package:madarsaConnect/Data/dynamic_popup.dart';
+import '../Data/const.dart';
 import '../Data/fullimageview.dart';
 import '../Data/main_page.dart';
 import '../Head Screen/kitchen_manage.dart';
@@ -1069,9 +1071,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSettingsList(double screenWidth) {
+    const String userIcons = 'assets/icons/user.svg';
+    const String notificationIcon = 'assets/icons/notification.svg';
+    const String signatureIcon = 'assets/icons/signature.svg';
+    const String feesIcon = 'assets/icons/receipt.svg';
+    const String passwordResetIcon = 'assets/icons/lock_reset.svg';
+    const String kitchenIcon = 'assets/icons/kitchen.svg';
+    const String inventoryIcon = 'assets/icons/inventory.svg';
+    const String aboutIcon = 'assets/icons/info.svg';
+    const String logoutIcon = 'assets/icons/logout.svg';
+    const String passwordChange = 'assets/icons/password_change.svg';
     final List<Map<String, dynamic>> upiSettings = [
       {
-        "icon": Icons.notification_add,
+        "icon": userIcons,
+        "title": "Personal Details",
+        "subtitle": "View or manage your personal information",
+        "onTap": () {
+          navigateWithPremiumTransition(context, const PersonalDetailsScreen());
+        },
+      },
+      {
+        "icon": notificationIcon,
         "title": "Notification Alerts",
         "subtitle": "Get alerts before any activity",
         "onTap": () {
@@ -1083,7 +1103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
       if (_role == 'Student')
         {
-          "icon": Icons.edit,
+          "icon": signatureIcon,
           "title": "Signature Upload",
           "subtitle": "Upload or manage your digital signature.",
           "onTap": () {
@@ -1095,7 +1115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       if (_role == "Head")
         {
-          "icon": Icons.receipt,
+          "icon": feesIcon,
           "title": "Fees Management",
           "subtitle": "Manage and track all fee-related payments",
           "onTap": () {
@@ -1104,7 +1124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       if (_role == "Head")
         {
-          "icon": Icons.lock_reset_outlined,
+          "icon": passwordResetIcon,
           "title": "Reset Student Password",
           "subtitle": "Reset student password to default password",
           "onTap": () {
@@ -1116,7 +1136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       if (_role == "Head")
         {
-          "icon": Icons.food_bank,
+          "icon": kitchenIcon,
           "title": "Kitchen Management",
           "subtitle": "Manage ingredients and recipes for the kitchen",
           "onTap": () {
@@ -1128,7 +1148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       if (_role == "Head")
         {
-          "icon": Icons.inventory,
+          "icon": inventoryIcon,
           "title": "Madarsa Management",
           "subtitle": "Manage expenses and inventory items",
           "onTap": () {
@@ -1142,7 +1162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final List<Map<String, dynamic>> paytmSettings = [
       {
-        "icon": Icons.lock_reset,
+        "icon": passwordChange,
         "title": "Change Your Password",
         "subtitle": "Update your credentials securely",
         "onTap": () {
@@ -1150,7 +1170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       },
       {
-        "icon": Icons.info_outline,
+        "icon": aboutIcon,
         "title": "About",
         "subtitle": "Learn more about the app",
         "onTap": () {
@@ -1158,7 +1178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       },
       {
-        "icon": Icons.logout,
+        "icon": logoutIcon,
         "title": "Logout",
         "subtitle": "Close your app",
         "onTap": _showLogoutDialog,
@@ -1182,10 +1202,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSettingItem(Map<String, dynamic> item, double screenWidth) {
     return ListTile(
-      leading: Icon(
+      leading: SvgPicture.asset(
         item['icon'],
-        size: screenWidth * 0.07,
-        color: Colors.black,
+        width: screenWidth * 0.06,
+        height: screenWidth * 0.06,
+        colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcIn),
       ),
       title: Text(
         item['title'],

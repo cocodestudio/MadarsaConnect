@@ -18,6 +18,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../Faculty Screen/donation_screen.dart';
 import '../Home Screen/Inventory_view_widget.dart';
 import '../Home Screen/feed_screen.dart';
@@ -931,6 +932,8 @@ class MainPageShimmer extends StatelessWidget {
   }
 }
 
+enum AdStatus { loading, loaded, failed }
+
 class AdBannerCard extends StatefulWidget {
   const AdBannerCard({super.key});
 
@@ -940,7 +943,7 @@ class AdBannerCard extends StatefulWidget {
 
 class _AdBannerCardState extends State<AdBannerCard> {
   BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
+  AdStatus _adStatus = AdStatus.loading;
 
   @override
   void initState() {
@@ -954,6 +957,13 @@ class _AdBannerCardState extends State<AdBannerCard> {
     super.dispose();
   }
 
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $url');
+    }
+  }
+
   void _loadAd() {
     _bannerAd = BannerAd(
       adUnitId: 'ca-app-pub-2465407468425782/8001108749',
@@ -963,16 +973,54 @@ class _AdBannerCardState extends State<AdBannerCard> {
         onAdLoaded: (_) {
           if (mounted) {
             setState(() {
-              _isAdLoaded = true;
+              _adStatus = AdStatus.loaded;
             });
           }
         },
         onAdFailedToLoad: (ad, err) {
           debugPrint('BannerAd failed to load: $err');
           ad.dispose();
+          if (mounted) {
+            setState(() {
+              _adStatus = AdStatus.failed;
+            });
+          }
         },
       ),
     )..load();
+  }
+
+  Widget _buildAdContent() {
+    switch (_adStatus) {
+      case AdStatus.loaded:
+        return AdWidget(ad: _bannerAd!);
+      case AdStatus.failed:
+        return GestureDetector(
+          onTap: () {
+            _launchURL('https://www.madarsaconnect.xyz');
+          },
+          child: Image.asset(
+            'assets/images/banner.jpg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        );
+      case AdStatus.loading:
+      default:
+        return Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            width: 320,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+          ),
+        );
+    }
   }
 
   @override
@@ -989,21 +1037,7 @@ class _AdBannerCardState extends State<AdBannerCard> {
           borderRadius: BorderRadius.circular(20.0),
           side: BorderSide(color: Colors.grey.shade400, width: 0.8),
         ),
-        child:
-            _isAdLoaded && _bannerAd != null
-                ? AdWidget(ad: _bannerAd!)
-                : Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300,
-                  highlightColor: Colors.grey.shade100,
-                  child: Container(
-                    width: 320,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                  ),
-                ),
+        child: _buildAdContent(),
       ),
     );
   }

@@ -110,14 +110,21 @@ class _OnboardingState extends State<Onboarding> {
                           PageRouteBuilder(
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                LoginPage(),
-                            transitionsBuilder:
-                                (context, animation, secondaryAnimation, child) {
+                                    LoginPage(),
+                            transitionsBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              child,
+                            ) {
                               var curve = CurvedAnimation(
                                 parent: animation,
                                 curve: Curves.easeInCirc,
                               );
-                              return ScaleTransition(scale: curve, child: child);
+                              return ScaleTransition(
+                                scale: curve,
+                                child: child,
+                              );
                             },
                           ),
                         );
@@ -159,7 +166,7 @@ class _OnboardingState extends State<Onboarding> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       contents.length,
-                          (index) => buildDot(index, context),
+                      (index) => buildDot(index, context),
                     ),
                   ),
                   const Spacer(),

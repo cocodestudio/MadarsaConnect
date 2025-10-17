@@ -21,7 +21,6 @@ InputDecoration premiumInputDecoration(String labelText) {
   );
 }
 
-// --- Main Admin Panel Screen ---
 class KitchenAdminPanelScreen extends StatefulWidget {
   const KitchenAdminPanelScreen({super.key});
 
@@ -84,7 +83,6 @@ class _KitchenAdminPanelScreenState extends State<KitchenAdminPanelScreen>
   }
 }
 
-// --- Ingredients Management Tab ---
 class IngredientsManagementTab extends StatelessWidget {
   const IngredientsManagementTab({super.key});
 
@@ -97,6 +95,62 @@ class IngredientsManagementTab extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _IngredientFormSheet(ingredientDoc: ingredientDoc),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(
+    BuildContext context,
+    DocumentSnapshot ingredientDoc,
+  ) {
+    final data = ingredientDoc.data() as Map<String, dynamic>;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          title: const Text(
+            'Delete Ingredient',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${data['name']}"?',
+            textAlign: TextAlign.center,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onPressed: () async {
+                try {
+                  await ingredientDoc.reference.delete();
+                  if (context.mounted) Navigator.of(context).pop();
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    CustomPopup.show(
+                      context,
+                      'Failed to delete ingredient: $e',
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+        );
+      },
     );
   }
 
@@ -150,6 +204,8 @@ class IngredientsManagementTab extends StatelessWidget {
                         context,
                         ingredientDoc: ingredient,
                       ),
+                  onLongPress:
+                      () => _showDeleteConfirmationDialog(context, ingredient),
                 ),
               );
             },
@@ -171,7 +227,6 @@ class IngredientsManagementTab extends StatelessWidget {
   }
 }
 
-// --- Ingredient Add/Edit Form Bottom Sheet ---
 class _IngredientFormSheet extends StatefulWidget {
   final DocumentSnapshot? ingredientDoc;
   const _IngredientFormSheet({this.ingredientDoc});
@@ -389,7 +444,6 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
   }
 }
 
-// --- Recipes Management Tab ---
 class RecipesManagementTab extends StatelessWidget {
   const RecipesManagementTab({super.key});
 
@@ -402,6 +456,59 @@ class RecipesManagementTab extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _RecipeFormSheet(recipeDoc: recipeDoc),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(
+    BuildContext context,
+    DocumentSnapshot recipeDoc,
+  ) {
+    final data = recipeDoc.data() as Map<String, dynamic>;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          title: const Text(
+            'Delete Recipe',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${data['dishName']}"?',
+            textAlign: TextAlign.center,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onPressed: () async {
+                try {
+                  await recipeDoc.reference.delete();
+                  if (context.mounted) Navigator.of(context).pop();
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    CustomPopup.show(context, 'Failed to delete recipe: $e');
+                  }
+                }
+              },
+            ),
+          ],
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+        );
+      },
     );
   }
 
@@ -450,6 +557,8 @@ class RecipesManagementTab extends StatelessWidget {
                   ),
                   onTap:
                       () => _showRecipeBottomSheet(context, recipeDoc: recipe),
+                  onLongPress:
+                      () => _showDeleteConfirmationDialog(context, recipe),
                 ),
               );
             },
@@ -468,7 +577,6 @@ class RecipesManagementTab extends StatelessWidget {
   }
 }
 
-// --- Recipe Add/Edit Form Bottom Sheet ---
 class _RecipeFormSheet extends StatefulWidget {
   final DocumentSnapshot? recipeDoc;
   const _RecipeFormSheet({super.key, this.recipeDoc});
@@ -652,7 +760,6 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
   }
 }
 
-// --- Bottom Sheet to Add an Ingredient to a Recipe ---
 class _AddIngredientToRecipeSheet extends StatefulWidget {
   const _AddIngredientToRecipeSheet();
   @override

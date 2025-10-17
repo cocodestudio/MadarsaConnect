@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:madarsaConnect/Faculty%20Screen/faculty_attendance_mark.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -11,109 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:madarsaConnect/Data/main_page.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
-import '../Head Screen/fees_manage.dart';
 import '../Home Screen/home_screen.dart';
 import '../utils/app_usage_tracker.dart';
-
-void showSuccessFullScreenDialog(BuildContext context) {
-  bool isButtonActive = true;
-  showGeneralDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierLabel: 'Success',
-    transitionDuration: const Duration(milliseconds: 500),
-    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutBack,
-      );
-
-      return FadeTransition(
-        opacity: curved,
-        child: ScaleTransition(
-          scale: curved,
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SizedBox(),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          height: 150,
-                          width: 150,
-                          child: Icon(
-                            Icons.verified,
-                            size: 100,
-                            color: Colors.green,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "Successfully Submitted!",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: MediaQuery.of(context).size.width * 0.05,
-                            color: Colors.black,
-                            fontFamily: 'Gilroy-Bold',
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 50.0),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed:
-                            isButtonActive
-                                ? () {
-                                  Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                      builder: (_) => const MainPage(),
-                                    ),
-                                    (route) => false,
-                                  );
-                                }
-                                : null,
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: MediaQuery.of(context).size.height * 0.060,
-                          decoration: BoxDecoration(
-                            color:
-                                isButtonActive
-                                    ? Colors.redAccent
-                                    : Colors.redAccent.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: const Text(
-                            "Done",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 17,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
 
 class Course {
   final String id;
@@ -881,6 +781,8 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
   int absentCount = 0;
   bool isSessionActive = false;
   String sessionStatusMessage = '';
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
 
   void updateCounts() {
     presentCount = attendance.values.where((v) => v).length;
@@ -891,6 +793,142 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
   void initState() {
     super.initState();
     checkSessionAndFetchStudents();
+    _loadBannerAd();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-2465407468425782/8176087690',
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  void showSuccessFullScreenDialog(BuildContext context) {
+    bool isButtonActive = true;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Success',
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: curved,
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: SafeArea(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            height: 150,
+                            width: 150,
+                            child: Icon(
+                              Icons.verified,
+                              size: 100,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            "Successfully Submitted!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.05,
+                              color: Colors.black,
+                              fontFamily: 'Gilroy-Bold',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 50.0),
+                        child: Column(
+                          children: [
+                            if (_isBannerAdReady && _bannerAd != null)
+                              SizedBox(
+                                width: _bannerAd!.size.width.toDouble(),
+                                height: _bannerAd!.size.height.toDouble(),
+                                child: AdWidget(ad: _bannerAd!),
+                              ),
+                            if (_isBannerAdReady) const SizedBox(height: 20),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (_) => const MainPage(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                width: double.infinity,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.060,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Text(
+                                  "Done",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> checkSessionAndFetchStudents() async {

@@ -15,6 +15,76 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+class UserCache {
+  static final UserCache _instance = UserCache._internal();
+  factory UserCache() => _instance;
+  UserCache._internal();
+  final Map<String, Map<String, dynamic>> _cache = {};
+
+  Map<String, dynamic>? get(String userId) {
+    return _cache[userId];
+  }
+
+  void set(String userId, Map<String, dynamic> userData) {
+    _cache[userId] = userData;
+  }
+
+  bool contains(String userId) {
+    return _cache.containsKey(userId);
+  }
+}
+
+String getMonthAbbreviation(int month) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  if (month >= 1 && month <= 12) {
+    return months[month - 1];
+  }
+  return '';
+}
+
+Future<Map<String, dynamic>> fetchUserData(String userId) async {
+  final userCache = UserCache();
+  if (userCache.contains(userId)) {
+    return userCache.get(userId)!;
+  }
+
+  try {
+    DocumentSnapshot userDoc;
+    const collections = ['Heads', 'Faculties', 'Students'];
+    for (final collection in collections) {
+      userDoc =
+          await FirebaseFirestore.instance
+              .collection(collection)
+              .doc(userId)
+              .get();
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        userCache.set(userId, data);
+        return data;
+      }
+    }
+  } catch (e) {
+    debugPrint('Error fetching user data for ID $userId: $e');
+  }
+
+  final defaultData = {'fullName': 'Unknown User', 'profilePictureUrl': ''};
+  userCache.set(userId, defaultData);
+  return defaultData;
+}
+
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
 
@@ -26,10 +96,8 @@ class _FeedScreenState extends State<FeedScreen>
     with AutomaticKeepAliveClientMixin<FeedScreen> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   @override
   bool get wantKeepAlive => true;
 
@@ -203,7 +271,6 @@ class _FeedScreenState extends State<FeedScreen>
                               final postId = posts[index].id;
                               final profileProvider =
                                   context.read<ProfileProvider>();
-
                               return _FeedPost(
                                 key: ValueKey(postId),
                                 postId: postId,
@@ -318,35 +385,12 @@ class _FeedPostState extends State<_FeedPost>
   late DateTime? _pollCreationTime;
   Timer? _pollExpiryTimer;
 
-  late final Future<Map<String, dynamic>> _authorDataFuture;
+  // --- FIX: Fetching data only once per widget lifecycle ---
+  // The Future is initialized in initState and reused by FutureBuilder, preventing re-fetching on every rebuild.
+  late Future<Map<String, dynamic>> _authorDataFuture;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-
-  static final Map<String, Map<String, dynamic>> _userCache = {};
-
-  Future<Map<String, dynamic>> _fetchAuthorData(String userId) async {
-    if (_userCache.containsKey(userId)) {
-      return _userCache[userId]!;
-    }
-
-    try {
-      DocumentSnapshot userDoc;
-      List<String> collections = ['Heads', 'Faculties', 'Students'];
-      for (String collection in collections) {
-        userDoc = await _firestore.collection(collection).doc(userId).get();
-        if (userDoc.exists) {
-          final data = userDoc.data() as Map<String, dynamic>;
-          _userCache[userId] = data; // Cache mein data save karna
-          return data;
-        }
-      }
-    } catch (e) {
-      print('Error fetching author data for ID $userId: $e');
-    }
-
-    return {'fullName': 'Unknown User', 'profilePictureUrl': ''};
-  }
 
   @override
   bool get wantKeepAlive => true;
@@ -354,6 +398,19 @@ class _FeedPostState extends State<_FeedPost>
   @override
   void initState() {
     super.initState();
+    _updateStateFromWidget();
+
+    // --- FIX: Fetch author data only ONCE when the widget is created ---
+    _authorDataFuture = fetchUserData(widget.postData['userId'] ?? '');
+
+    if (widget.postData['isPoll'] ?? false) {
+      _startPollListener();
+      _startPollExpiryTimer();
+    }
+  }
+
+  // Helper to update state from widget.postData
+  void _updateStateFromWidget() {
     final postData = widget.postData;
     _likesCount = postData['likesCount'] ?? 0;
     _likedBy = List<String>.from(postData['likedBy'] ?? []);
@@ -364,56 +421,34 @@ class _FeedPostState extends State<_FeedPost>
     );
 
     final votedByRaw = postData['votedBy'];
-    _votedBy = {};
-    if (votedByRaw is Map) {
-      try {
-        _votedBy = Map<String, int>.from(
-          votedByRaw.map((key, value) => MapEntry(key, value as int)),
-        );
-      } catch (e) {
-        _votedBy = {};
-      }
-    }
+    _votedBy =
+        (votedByRaw is Map)
+            ? Map<String, int>.from(
+              votedByRaw.map((k, v) => MapEntry(k.toString(), v as int)),
+            )
+            : {};
 
     _answersCount = postData['answersCount'] ?? 0;
     _pollCreationTime = (postData['timestamp'] as Timestamp?)?.toDate();
-
-    // --- SUDHAR 2.1: Future ko yahan ek baar call kiya ja raha hai ---
-    _authorDataFuture = _fetchAuthorData(postData['userId'] ?? '');
-
-    if (postData['isPoll'] ?? false) {
-      _startPollListener();
-      _startPollExpiryTimer();
-    }
   }
 
   @override
   void didUpdateWidget(covariant _FeedPost oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final newPostData = widget.postData;
-    final oldPostData = oldWidget.postData;
-
-    if (newPostData['likesCount'] != oldPostData['likesCount']) {
-      _likesCount = newPostData['likesCount'] ?? 0;
-    }
-    if (newPostData['likedBy'] != oldPostData['likedBy']) {
-      _likedBy = List.from(newPostData['likedBy'] ?? []);
-    }
-    if (newPostData['commentsCount'] != oldPostData['commentsCount']) {
-      _commentsCount = newPostData['commentsCount'] ?? 0;
-    }
-    if (newPostData['savedBy'] != oldPostData['savedBy']) {
-      _savedBy = List.from(newPostData['savedBy'] ?? []);
-    }
-    if (newPostData['answersCount'] != oldPostData['answersCount']) {
-      _answersCount = newPostData['answersCount'] ?? 0;
+    // If post data changes from the stream, update the local state.
+    if (widget.postData != oldWidget.postData) {
+      if (mounted) {
+        setState(() {
+          _updateStateFromWidget();
+        });
+      }
     }
 
     if (widget.postId != oldWidget.postId ||
-        newPostData['isPoll'] != oldPostData['isPoll']) {
+        widget.postData['isPoll'] != oldWidget.postData['isPoll']) {
       _pollSubscription?.cancel();
       _pollExpiryTimer?.cancel();
-      if (newPostData['isPoll'] ?? false) {
+      if (widget.postData['isPoll'] ?? false) {
         _startPollListener();
         _startPollExpiryTimer();
       }
@@ -425,43 +460,41 @@ class _FeedPostState extends State<_FeedPost>
         .collection('posts')
         .doc(widget.postId)
         .snapshots()
-        .listen((snapshot) {
-          if (snapshot.exists && snapshot.data() != null) {
-            final data = snapshot.data()!;
-            final List<dynamic> pollOptionsDynamic = data['pollOptions'] ?? [];
-            final Map<String, dynamic> votedByRaw = data['votedBy'] ?? {};
-
-            if (mounted) {
+        .listen(
+          (snapshot) {
+            if (snapshot.exists && snapshot.data() != null && mounted) {
+              final data = snapshot.data()!;
               setState(() {
-                _pollOptions =
-                    pollOptionsDynamic
-                        .map((e) => Map<String, dynamic>.from(e))
-                        .toList();
-                try {
-                  _votedBy = Map<String, int>.from(
-                    votedByRaw.map((key, value) => MapEntry(key, value as int)),
-                  );
-                } catch (e) {
-                  _votedBy = {};
-                }
+                _pollOptions = List<Map<String, dynamic>>.from(
+                  data['pollOptions'] ?? [],
+                );
+                final votedByRaw = data['votedBy'];
+                _votedBy =
+                    (votedByRaw is Map)
+                        ? Map<String, int>.from(
+                          votedByRaw.map(
+                            (k, v) => MapEntry(k.toString(), v as int),
+                          ),
+                        )
+                        : {};
               });
             }
-          }
-        }, onError: (error) {});
+          },
+          onError: (error) {
+            debugPrint("Poll listener error: $error");
+          },
+        );
   }
 
   void _startPollExpiryTimer() {
     if (_pollCreationTime == null) return;
-
-    final Duration timeUntilExpiry = _pollCreationTime!
+    final timeUntilExpiry = _pollCreationTime!
         .add(const Duration(hours: 24))
         .difference(DateTime.now());
-
     if (timeUntilExpiry.isNegative) {
       if (mounted) setState(() {});
       return;
     }
-
     _pollExpiryTimer = Timer(timeUntilExpiry, () {
       if (mounted) setState(() {});
     });
@@ -481,35 +514,48 @@ class _FeedPostState extends State<_FeedPost>
     }
 
     final postRef = _firestore.collection('posts').doc(widget.postId);
-    bool hasLiked = _likedBy.contains(widget.currentUserId);
+    final bool hasLiked = _likedBy.contains(widget.currentUserId);
 
+    // Optimistic UI update
     if (mounted) {
       setState(() {
         if (hasLiked) {
-          _likedBy.remove(widget.currentUserId);
           _likesCount--;
+          _likedBy.remove(widget.currentUserId);
         } else {
-          _likedBy.add(widget.currentUserId!);
           _likesCount++;
+          _likedBy.add(widget.currentUserId!);
         }
       });
     }
 
     try {
-      await postRef.update({'likesCount': _likesCount, 'likedBy': _likedBy});
+      if (hasLiked) {
+        await postRef.update({
+          'likesCount': FieldValue.increment(-1),
+          'likedBy': FieldValue.arrayRemove([widget.currentUserId]),
+        });
+      } else {
+        await postRef.update({
+          'likesCount': FieldValue.increment(1),
+          'likedBy': FieldValue.arrayUnion([widget.currentUserId]),
+        });
+      }
     } catch (e) {
+      debugPrint("Failed to update like status: $e");
+      // Revert UI on failure
       if (mounted) {
         setState(() {
           if (hasLiked) {
-            _likedBy.add(widget.currentUserId!);
             _likesCount++;
+            _likedBy.add(widget.currentUserId!);
           } else {
-            _likedBy.remove(widget.currentUserId);
             _likesCount--;
+            _likedBy.remove(widget.currentUserId);
           }
         });
+        CustomPopup.show(context, "Failed to update like status.");
       }
-      if (mounted) CustomPopup.show(context, "Failed to update like status.");
     }
   }
 
@@ -519,8 +565,7 @@ class _FeedPostState extends State<_FeedPost>
       return;
     }
 
-    final postRef = _firestore.collection('posts').doc(widget.postId);
-    bool hasSaved = _savedBy.contains(widget.currentUserId);
+    final bool hasSaved = _savedBy.contains(widget.currentUserId);
 
     if (mounted) {
       setState(() {
@@ -533,11 +578,19 @@ class _FeedPostState extends State<_FeedPost>
     }
 
     try {
-      await postRef.update({'savedBy': _savedBy});
-      if (mounted) {
-        CustomPopup.show(context, hasSaved ? "Post unsaved!" : "Post saved!");
+      if (hasSaved) {
+        await _firestore.collection('posts').doc(widget.postId).update({
+          'savedBy': FieldValue.arrayRemove([widget.currentUserId]),
+        });
+      } else {
+        await _firestore.collection('posts').doc(widget.postId).update({
+          'savedBy': FieldValue.arrayUnion([widget.currentUserId]),
+        });
       }
+      if (mounted)
+        CustomPopup.show(context, hasSaved ? "Post unsaved!" : "Post saved!");
     } catch (e) {
+      debugPrint("Failed to update save status: $e");
       if (mounted) {
         setState(() {
           if (hasSaved) {
@@ -546,8 +599,8 @@ class _FeedPostState extends State<_FeedPost>
             _savedBy.remove(widget.currentUserId);
           }
         });
+        CustomPopup.show(context, "Failed to update save status.");
       }
-      if (mounted) CustomPopup.show(context, "Failed to update save status.");
     }
   }
 
@@ -707,6 +760,7 @@ class _FeedPostState extends State<_FeedPost>
     if (!confirmDelete) return;
 
     try {
+      // Delete associated media from Firebase Storage
       if (!(widget.postData['isQuestion'] ?? false) &&
           !(widget.postData['isPoll'] ?? false)) {
         for (String url in List<String>.from(
@@ -714,26 +768,34 @@ class _FeedPostState extends State<_FeedPost>
         )) {
           try {
             await _storage.refFromURL(url).delete();
-          } catch (e) {}
+          } catch (e) {
+            debugPrint("Could not delete media at $url: $e");
+          }
         }
       }
 
+      // Delete all comments and replies (batched write for efficiency)
       final commentsSnapshot =
           await _firestore
               .collection('posts')
               .doc(widget.postId)
               .collection('comments')
               .get();
+      final WriteBatch batch = _firestore.batch();
       for (QueryDocumentSnapshot doc in commentsSnapshot.docs) {
         final repliesSnapshot = await doc.reference.collection('replies').get();
         for (QueryDocumentSnapshot replyDoc in repliesSnapshot.docs) {
-          await replyDoc.reference.delete();
+          batch.delete(replyDoc.reference);
         }
-        await doc.reference.delete();
+        batch.delete(doc.reference);
       }
+      await batch.commit();
+
+      // Finally, delete the post itself
       await _firestore.collection('posts').doc(widget.postId).delete();
       if (mounted) CustomPopup.show(context, "Post deleted successfully!");
     } catch (e) {
+      debugPrint("Failed to delete post: $e");
       if (mounted) CustomPopup.show(context, "Failed to delete post.");
     }
   }
@@ -882,36 +944,34 @@ class _FeedPostState extends State<_FeedPost>
               docSnapshot.data()?['pollOptions'] ?? [],
             );
         Map<String, int> currentVotedBy = {};
-
         final dynamic votedByRaw = docSnapshot.data()?['votedBy'];
         if (votedByRaw is Map) {
-          try {
-            currentVotedBy = Map<String, int>.from(
-              votedByRaw.map((key, value) => MapEntry(key, value as int)),
-            );
-          } catch (e) {
-            currentVotedBy = {};
-          }
+          currentVotedBy = Map<String, int>.from(
+            votedByRaw.map((k, v) => MapEntry(k.toString(), v as int)),
+          );
         }
 
         final String userId = widget.currentUserId!;
         final bool hasVoted = currentVotedBy.containsKey(userId);
         final int? oldVotedOptionIndex = currentVotedBy[userId];
 
-        if (hasVoted &&
-            oldVotedOptionIndex != null &&
-            oldVotedOptionIndex != selectedOptionIndex) {
+        // If user has already voted for this option, do nothing.
+        if (hasVoted && oldVotedOptionIndex == selectedOptionIndex) {
+          return;
+        }
+
+        // If user changes their vote, decrement the old option's count.
+        if (hasVoted && oldVotedOptionIndex != null) {
           if (oldVotedOptionIndex >= 0 &&
               oldVotedOptionIndex < currentPollOptions.length) {
             currentPollOptions[oldVotedOptionIndex]['votes'] =
                 (currentPollOptions[oldVotedOptionIndex]['votes'] as int? ??
-                    0) -
+                    1) -
                 1;
           }
-        } else if (hasVoted && oldVotedOptionIndex == selectedOptionIndex) {
-          return;
         }
 
+        // Increment the new option's count.
         if (selectedOptionIndex >= 0 &&
             selectedOptionIndex < currentPollOptions.length) {
           currentPollOptions[selectedOptionIndex]['votes'] =
@@ -919,6 +979,7 @@ class _FeedPostState extends State<_FeedPost>
               1;
         }
 
+        // Update the user's vote.
         currentVotedBy[userId] = selectedOptionIndex;
 
         transaction.update(postRef, {
@@ -927,29 +988,9 @@ class _FeedPostState extends State<_FeedPost>
         });
       });
     } catch (e) {
+      debugPrint("Failed to cast vote: $e");
       if (mounted) CustomPopup.show(context, "Failed to cast vote: $e");
     }
-  }
-
-  String getMonthAbbreviation(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    if (month >= 1 && month <= 12) {
-      return months[month - 1];
-    }
-    return '';
   }
 
   @override
@@ -957,15 +998,9 @@ class _FeedPostState extends State<_FeedPost>
     super.build(context);
 
     final postData = widget.postData;
-    final String userName = postData['userName'] ?? 'Unknown User';
-    final String userTitle = postData['userRole'] ?? 'User';
     final String postText = postData['caption'] ?? '';
-    final String userAvatarUrl = postData['userProfileUrl'] ?? '';
     final List<String> mediaUrls = List<String>.from(
       postData['mediaUrls'] ?? [],
-    );
-    final List<String> mediaTypes = List<String>.from(
-      postData['mediaTypes'] ?? [],
     );
     final Timestamp? timestamp = postData['timestamp'] as Timestamp?;
     final String postUserId = postData['userId'] ?? '';
@@ -973,48 +1008,45 @@ class _FeedPostState extends State<_FeedPost>
     final bool isQuestion = postData['isQuestion'] ?? false;
     final bool isPoll = postData['isPoll'] ?? false;
 
-    String timeAgoString = '';
-    if (timestamp != null) {
-      final DateTime postDateTime = timestamp.toDate();
-      timeAgoString = timeago.format(postDateTime);
-      if (DateTime.now().difference(postDateTime).inDays > 0) {
-        timeAgoString =
-            '${postDateTime.day} ${getMonthAbbreviation(postDateTime.month)}';
-      }
+    String timeAgoString =
+        (timestamp != null) ? timeago.format(timestamp.toDate()) : '';
+    if (timestamp != null &&
+        DateTime.now().difference(timestamp.toDate()).inDays > 0) {
+      final postDateTime = timestamp.toDate();
+      timeAgoString =
+          '${postDateTime.day} ${getMonthAbbreviation(postDateTime.month)}';
     }
 
-    bool isLiked =
+    final bool isLiked =
         widget.currentUserId != null && _likedBy.contains(widget.currentUserId);
-    bool isSaved =
+    final bool isSaved =
         widget.currentUserId != null && _savedBy.contains(widget.currentUserId);
-    bool hasVoted =
+    final bool hasVoted =
         widget.currentUserId != null &&
         _votedBy.containsKey(widget.currentUserId);
-    bool isPollExpired =
+    final bool isPollExpired =
         _pollCreationTime != null &&
         DateTime.now().difference(_pollCreationTime!).inHours >= 24;
-    bool canSeePollResults =
+    final bool canSeePollResults =
         hasVoted || (widget.currentUserId == postUserId) || isPollExpired;
-
-    final bool isViewingThisUserProfile =
-        (widget.profileViewUserId != null &&
-            widget.profileViewUserId == postUserId);
 
     String? pollWinnerText;
     if (isPoll && isPollExpired) {
       int maxVotes = 0;
       for (var option in _pollOptions) {
-        if ((option['votes'] as int? ?? 0) > maxVotes) {
-          maxVotes = (option['votes'] as int? ?? 0);
-        }
+        maxVotes =
+            (option['votes'] as int? ?? 0) > maxVotes
+                ? (option['votes'] as int? ?? 0)
+                : maxVotes;
       }
-
-      List<String> winners = [];
-      for (var option in _pollOptions) {
-        if ((option['votes'] as int? ?? 0) == maxVotes && maxVotes > 0) {
-          winners.add(option['text']);
-        }
-      }
+      List<String> winners =
+          _pollOptions
+              .where(
+                (opt) =>
+                    (opt['votes'] as int? ?? 0) == maxVotes && maxVotes > 0,
+              )
+              .map((opt) => opt['text'] as String)
+              .toList();
 
       if (winners.length == 1) {
         pollWinnerText = 'Winner: ${winners.first}!';
@@ -1044,38 +1076,36 @@ class _FeedPostState extends State<_FeedPost>
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            // --- SUDHAR 2.2: FutureBuilder ab initState mein define kiye gaye future ka istemaal karega ---
             child: FutureBuilder<Map<String, dynamic>>(
+              // --- FIX: Use the pre-initialized future ---
               future: _authorDataFuture,
               builder: (context, snapshot) {
-                String displayName = userName;
-                String displayAvatarUrl = userAvatarUrl;
+                String displayName = 'Loading...';
+                String displayAvatarUrl = '';
 
                 if (snapshot.connectionState == ConnectionState.done &&
                     snapshot.hasData) {
-                  displayName = snapshot.data?['fullName'] ?? userName;
-                  displayAvatarUrl =
-                      snapshot.data?['profilePictureUrl'] ?? userAvatarUrl;
+                  displayName = snapshot.data?['fullName'] ?? 'Unknown User';
+                  displayAvatarUrl = snapshot.data?['profilePictureUrl'] ?? '';
+                } else if (snapshot.hasError) {
+                  displayName = 'Error';
                 }
 
-                // Header (Profile picture, name etc.)
                 return Row(
                   children: [
                     GestureDetector(
-                      onTap:
-                          isViewingThisUserProfile
-                              ? null
-                              : () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => UserProfileScreen(
-                                          userId: postUserId,
-                                        ),
-                                  ),
-                                );
-                              },
+                      onTap: () {
+                        if (postUserId.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) =>
+                                      UserProfileScreen(userId: postUserId),
+                            ),
+                          );
+                        }
+                      },
                       child: CircleAvatar(
                         radius: 24,
                         backgroundColor: Colors.grey[200],
@@ -1100,20 +1130,18 @@ class _FeedPostState extends State<_FeedPost>
                     const SizedBox(width: 12),
                     Expanded(
                       child: GestureDetector(
-                        onTap:
-                            isViewingThisUserProfile
-                                ? null
-                                : () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => UserProfileScreen(
-                                            userId: postUserId,
-                                          ),
-                                    ),
-                                  );
-                                },
+                        onTap: () {
+                          if (postUserId.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        UserProfileScreen(userId: postUserId),
+                              ),
+                            );
+                          }
+                        },
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1128,14 +1156,14 @@ class _FeedPostState extends State<_FeedPost>
                             ),
                             Row(
                               children: [
-                                if (privacySetting == 'Public')
+                                if (privacySetting == 'Public') ...[
                                   Icon(
                                     Icons.public,
                                     size: 16,
                                     color: Colors.grey[600],
                                   ),
-                                if (privacySetting == 'Public')
                                   const SizedBox(width: 4),
+                                ],
                                 Text(
                                   timeAgoString,
                                   style: TextStyle(
@@ -1160,46 +1188,47 @@ class _FeedPostState extends State<_FeedPost>
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  postText,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    color: Colors.black87,
-                    fontFamily: 'Inter',
+          if (postText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    postText,
+                    style: const TextStyle(
+                      fontSize: 15.5,
+                      color: Colors.black87,
+                      fontFamily: 'Inter',
+                    ),
+                    maxLines: _showFullText ? null : _maxLines,
+                    overflow:
+                        _showFullText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                   ),
-                  maxLines: _showFullText ? null : _maxLines,
-                  overflow:
-                      _showFullText
-                          ? TextOverflow.visible
-                          : TextOverflow.ellipsis,
-                ),
-                if (!_showFullText && postText.length > (_maxLines * 50))
-                  GestureDetector(
-                    onTap: () {
-                      if (mounted) setState(() => _showFullText = true);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        'See More',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontFamily: 'Gilroy-Bold',
+                  if (!_showFullText && postText.length > (_maxLines * 50))
+                    GestureDetector(
+                      onTap: () {
+                        if (mounted) setState(() => _showFullText = true);
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          'See More',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Gilroy-Bold',
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
           if (isPoll)
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -1218,7 +1247,6 @@ class _FeedPostState extends State<_FeedPost>
                       );
                       double percentage =
                           totalVotes == 0 ? 0.0 : (votes / totalVotes) * 100;
-
                       bool isSelectedOption =
                           hasVoted && _votedBy[widget.currentUserId] == idx;
 
@@ -1247,60 +1275,54 @@ class _FeedPostState extends State<_FeedPost>
                                 ),
                               ),
                               child: Stack(
+                                alignment: Alignment.centerLeft,
                                 children: [
                                   if (canSeePollResults)
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(6.0),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 500,
-                                          ),
-                                          width:
-                                              MediaQuery.of(
-                                                context,
-                                              ).size.width *
-                                              0.9 *
-                                              (animatedPercentage / 100),
-                                          decoration: BoxDecoration(
-                                            color: Colors.redAccent.withOpacity(
-                                              0.25,
-                                            ),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 500,
+                                        ),
+                                        width:
+                                            (MediaQuery.of(context).size.width -
+                                                64) *
+                                            (animatedPercentage / 100),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent.withOpacity(
+                                            0.25,
                                           ),
                                         ),
                                       ),
                                     ),
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12.0,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              option['text'],
-                                              style: const TextStyle(
-                                                fontSize: 15.0,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.black87,
-                                              ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            option['text'],
+                                            style: const TextStyle(
+                                              fontSize: 15.0,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
                                             ),
                                           ),
-                                          if (canSeePollResults)
-                                            Text(
-                                              '($votes)',
-                                              style: const TextStyle(
-                                                fontSize: 14.0,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
-                                              ),
+                                        ),
+                                        if (canSeePollResults)
+                                          Text(
+                                            '($votes)',
+                                            style: const TextStyle(
+                                              fontSize: 14.0,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
                                             ),
-                                        ],
-                                      ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -1332,9 +1354,7 @@ class _FeedPostState extends State<_FeedPost>
               ),
             ),
           const SizedBox(height: 8),
-          if (mediaUrls.isNotEmpty &&
-              mediaTypes.first == 'image' &&
-              !isQuestion)
+          if (mediaUrls.isNotEmpty && !isQuestion)
             GestureDetector(
               onTap: () => _viewMediaFullScreen(mediaUrls.first),
               onDoubleTap: _toggleLike,
@@ -1486,7 +1506,7 @@ class CommentsScreen extends StatefulWidget {
     super.key,
     required this.postId,
     required this.scrollController,
-    required this.currentUserId,
+    this.currentUserId,
     this.currentUserName,
     this.currentUserProfileUrl,
     this.isQuestionOrPoll = false,
@@ -1499,15 +1519,13 @@ class CommentsScreen extends StatefulWidget {
 class _CommentsScreenState extends State<CommentsScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? _replyingToCommentId;
   String? _replyingToReplyId;
   String? _replyingToUserName;
 
   final Set<String> _expandedComments = {};
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Map<String, Map<String, dynamic>> _userCache =
-      {}; // Cache for user data
 
   @override
   void dispose() {
@@ -1516,56 +1534,29 @@ class _CommentsScreenState extends State<CommentsScreen> {
     super.dispose();
   }
 
-  // New method to fetch user data and cache it
-  Future<Map<String, dynamic>> _fetchUserData(String userId) async {
-    if (_userCache.containsKey(userId)) {
-      return _userCache[userId]!;
-    }
-
-    try {
-      final userDoc = await _firestore.collection('Heads').doc(userId).get();
-      if (userDoc.exists) {
-        final data = userDoc.data()!;
-        _userCache[userId] = data;
-        return data;
-      }
-
-      final facultyDoc =
-          await _firestore.collection('Faculties').doc(userId).get();
-      if (facultyDoc.exists) {
-        final data = facultyDoc.data()!;
-        _userCache[userId] = data;
-        return data;
-      }
-
-      final studentDoc =
-          await _firestore.collection('Students').doc(userId).get();
-      if (studentDoc.exists) {
-        final data = studentDoc.data()!;
-        _userCache[userId] = data;
-        return data;
-      }
-
-      // If user not found, return a default map
-      return {'fullName': 'Unknown User', 'profilePictureUrl': ''};
-    } catch (e) {
-      print('Error fetching user data for ID $userId: $e');
-      return {'fullName': 'Unknown User', 'profilePictureUrl': ''};
-    }
-  }
-
+  /// IMPROVEMENT: More efficient and robust comment/reply sending logic.
   void _sendCommentOrReply() async {
     final text = _commentController.text.trim();
-    if (text.isEmpty) {
-      return;
-    }
-    if (widget.currentUserId == null) {
-      return;
-    }
+    if (text.isEmpty || widget.currentUserId == null) return;
+
+    // Give instant feedback by clearing the text field and unfocusing
+    _commentController.clear();
+    _commentFocusNode.unfocus();
+
+    final originalReplyingToCommentId = _replyingToCommentId;
+    final originalReplyingToReplyId = _replyingToReplyId;
+    final originalReplyingToUserName = _replyingToUserName;
+
+    // Clear reply state immediately
+    setState(() {
+      _replyingToCommentId = null;
+      _replyingToReplyId = null;
+      _replyingToUserName = null;
+    });
 
     try {
-      // Fetch user details for the comment/reply
-      final userDetails = await _fetchUserData(widget.currentUserId!);
+      // Use the centralized fetchUserData function for caching
+      final userDetails = await fetchUserData(widget.currentUserId!);
       final userName =
           userDetails['fullName'] ?? widget.currentUserName ?? "Unknown";
       final userProfileUrl =
@@ -1573,133 +1564,93 @@ class _CommentsScreenState extends State<CommentsScreen> {
           widget.currentUserProfileUrl ??
           "";
 
-      if (_replyingToCommentId != null) {
+      final Map<String, dynamic> data = {
+        'userId': widget.currentUserId,
+        'userName': userName,
+        'userProfileUrl': userProfileUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+        'likesCount': 0,
+        'likedBy': [],
+      };
+
+      if (originalReplyingToCommentId != null) {
+        // Handle reply logic
         String replyText = text;
-        if (_replyingToUserName != null &&
-            replyText.startsWith('@$_replyingToUserName')) {
+        if (originalReplyingToUserName != null &&
+            text.startsWith('@$originalReplyingToUserName')) {
           replyText =
-              replyText.substring('@$_replyingToUserName'.length).trim();
+              text.substring('@$originalReplyingToUserName'.length).trim();
+        }
+        data['replyText'] = replyText;
+
+        if (originalReplyingToReplyId != null) {
+          data['parentReplyId'] = originalReplyingToReplyId;
         }
 
-        if (_replyingToReplyId != null) {
-          await _firestore
-              .collection('posts')
-              .doc(widget.postId)
-              .collection('comments')
-              .doc(_replyingToCommentId)
-              .collection('replies')
-              .add({
-                'userId': widget.currentUserId,
-                'userName': userName,
-                'userProfileUrl': userProfileUrl,
-                'replyText': replyText,
-                'timestamp': FieldValue.serverTimestamp(),
-                'likesCount': 0,
-                'likedBy': [],
-                'parentReplyId': _replyingToReplyId,
-              });
-        } else {
-          await _firestore
-              .collection('posts')
-              .doc(widget.postId)
-              .collection('comments')
-              .doc(_replyingToCommentId)
-              .collection('replies')
-              .add({
-                'userId': widget.currentUserId,
-                'userName': userName,
-                'userProfileUrl': userProfileUrl,
-                'replyText': replyText,
-                'timestamp': FieldValue.serverTimestamp(),
-                'likesCount': 0,
-                'likedBy': [],
-              });
-        }
-      } else {
         await _firestore
             .collection('posts')
             .doc(widget.postId)
             .collection('comments')
-            .add({
-              'userId': widget.currentUserId,
-              'userName': userName,
-              'userProfileUrl': userProfileUrl,
-              'commentText': text,
-              'timestamp': FieldValue.serverTimestamp(),
-              'likesCount': 0,
-              'likedBy': [],
-            });
+            .doc(originalReplyingToCommentId)
+            .collection('replies')
+            .add(data);
+      } else {
+        // Handle new comment logic
+        data['commentText'] = text;
+        await _firestore
+            .collection('posts')
+            .doc(widget.postId)
+            .collection('comments')
+            .add(data);
 
-        if (widget.isQuestionOrPoll) {
-          await _firestore.collection('posts').doc(widget.postId).update({
-            'answersCount': FieldValue.increment(1),
-          });
-        } else {
-          await _firestore.collection('posts').doc(widget.postId).update({
-            'commentsCount': FieldValue.increment(1),
-          });
-        }
+        // Use atomic server-side increment
+        final fieldToIncrement =
+            widget.isQuestionOrPoll ? 'answersCount' : 'commentsCount';
+        await _firestore.collection('posts').doc(widget.postId).update({
+          fieldToIncrement: FieldValue.increment(1),
+        });
       }
-
-      _commentController.clear();
-      setState(() {
-        _replyingToCommentId = null;
-        _replyingToReplyId = null;
-        _replyingToUserName = null;
-      });
-      _commentFocusNode.unfocus();
     } catch (e) {
-      print("Error sending comment/reply: $e");
+      debugPrint("Error sending comment/reply: $e");
+      if (mounted) CustomPopup.show(context, "Failed to send message.");
     }
   }
 
-  void _toggleCommentLike(
-    String commentId,
-    int currentLikes,
-    List<String> currentLikedBy,
-  ) async {
+  /// IMPROVEMENT: Uses atomic server-side operations for likes, which is more efficient and safer.
+  void _toggleCommentLike(String commentId, List<String> currentLikedBy) {
     if (widget.currentUserId == null) {
       CustomPopup.show(context, "Please log in to like comments.");
       return;
     }
-
     final commentRef = _firestore
         .collection('posts')
         .doc(widget.postId)
         .collection('comments')
         .doc(commentId);
 
-    bool hasLiked = currentLikedBy.contains(widget.currentUserId);
-    int newLikesCount = currentLikes;
-    List<String> newLikedBy = List.from(currentLikedBy);
-
-    if (hasLiked) {
-      newLikedBy.remove(widget.currentUserId);
-      newLikesCount--;
-    } else {
-      newLikedBy.add(widget.currentUserId!);
-      newLikesCount++;
-    }
-
-    try {
-      await commentRef.update({
-        'likesCount': newLikesCount,
-        'likedBy': newLikedBy,
+    if (currentLikedBy.contains(widget.currentUserId)) {
+      commentRef.update({
+        'likesCount': FieldValue.increment(-1),
+        'likedBy': FieldValue.arrayRemove([widget.currentUserId!]),
       });
-    } catch (e) {}
+    } else {
+      commentRef.update({
+        'likesCount': FieldValue.increment(1),
+        'likedBy': FieldValue.arrayUnion([widget.currentUserId!]),
+      });
+    }
   }
 
+  /// IMPROVEMENT: Also uses atomic operations for reply likes.
   void _toggleReplyLike(
     String commentId,
     String replyId,
-    int currentLikes,
     List<String> currentLikedBy,
-  ) async {
+  ) {
     if (widget.currentUserId == null) {
       CustomPopup.show(context, "Please log in to like replies.");
       return;
     }
-
     final replyRef = _firestore
         .collection('posts')
         .doc(widget.postId)
@@ -1708,44 +1659,28 @@ class _CommentsScreenState extends State<CommentsScreen> {
         .collection('replies')
         .doc(replyId);
 
-    bool hasLiked = currentLikedBy.contains(widget.currentUserId);
-    int newLikesCount = currentLikes;
-    List<String> newLikedBy = List.from(currentLikedBy);
-
-    if (hasLiked) {
-      newLikedBy.remove(widget.currentUserId);
-      newLikesCount--;
-    } else {
-      newLikedBy.add(widget.currentUserId!);
-      newLikesCount++;
-    }
-
-    try {
-      await replyRef.update({
-        'likesCount': newLikesCount,
-        'likedBy': newLikedBy,
+    if (currentLikedBy.contains(widget.currentUserId)) {
+      replyRef.update({
+        'likesCount': FieldValue.increment(-1),
+        'likedBy': FieldValue.arrayRemove([widget.currentUserId!]),
       });
-    } catch (e) {
-      CustomPopup.show(context, "Failed to update reply like status: $e");
+    } else {
+      replyRef.update({
+        'likesCount': FieldValue.increment(1),
+        'likedBy': FieldValue.arrayUnion([widget.currentUserId!]),
+      });
     }
   }
 
-  void _startReplyToComment(String commentId, String userName) {
-    setState(() {
-      _replyingToCommentId = commentId;
-      _replyingToReplyId = null;
-      _replyingToUserName = userName;
-      _commentController.text = '@$userName ';
-      _commentFocusNode.requestFocus();
-    });
-  }
-
-  void _startReplyToReply(String commentId, String replyId, String userName) {
+  void _startReplyTo(String commentId, String? replyId, String userName) {
     setState(() {
       _replyingToCommentId = commentId;
       _replyingToReplyId = replyId;
       _replyingToUserName = userName;
       _commentController.text = '@$userName ';
+      _commentController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _commentController.text.length),
+      );
       _commentFocusNode.requestFocus();
     });
   }
@@ -1756,47 +1691,37 @@ class _CommentsScreenState extends State<CommentsScreen> {
       _replyingToReplyId = null;
       _replyingToUserName = null;
       _commentController.clear();
+      _commentFocusNode.unfocus();
     });
-    _commentFocusNode.unfocus();
   }
 
+  /// IMPROVEMENT: Uses a WriteBatch to delete a comment and its replies atomically.
   Future<void> _deleteComment(String commentId, String commentUserId) async {
-    if (widget.currentUserId == null || widget.currentUserId != commentUserId) {
-      return;
-    }
+    if (widget.currentUserId != commentUserId) return;
 
     try {
-      final repliesSnapshot =
-          await _firestore
-              .collection('posts')
-              .doc(widget.postId)
-              .collection('comments')
-              .doc(commentId)
-              .collection('replies')
-              .get();
-
-      for (var doc in repliesSnapshot.docs) {
-        await doc.reference.delete();
-      }
-
-      await _firestore
+      final writeBatch = _firestore.batch();
+      final commentRef = _firestore
           .collection('posts')
           .doc(widget.postId)
           .collection('comments')
-          .doc(commentId)
-          .delete();
+          .doc(commentId);
+      final repliesSnapshot = await commentRef.collection('replies').get();
 
-      if (widget.isQuestionOrPoll) {
-        await _firestore.collection('posts').doc(widget.postId).update({
-          'answersCount': FieldValue.increment(-1),
-        });
-      } else {
-        await _firestore.collection('posts').doc(widget.postId).update({
-          'commentsCount': FieldValue.increment(-1),
-        });
+      for (final doc in repliesSnapshot.docs) {
+        writeBatch.delete(doc.reference);
       }
+      writeBatch.delete(commentRef);
+
+      await writeBatch.commit();
+
+      final fieldToDecrement =
+          widget.isQuestionOrPoll ? 'answersCount' : 'commentsCount';
+      await _firestore.collection('posts').doc(widget.postId).update({
+        fieldToDecrement: FieldValue.increment(-1),
+      });
     } catch (e) {
-      print("Error deleting comment: $e");
+      debugPrint("Error deleting comment atomically: $e");
     }
   }
 
@@ -1805,10 +1730,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     String replyId,
     String replyUserId,
   ) async {
-    if (widget.currentUserId == null || widget.currentUserId != replyUserId) {
-      return;
-    }
-
+    if (widget.currentUserId != replyUserId) return;
     try {
       await _firestore
           .collection('posts')
@@ -1819,296 +1741,175 @@ class _CommentsScreenState extends State<CommentsScreen> {
           .doc(replyId)
           .delete();
     } catch (e) {
-      CustomPopup.show(context, "Error deleting reply: $e");
-      CustomPopup.show(context, "Failed to delete reply: $e");
+      debugPrint("Error deleting reply: $e");
+      if (mounted) CustomPopup.show(context, "Failed to delete reply.");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  _firestore
-                      .collection('posts')
-                      .doc(widget.postId)
-                      .collection('comments')
-                      .orderBy('timestamp', descending: false)
-                      .snapshots(),
-              builder: (context, snapshot) {
-                // --- SUDHAR 3: Shimmer Effect ka istemaal ---
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return ListView.builder(
-                    itemCount: 5, // 5 shimmer items dikhana
-                    itemBuilder: (context, index) => const _CommentShimmer(),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error loading comments: ${snapshot.error}'),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      widget.isQuestionOrPoll
-                          ? 'No answers yet. Be the first to answer!'
-                          : 'No comments yet. Be the first to comment!',
-                    ),
-                  );
-                }
-
+    return Column(
+      children: [
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream:
+                _firestore
+                    .collection('posts')
+                    .doc(widget.postId)
+                    .collection('comments')
+                    .orderBy('timestamp', descending: false)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return ListView.builder(
-                  controller: widget.scrollController,
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final commentDoc = snapshot.data!.docs[index];
-                    final commentData =
-                        commentDoc.data() as Map<String, dynamic>;
-                    final commentId = commentDoc.id;
-
-                    final String commentUserName =
-                        commentData['userName'] ?? 'Unknown';
-                    final String commentUserAvatarUrl =
-                        commentData['userProfileUrl'] ?? '';
-                    final String commentText = commentData['commentText'] ?? '';
-                    final String commentUserId = commentData['userId'] ?? '';
-                    final Timestamp? commentTimestamp =
-                        commentData['timestamp'] as Timestamp?;
-                    final int commentLikesCount =
-                        commentData['likesCount'] ?? 0;
-                    final List<dynamic> commentLikedByDynamic =
-                        commentData['likedBy'] ?? [];
-                    final List<String> commentLikedBy =
-                        commentLikedByDynamic.map((e) => e.toString()).toList();
-
-                    String timeAgoString = '';
-                    if (commentTimestamp != null) {
-                      final DateTime commentDateTime =
-                          commentTimestamp.toDate();
-                      timeAgoString = timeago.format(commentDateTime);
-                      if (DateTime.now().difference(commentDateTime).inDays >
-                          0) {
-                        timeAgoString =
-                            '${commentDateTime.day} ${getMonthAbbreviation(commentDateTime.month)}';
-                      }
-                    }
-
-                    bool isCommentLiked =
-                        widget.currentUserId != null &&
-                        commentLikedBy.contains(widget.currentUserId);
-                    bool isCommentExpanded = _expandedComments.contains(
-                      commentId,
-                    );
-                    bool canDeleteComment =
-                        widget.currentUserId != null &&
-                        widget.currentUserId == commentUserId;
-
-                    return FutureBuilder(
-                      future: _fetchUserData(commentUserId),
-                      builder: (
-                        context,
-                        AsyncSnapshot<Map<String, dynamic>> userSnapshot,
-                      ) {
-                        final String finalUserName =
-                            userSnapshot.data?['fullName'] ?? commentUserName;
-                        final String finalUserAvatarUrl =
-                            userSnapshot.data?['profilePictureUrl'] ??
-                            commentUserAvatarUrl;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _CommentItem(
-                              key: ValueKey(commentId),
-                              postId: widget.postId,
-                              commentId: commentId,
-                              commentUserName: finalUserName,
-                              commentUserAvatarUrl: finalUserAvatarUrl,
-                              commentText: commentText,
-                              commentUserId: commentUserId,
-                              commentTimestamp: commentTimestamp,
-                              commentLikesCount: commentLikesCount,
-                              commentLikedBy: commentLikedBy,
-                              isCommentLiked: isCommentLiked,
-                              timeAgoString: timeAgoString,
-                              canDeleteComment: canDeleteComment,
-                              currentUserId: widget.currentUserId,
-                              onToggleLike: _toggleCommentLike,
-                              onStartReply: _startReplyToComment,
-                              onDelete: _deleteComment,
-                              onToggleExpandReplies: (id) {
-                                setState(() {
-                                  if (_expandedComments.contains(id)) {
-                                    _expandedComments.remove(id);
-                                  } else {
-                                    _expandedComments.add(id);
-                                  }
-                                });
-                              },
-                              isCommentExpanded: isCommentExpanded,
-                              getReplyTimeAgoString: _getReplyTimeAgoString,
-                              toggleReplyLike: _toggleReplyLike,
-                              deleteReply: _deleteReply,
-                              startReplyToReply: _startReplyToReply,
-                              fetchUserData: _fetchUserData,
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
+                  itemCount: 5,
+                  itemBuilder: (_, __) => const _CommentShimmer(),
                 );
-              },
-            ),
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    widget.isQuestionOrPoll
+                        ? 'Be the first to answer!'
+                        : 'Be the first to comment!',
+                  ),
+                );
+              }
+
+              final commentDocs = snapshot.data!.docs;
+              return ListView.builder(
+                controller: widget.scrollController,
+                itemCount: commentDocs.length,
+                itemBuilder: (context, index) {
+                  final commentDoc = commentDocs[index];
+                  final commentData = commentDoc.data() as Map<String, dynamic>;
+
+                  return _CommentItem(
+                    key: ValueKey(commentDoc.id),
+                    postId: widget.postId,
+                    commentId: commentDoc.id,
+                    commentData: commentData,
+                    currentUserId: widget.currentUserId,
+                    onToggleLike: _toggleCommentLike,
+                    onStartReply:
+                        (userName) =>
+                            _startReplyTo(commentDoc.id, null, userName),
+                    onDelete: _deleteComment,
+                    onToggleExpandReplies:
+                        (id) => setState(() {
+                          _expandedComments.contains(id)
+                              ? _expandedComments.remove(id)
+                              : _expandedComments.add(id);
+                        }),
+                    isCommentExpanded: _expandedComments.contains(
+                      commentDoc.id,
+                    ),
+                    toggleReplyLike: _toggleReplyLike,
+                    deleteReply: _deleteReply,
+                    startReplyToReply: _startReplyTo,
+                  );
+                },
+              );
+            },
           ),
-          Padding(
-            padding: EdgeInsets.only(
-              left: 16.0,
-              right: 16.0,
-              top: 16.0,
-              bottom: 16.0 + MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_replyingToCommentId != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Replying to @${_replyingToUserName ?? 'User'}',
-                            style: TextStyle(
-                              color: Colors.blue[700],
-                              fontSize: 13,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Spacer(),
-                        InkWell(
-                          onTap: _cancelReply,
-                          child: Icon(
-                            Icons.close,
-                            size: 18,
+        ),
+        // Input field area
+        Padding(
+          padding: EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+            bottom: 16.0 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_replyingToCommentId != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Replying to @${_replyingToUserName ?? 'User'}',
+                          style: TextStyle(
                             color: Colors.blue[700],
+                            fontSize: 13,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
+                      InkWell(
+                        onTap: _cancelReply,
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      focusNode: _commentFocusNode,
+                      decoration: InputDecoration(
+                        hintText:
+                            _replyingToCommentId != null
+                                ? 'Add a reply...'
+                                : (widget.isQuestionOrPoll
+                                    ? 'Add an answer...'
+                                    : 'Add a comment...'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25.0),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      textCapitalization: TextCapitalization.sentences,
                     ),
                   ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        focusNode: _commentFocusNode,
-                        decoration: InputDecoration(
-                          hintText:
-                              _replyingToCommentId != null
-                                  ? 'Add a reply to ${_replyingToUserName ?? 'User'}...'
-                                  : widget.isQuestionOrPoll
-                                  ? 'Add an answer...'
-                                  : 'Add a comment...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25.0),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                        ),
-                        maxLines: null,
-                        keyboardType: TextInputType.multiline,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    FloatingActionButton(
-                      onPressed: _sendCommentOrReply,
-                      mini: true,
-                      backgroundColor: Colors.redAccent,
-                      elevation: 0,
-                      child: const Icon(Icons.send, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  const SizedBox(width: 10),
+                  FloatingActionButton(
+                    onPressed: _sendCommentOrReply,
+                    mini: true,
+                    backgroundColor: Colors.redAccent,
+                    elevation: 0,
+                    child: const Icon(Icons.send, color: Colors.white),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-
-  String _getReplyTimeAgoString(Timestamp? replyTimestamp) {
-    String replyTimeAgoString = '';
-    if (replyTimestamp != null) {
-      final DateTime replyDateTime = replyTimestamp.toDate();
-      replyTimeAgoString = timeago.format(replyDateTime);
-      if (DateTime.now().difference(replyDateTime).inDays > 0) {
-        replyTimeAgoString =
-            '${replyDateTime.day} ${getMonthAbbreviation(replyDateTime.month)}';
-      }
-    }
-    return replyTimeAgoString;
-  }
-
-  String getMonthAbbreviation(int month) {
-    switch (month) {
-      case 1:
-        return 'Jan';
-      case 2:
-        return 'Feb';
-      case 3:
-        return 'Mar';
-      case 4:
-        return 'Apr';
-      case 5:
-        return 'May';
-      case 6:
-        return 'Jun';
-      case 7:
-        return 'Jul';
-      case 8:
-        return 'Aug';
-      case 9:
-        return 'Sep';
-      case 10:
-        return 'Oct';
-      case 11:
-        return 'Nov';
-      case 12:
-        return 'Dec';
-      default:
-        return '';
-    }
   }
 }
 
-// Comments ke liye naya shimmer widget
 class _CommentShimmer extends StatelessWidget {
   const _CommentShimmer();
-
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
@@ -2149,9 +1950,7 @@ class _CommentActionIcon extends StatelessWidget {
   final int count;
   final bool isLiked;
   final VoidCallback onTap;
-
   const _CommentActionIcon({
-    super.key,
     required this.svgPath,
     required this.count,
     this.isLiked = false,
@@ -2195,478 +1994,331 @@ class _CommentActionIcon extends StatelessWidget {
   }
 }
 
+/// IMPROVEMENT: Simplified widget by passing the whole data map.
 class _CommentItem extends StatelessWidget {
   final String postId;
   final String commentId;
-  final String commentUserName;
-  final String commentUserAvatarUrl;
-  final String commentText;
-  final String commentUserId;
-  final Timestamp? commentTimestamp;
-  final int commentLikesCount;
-  final List<String> commentLikedBy;
-  final bool isCommentLiked;
-  final String timeAgoString;
-  final bool canDeleteComment;
+  final Map<String, dynamic> commentData;
   final String? currentUserId;
-  final Function(
-    String commentId,
-    int currentLikes,
-    List<String> currentLikedBy,
-  )
-  onToggleLike;
-  final Function(String commentId, String userName) onStartReply;
-  final Future<void> Function(String commentId, String commentUserId) onDelete;
+  final Function(String commentId, List<String> currentLikedBy) onToggleLike;
+  final Function(String userName) onStartReply;
+  final Function(String commentId, String commentUserId) onDelete;
   final Function(String commentId) onToggleExpandReplies;
   final bool isCommentExpanded;
-  final String Function(Timestamp? replyTimestamp) getReplyTimeAgoString;
-  final Function(
-    String commentId,
-    String replyId,
-    int currentLikes,
-    List<String> currentLikedBy,
-  )
+  final Function(String commentId, String replyId, List<String> currentLikedBy)
   toggleReplyLike;
-  final Future<void> Function(
-    String commentId,
-    String replyId,
-    String replyUserId,
-  )
+  final Function(String commentId, String replyId, String replyUserId)
   deleteReply;
-  final Function(String commentId, String replyId, String userName)
+  final Function(String commentId, String? replyId, String userName)
   startReplyToReply;
-  final Future<Map<String, dynamic>> Function(String userId) fetchUserData;
 
   const _CommentItem({
     super.key,
     required this.postId,
     required this.commentId,
-    required this.commentUserName,
-    required this.commentUserAvatarUrl,
-    required this.commentText,
-    required this.commentUserId,
-    required this.commentTimestamp,
-    required this.commentLikesCount,
-    required this.commentLikedBy,
-    required this.isCommentLiked,
-    required this.timeAgoString,
-    required this.canDeleteComment,
-    required this.currentUserId,
+    required this.commentData,
+    this.currentUserId,
     required this.onToggleLike,
     required this.onStartReply,
     required this.onDelete,
     required this.onToggleExpandReplies,
     required this.isCommentExpanded,
-    required this.getReplyTimeAgoString,
     required this.toggleReplyLike,
     required this.deleteReply,
     required this.startReplyToReply,
-    required this.fetchUserData,
   });
 
-  void _showDeleteOptions(BuildContext context) {
-    bool canDeleteComment =
-        currentUserId != null && currentUserId == commentUserId;
-    if (!canDeleteComment) {
-      return;
-    }
+  void _showDeleteOptions(BuildContext context, String commentUserId) {
+    if (currentUserId != commentUserId) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext bc) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: 45,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                margin: const EdgeInsets.only(bottom: 10),
-              ),
-              const Text(
-                'Comment Options',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.pop(bc);
-                    onDelete(commentId, commentUserId);
-                  },
-                  icon: const Icon(
-                    Icons.delete_forever,
-                    color: Colors.redAccent,
+      builder:
+          (bc) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 45,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  label: const Text(
-                    'Delete Comment',
-                    style: TextStyle(
+                  margin: const EdgeInsets.only(bottom: 10),
+                ),
+                const Text(
+                  'Comment Options',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.pop(bc);
+                      onDelete(commentId, commentUserId);
+                    },
+                    icon: const Icon(
+                      Icons.delete_forever,
                       color: Colors.redAccent,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: Colors.redAccent, width: 1),
+                    label: const Text(
+                      'Delete Comment',
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(bc),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Colors.grey[300]!, width: 1),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(
+                          color: Colors.redAccent,
+                          width: 1,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(bc),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.grey[300]!, width: 1),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final firestore = FirebaseFirestore.instance;
+    final String commentUserName = commentData['userName'] ?? 'Unknown';
+    final String commentUserAvatarUrl = commentData['userProfileUrl'] ?? '';
+    final String commentText = commentData['commentText'] ?? '';
+    final String commentUserId = commentData['userId'] ?? '';
+    final Timestamp? commentTimestamp = commentData['timestamp'] as Timestamp?;
+    final int commentLikesCount = commentData['likesCount'] ?? 0;
+    final List<String> commentLikedBy = List<String>.from(
+      commentData['likedBy'] ?? [],
+    );
+    final bool isCommentLiked =
+        currentUserId != null && commentLikedBy.contains(currentUserId);
+
+    String timeAgoString = '';
+    if (commentTimestamp != null) {
+      final postTime = commentTimestamp.toDate();
+      timeAgoString = timeago.format(postTime, locale: 'en_short');
+      if (DateTime.now().difference(postTime).inDays > 0) {
+        timeAgoString =
+            '${postTime.day} ${getMonthAbbreviation(postTime.month)}';
+      }
+    }
+
     return GestureDetector(
-      onLongPress: () => _showDeleteOptions(context),
-      child: Container(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (commentUserId.isNotEmpty) {
+      onLongPress: () => _showDeleteOptions(context, commentUserId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FutureBuilder<Map<String, dynamic>>(
+                  future: fetchUserData(commentUserId),
+                  builder: (context, snapshot) {
+                    final avatarUrl =
+                        snapshot.data?['profilePictureUrl'] ??
+                        commentUserAvatarUrl;
+                    return GestureDetector(
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) =>
-                                    UserProfileScreen(userId: commentUserId),
+                                (_) => UserProfileScreen(userId: commentUserId),
                           ),
                         );
-                      }
-                    },
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage:
-                          commentUserAvatarUrl.isNotEmpty
-                              ? NetworkImage(commentUserAvatarUrl)
-                              : null,
-                      child:
-                          commentUserAvatarUrl.isEmpty
-                              ? SvgPicture.asset(
-                                'assets/icons/users.svg',
-                                width: 20,
-                                height: 20,
-                              )
-                              : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                if (commentUserId.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => UserProfileScreen(
-                                            userId: commentUserId,
-                                          ),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Text(
-                                commentUserName,
+                      },
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage:
+                            avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
+                                : null,
+                        child:
+                            avatarUrl.isEmpty
+                                ? SvgPicture.asset(
+                                  'assets/icons/users.svg',
+                                  width: 20,
+                                  height: 20,
+                                )
+                                : null,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: fetchUserData(commentUserId),
+                            builder: (context, snapshot) {
+                              final displayName =
+                                  snapshot.data?['fullName'] ?? commentUserName;
+                              return Text(
+                                displayName,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: Colors.black87,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              timeAgoString,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          commentText,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
+                              );
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: () => onStartReply(commentId, commentUserName),
-                          child: Text(
-                            'Reply',
+                          const SizedBox(width: 8),
+                          Text(
+                            timeAgoString,
                             style: TextStyle(
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[600],
                               fontSize: 12,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _CommentActionIcon(
-                    svgPath: 'assets/icons/like.svg',
-                    count: commentLikesCount,
-                    isLiked: isCommentLiked,
-                    onTap:
-                        () => onToggleLike(
-                          commentId,
-                          commentLikesCount,
-                          commentLikedBy,
-                        ),
-                  ),
-                ],
-              ),
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('posts')
-                        .doc(postId)
-                        .collection('comments')
-                        .doc(commentId)
-                        .collection('replies')
-                        .orderBy('timestamp', descending: false)
-                        .snapshots(),
-                builder: (context, replySnapshot) {
-                  if (replySnapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const SizedBox.shrink();
-                  }
-                  if (replySnapshot.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 50.0, top: 8.0),
-                      child: Text(
-                        'Error loading replies: ${replySnapshot.error}',
+                        ],
                       ),
-                    );
-                  }
-
-                  final List<DocumentSnapshot> replyDocs =
-                      replySnapshot.data?.docs ?? [];
-                  final int replyCount = replyDocs.length;
-
-                  if (replyCount == 0) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (replyCount == 1 && !isCommentExpanded)
-                        FutureBuilder(
-                          future: fetchUserData(replyDocs[0]['userId']),
-                          builder: (
-                            context,
-                            AsyncSnapshot<Map<String, dynamic>> userSnapshot,
-                          ) {
-                            final String finalUserName =
-                                userSnapshot.data?['fullName'] ??
-                                replyDocs[0]['userName'] ??
-                                'Unknown';
-                            final String finalUserAvatarUrl =
-                                userSnapshot.data?['profilePictureUrl'] ??
-                                replyDocs[0]['userProfileUrl'] ??
-                                '';
-                            return _ReplyItem(
-                              key: ValueKey(replyDocs[0].id),
-                              commentId: commentId,
-                              replyId: replyDocs[0].id,
-                              userName: finalUserName,
-                              userAvatarUrl: finalUserAvatarUrl,
-                              replyText: replyDocs[0]['replyText'] ?? '',
-                              timeAgo: getReplyTimeAgoString(
-                                replyDocs[0]['timestamp'] as Timestamp?,
-                              ),
-                              likesCount: replyDocs[0]['likesCount'] ?? 0,
-                              isLiked:
-                                  currentUserId != null &&
-                                  (replyDocs[0]['likedBy'] as List<dynamic>)
-                                      .map((e) => e.toString())
-                                      .contains(currentUserId),
-                              onTapLike:
-                                  () => toggleReplyLike(
-                                    commentId,
-                                    replyDocs[0].id,
-                                    replyDocs[0]['likesCount'] ?? 0,
-                                    (replyDocs[0]['likedBy'] as List<dynamic>)
-                                        .map((e) => e.toString())
-                                        .toList(),
-                                  ),
-                              replyUserId: replyDocs[0]['userId'] ?? '',
-                              currentUserId: currentUserId,
-                              onDelete: deleteReply,
-                              onReply: startReplyToReply,
-                              fetchUserData: fetchUserData, // Pass the method
-                            );
-                          },
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 50.0,
-                            top: 4.0,
-                            bottom: 4.0,
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              onToggleExpandReplies(commentId);
-                            },
-                            child: Text(
-                              isCommentExpanded
-                                  ? 'Hide replies'
-                                  : 'View $replyCount replies',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
+                      const SizedBox(height: 4),
+                      Text(
+                        commentText,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => onStartReply(commentUserName),
+                        child: Text(
+                          'Reply',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
-                      if (isCommentExpanded)
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: replyCount,
-                          itemBuilder: (context, replyIndex) {
-                            final replyDoc = replyDocs[replyIndex];
-                            final replyData =
-                                replyDoc.data() as Map<String, dynamic>;
-                            final replyId = replyDoc.id;
-
-                            final String replyUserName =
-                                replyData['userName'] ?? 'Unknown';
-                            final String replyUserAvatarUrl =
-                                replyData['userProfileUrl'] ?? '';
-                            final String replyText =
-                                replyData['replyText'] ?? '';
-                            final String replyUserId =
-                                replyData['userId'] ?? '';
-                            final Timestamp? replyTimestamp =
-                                replyData['timestamp'] as Timestamp?;
-                            final int replyLikesCount =
-                                replyData['likesCount'] ?? 0;
-                            final List<dynamic> replyLikedByDynamic =
-                                replyData['likedBy'] ?? [];
-                            final List<String> replyLikedBy =
-                                replyLikedByDynamic
-                                    .map((e) => e.toString())
-                                    .toList();
-
-                            String replyTimeAgoString = getReplyTimeAgoString(
-                              replyTimestamp,
-                            );
-
-                            bool isReplyLiked =
-                                currentUserId != null &&
-                                replyLikedBy.contains(currentUserId);
-
-                            return FutureBuilder(
-                              future: fetchUserData(replyUserId),
-                              builder: (
-                                context,
-                                AsyncSnapshot<Map<String, dynamic>>
-                                userSnapshot,
-                              ) {
-                                final String finalUserName =
-                                    userSnapshot.data?['fullName'] ??
-                                    replyUserName;
-                                final String finalUserAvatarUrl =
-                                    userSnapshot.data?['profilePictureUrl'] ??
-                                    replyUserAvatarUrl;
-                                return _ReplyItem(
-                                  key: ValueKey(replyId),
-                                  commentId: commentId,
-                                  replyId: replyId,
-                                  userName: finalUserName,
-                                  userAvatarUrl: finalUserAvatarUrl,
-                                  replyText: replyText,
-                                  timeAgo: replyTimeAgoString,
-                                  likesCount: replyLikesCount,
-                                  isLiked: isReplyLiked,
-                                  onTapLike:
-                                      () => toggleReplyLike(
-                                        commentId,
-                                        replyId,
-                                        replyLikesCount,
-                                        replyLikedBy,
-                                      ),
-                                  replyUserId: replyUserId,
-                                  currentUserId: currentUserId,
-                                  onDelete: deleteReply,
-                                  onReply: startReplyToReply,
-                                  fetchUserData:
-                                      fetchUserData, // Pass the method
-                                );
-                              },
-                            );
-                          },
-                        ),
+                      ),
                     ],
-                  );
-                },
-              ),
-            ],
-          ),
+                  ),
+                ),
+                _CommentActionIcon(
+                  svgPath: 'assets/icons/like.svg',
+                  count: commentLikesCount,
+                  isLiked: isCommentLiked,
+                  onTap: () => onToggleLike(commentId, commentLikedBy),
+                ),
+              ],
+            ),
+            // Reply Section
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  firestore
+                      .collection('posts')
+                      .doc(postId)
+                      .collection('comments')
+                      .doc(commentId)
+                      .collection('replies')
+                      .orderBy('timestamp', descending: false)
+                      .snapshots(),
+              builder: (context, replySnapshot) {
+                if (!replySnapshot.hasData ||
+                    replySnapshot.data!.docs.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final replyDocs = replySnapshot.data!.docs;
+                final int replyCount = replyDocs.length;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 50.0,
+                        top: 4.0,
+                        bottom: 4.0,
+                      ),
+                      child: GestureDetector(
+                        onTap: () => onToggleExpandReplies(commentId),
+                        child: Text(
+                          isCommentExpanded
+                              ? 'Hide replies'
+                              : 'View $replyCount ${replyCount > 1 ? "replies" : "reply"}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (isCommentExpanded)
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: replyCount,
+                        itemBuilder: (context, replyIndex) {
+                          final replyDoc = replyDocs[replyIndex];
+                          final replyData =
+                              replyDoc.data() as Map<String, dynamic>;
+                          return _ReplyItem(
+                            key: ValueKey(replyDoc.id),
+                            commentId: commentId,
+                            replyId: replyDoc.id,
+                            replyData: replyData,
+                            currentUserId: currentUserId,
+                            onTapLike: toggleReplyLike,
+                            onDelete: deleteReply,
+                            onReply: startReplyToReply,
+                          );
+                        },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -2676,254 +2328,139 @@ class _CommentItem extends StatelessWidget {
 class _ReplyItem extends StatelessWidget {
   final String commentId;
   final String replyId;
-  final String userName;
-  final String userAvatarUrl;
-  final String replyText;
-  final String timeAgo;
-  final int likesCount;
-  final bool isLiked;
-  final VoidCallback onTapLike;
-  final String replyUserId;
+  final Map<String, dynamic> replyData;
   final String? currentUserId;
-  final Future<void> Function(
-    String commentId,
-    String replyId,
-    String replyUserId,
-  )
-  onDelete;
-  final Function(String commentId, String replyId, String userName) onReply;
-  final Future<Map<String, dynamic>> Function(String userId) fetchUserData;
+  final Function(String commentId, String replyId, List<String> currentLikedBy)
+  onTapLike;
+  final Function(String commentId, String replyId, String replyUserId) onDelete;
+  final Function(String commentId, String? replyId, String userName) onReply;
 
   const _ReplyItem({
     super.key,
     required this.commentId,
     required this.replyId,
-    required this.userName,
-    required this.userAvatarUrl,
-    required this.replyText,
-    required this.timeAgo,
-    required this.likesCount,
-    required this.isLiked,
+    required this.replyData,
+    this.currentUserId,
     required this.onTapLike,
-    required this.replyUserId,
-    required this.currentUserId,
     required this.onDelete,
     required this.onReply,
-    required this.fetchUserData,
   });
 
-  void _showDeleteOptions(BuildContext context) {
-    bool canDeleteReply = currentUserId != null && currentUserId == replyUserId;
-    if (!canDeleteReply) {
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bc) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: 45,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                margin: const EdgeInsets.only(bottom: 10),
-              ),
-              const Text(
-                'Reply Options',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.pop(bc);
-                    onDelete(commentId, replyId, replyUserId);
-                  },
-                  icon: const Icon(
-                    Icons.delete_forever,
-                    color: Colors.redAccent,
-                  ),
-                  label: const Text(
-                    'Delete Reply',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: Colors.redAccent, width: 1),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(bc),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Colors.grey[300]!, width: 1),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  void _showDeleteOptions(BuildContext context, String replyUserId) {
+    if (currentUserId != replyUserId) return;
   }
 
   @override
   Widget build(BuildContext context) {
+    final String replyUserName = replyData['userName'] ?? 'Unknown';
+    final String replyUserAvatarUrl = replyData['userProfileUrl'] ?? '';
+    final String replyText = replyData['replyText'] ?? '';
+    final String replyUserId = replyData['userId'] ?? '';
+    final Timestamp? replyTimestamp = replyData['timestamp'] as Timestamp?;
+    final int likesCount = replyData['likesCount'] ?? 0;
+    final List<String> likedBy = List<String>.from(replyData['likedBy'] ?? []);
+    final bool isLiked =
+        currentUserId != null && likedBy.contains(currentUserId);
+
+    String timeAgo = '';
+    if (replyTimestamp != null) {
+      final replyTime = replyTimestamp.toDate();
+      timeAgo = timeago.format(replyTime, locale: 'en_short');
+      if (DateTime.now().difference(replyTime).inDays > 0) {
+        timeAgo = '${replyTime.day} ${getMonthAbbreviation(replyTime.month)}';
+      }
+    }
+
     return GestureDetector(
-      onLongPress: () => _showDeleteOptions(context),
-      child: Container(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 50.0, top: 4.0, bottom: 4.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  if (replyUserId.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => UserProfileScreen(userId: replyUserId),
-                      ),
-                    );
-                  }
-                },
-                child: CircleAvatar(
+      onLongPress: () => _showDeleteOptions(context, replyUserId),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 50.0, top: 4.0, bottom: 4.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FutureBuilder<Map<String, dynamic>>(
+              future: fetchUserData(replyUserId),
+              builder: (context, snapshot) {
+                final avatarUrl =
+                    snapshot.data?['profilePictureUrl'] ?? replyUserAvatarUrl;
+                return CircleAvatar(
                   radius: 14,
                   backgroundColor: Colors.grey[200],
                   backgroundImage:
-                      userAvatarUrl.isNotEmpty
-                          ? NetworkImage(userAvatarUrl)
-                          : null,
+                      avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
                   child:
-                      userAvatarUrl.isEmpty
+                      avatarUrl.isEmpty
                           ? SvgPicture.asset(
                             'assets/icons/users.svg',
                             width: 16,
                             height: 16,
                           )
                           : null,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            if (replyUserId.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => UserProfileScreen(
-                                        userId: replyUserId,
-                                      ),
-                                ),
-                              );
-                            }
-                          },
-                          child: Text(
-                            userName,
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: fetchUserData(replyUserId),
+                        builder: (context, snapshot) {
+                          final displayName =
+                              snapshot.data?['fullName'] ?? replyUserName;
+                          return Text(
+                            displayName,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                               color: Colors.black87,
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          timeAgo,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      replyText,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        timeAgo,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    replyText,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => onReply(commentId, replyId, replyUserName),
+                    child: Text(
+                      'Reply',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    GestureDetector(
-                      onTap: () => onReply(commentId, replyId, userName),
-                      child: Text(
-                        'Reply',
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 0.0),
-                child: _CommentActionIcon(
-                  svgPath: 'assets/icons/like.svg',
-                  count: likesCount,
-                  isLiked: isLiked,
-                  onTap: onTapLike,
-                ),
-              ),
-            ],
-          ),
+            ),
+            _CommentActionIcon(
+              svgPath: 'assets/icons/like.svg',
+              count: likesCount,
+              isLiked: isLiked,
+              onTap: () => onTapLike(commentId, replyId, likedBy),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ... UserProfileScreen, MediaViewerScreen, aur _UpdatePostTextScreen ka code bina kisi badlav ke yahan se shuru hota hai ...
 class _UpdatePostTextScreen extends StatefulWidget {
   final String initialText;
   final bool isPoll;

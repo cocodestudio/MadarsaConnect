@@ -1,7 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:madarsaConnect/Data/check_internet.dart';
 import 'package:madarsaConnect/Main%20Screen/splash_screen.dart';
 import 'package:madarsaConnect/utils/app_usage_tracker.dart';

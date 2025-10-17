@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:madarsaConnect/Head%20Screen/upload_banner_screen.dart';
+import 'package:madarsaConnect/Main%20Screen/Head_manage.dart';
+import 'package:madarsaConnect/Main%20Screen/admin_notification.dart';
 import 'package:madarsaConnect/Main%20Screen/qr_upload_byadmin.dart';
 import 'package:madarsaConnect/Main%20Screen/subscription_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,8 +16,19 @@ class AdminSupportScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      await FirebaseAuth.instance.signOut();
+      final auth = FirebaseAuth.instance;
+      await auth.signOut();
+      await prefs.remove('user_email');
+      await prefs.remove('user_role');
+      await prefs.remove('cachedProfile');
+      await prefs.remove('cachedProfileAtMs');
+      await prefs.remove('cachedFullName');
+      await prefs.remove('cachedProfileUrl');
+      await prefs.remove('isHead');
+      await prefs.remove('isFaculty');
+      await prefs.remove('isStudent');
+      await prefs.remove('headPassword');
+
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -141,7 +154,14 @@ class AdminSupportScreen extends StatelessWidget {
                         gradient: const LinearGradient(
                           colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
                         ),
-                        onTap: () {},
+                        onTap:
+                            () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => const ManageHeadsScreen(),
+                          ),
+                        ),
                       ),
                       _ManagementCard(
                         title: 'Notifications',
@@ -150,7 +170,14 @@ class AdminSupportScreen extends StatelessWidget {
                         gradient: const LinearGradient(
                           colors: [Color(0xFF66BB6A), Color(0xFF388E3C)],
                         ),
-                        onTap: () {},
+                        onTap:
+                            () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => const AdminNotificationScreen(),
+                          ),
+                        ),
                       ),
                       _ManagementCard(
                         title: 'App Settings',

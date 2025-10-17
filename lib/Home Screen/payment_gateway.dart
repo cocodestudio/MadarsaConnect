@@ -41,7 +41,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       debugPrint('Failed to load QR code: $e');
       if (mounted) {
-        CustomPopup.show(context,'Could not load QR Code.');
+        CustomPopup.show(context, 'Could not load QR Code.');
       }
     } finally {
       if (mounted) {
@@ -55,7 +55,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _handleVerification() async {
     final utr = _utrController.text.trim();
     if (utr.isEmpty) {
-      CustomPopup.show(context,'Please enter the UTR Number.');
+      CustomPopup.show(context, 'Please enter the UTR Number.');
       return;
     }
 
@@ -90,15 +90,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (adminQuery.docs.isNotEmpty) {
           final adminDoc = adminQuery.docs.first;
           final adminToken = adminDoc.data()['fcmToken'];
+          final adminUid = adminDoc.id; // Admin ki UID
 
+          // Push Notification
           if (adminToken != null && adminToken.toString().isNotEmpty) {
             await FirebaseNotificationHelper.sendNotificationFromApp(
               fcmToken: adminToken,
               title: 'New Subscription Request',
               body:
-                  '${user.email} has submitted a subscription request for the ${widget.planDetails['planName']} plan with UTR: $utr.',
+                  '${user.email} has submitted a subscription request for the ${widget.planDetails['planName']} plan.',
             );
           }
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'recipientId': adminUid,
+            'title': 'New Subscription Request',
+            'message':
+                '${user.email} has requested the ${widget.planDetails['planName']} plan.',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'subscriptionRequest',
+            'senderId': user.uid,
+            'senderName': user.email,
+          });
         }
       } catch (e) {
         print('❌ Failed to send notification to admin: $e');
@@ -113,7 +126,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       print("Error submitting payment request: $e");
       if (mounted) {
-        CustomPopup.show(context,'Failed to submit request: $e');
+        CustomPopup.show(context, 'Failed to submit request: $e');
       }
     } finally {
       if (mounted) {
@@ -156,13 +169,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
-                  shadows: [
-                    Shadow(
-                      color: Colors.transparent,
-                      blurRadius: 0,
-                      offset: Offset(0, 0),
-                    ),
-                  ],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -208,7 +214,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       aspectRatio: 1.0,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        // *** MODIFICATION START ***
                         child:
                             _isQrLoading
                                 ? const Center(child: GradientSpinner())
@@ -236,15 +241,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       ),
                                     );
                                   },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Text(
-                                        'QR Code\nLoading Failed',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(color: Colors.black),
-                                      ),
-                                    );
-                                  },
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          const Center(
+                                            child: Text(
+                                              'QR Code\nLoading Failed',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
                                 )
                                 : const Center(
                                   child: Text(
@@ -253,7 +260,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     style: TextStyle(color: Colors.black),
                                   ),
                                 ),
-                        // *** MODIFICATION END ***
                       ),
                     ),
                   ],

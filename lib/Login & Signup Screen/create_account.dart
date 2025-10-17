@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
@@ -50,8 +51,8 @@ class _CreateAccountState extends State<CreateAccount> {
   Map<String, dynamic> stateDistrictMap = {};
   List<String> stateList = [];
   String? selectedState;
-
-  // Firebase instances
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -79,6 +80,7 @@ class _CreateAccountState extends State<CreateAccount> {
       ),
     );
     loadStateDistrictData();
+    _loadBannerAd();
   }
 
   @override
@@ -99,6 +101,7 @@ class _CreateAccountState extends State<CreateAccount> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+    _bannerAd?.dispose();
   }
 
   // This function checks all mandatory fields and updates the button state
@@ -153,9 +156,9 @@ class _CreateAccountState extends State<CreateAccount> {
     try {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
 
       String uid = userCredential.user!.uid;
       final hucId = await generateNextHUC();
@@ -189,7 +192,10 @@ class _CreateAccountState extends State<CreateAccount> {
         'uid': uid,
       };
 
-      await _firestore.collection('users').doc(uid).set(userDataForUsersCollection);
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .set(userDataForUsersCollection);
       await _firestore.collection('Heads').doc(uid).set(headData);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('headEmail', _emailController.text.trim());
@@ -206,11 +212,14 @@ class _CreateAccountState extends State<CreateAccount> {
         message = e.message ?? message;
       }
       if (mounted) {
-        CustomPopup.show(context,(message));
+        CustomPopup.show(context, (message));
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context,'An unexpected error occurred: ${e.toString()}');
+        CustomPopup.show(
+          context,
+          'An unexpected error occurred: ${e.toString()}',
+        );
       }
     } finally {
       if (mounted) {
@@ -219,6 +228,28 @@ class _CreateAccountState extends State<CreateAccount> {
         });
       }
     }
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-2465407468425782/2868114213',
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd?.load();
   }
 
   // --- NEW FUNCTION ---
@@ -271,33 +302,45 @@ class _CreateAccountState extends State<CreateAccount> {
                       ),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 50.0),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (_) => const LoginPage(),
+                        child: Column(
+                          children: [
+                            if (_isBannerAdReady && _bannerAd != null)
+                              SizedBox(
+                                width: _bannerAd!.size.width.toDouble(),
+                                height: _bannerAd!.size.height.toDouble(),
+                                child: AdWidget(ad: _bannerAd!),
                               ),
-                              (route) => false,
-                            );
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            width: double.infinity,
-                            height: MediaQuery.of(context).size.height * 0.060,
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Text(
-                              "Done",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 17,
+                            if (_isBannerAdReady) const SizedBox(height: 20),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginPage(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                width: double.infinity,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.060,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Text(
+                                  "Done",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 17,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
@@ -424,49 +467,31 @@ class _CreateAccountState extends State<CreateAccount> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.grey.withOpacity(0.2),
+        surfaceTintColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 26),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Create Account',
+          style: TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy-Bold',
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
           bottom: false,
           child: Column(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.04,
-                  vertical: MediaQuery.of(context).size.height * 0.013,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Center(
-                      child: Text(
-                        'Create Account',
-                        style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width * 0.048,
-                          fontFamily: 'Gilroy-Bold',
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back, size: 26),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Expanded(
                 child: Stack(
                   children: [
@@ -1088,7 +1113,10 @@ class _CreateAccountState extends State<CreateAccount> {
                                 },
                               );
                             } else {
-                              CustomPopup.show(context,"Please select a state first");
+                              CustomPopup.show(
+                                context,
+                                "Please select a state first",
+                              );
                             }
                           },
                           style: const TextStyle(

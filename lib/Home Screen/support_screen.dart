@@ -354,9 +354,7 @@ class _SupportScreenState extends State<SupportScreen> {
         if (_pickedScreenshot != null) {
           try {
             String fileName =
-                'screenshots/${DateTime
-                .now()
-                .millisecondsSinceEpoch}_${_pickedScreenshot!.name}';
+                'screenshots/${DateTime.now().millisecondsSinceEpoch}_${_pickedScreenshot!.name}';
             Reference storageRef = FirebaseStorage.instance.ref().child(
               fileName,
             );
@@ -386,17 +384,24 @@ class _SupportScreenState extends State<SupportScreen> {
 
         if (_currentUserRole == 'Head') {
           // Head submits ticket to admin_tickets collection
-          await FirebaseFirestore.instance.collection('admin_tickets').add(
-              ticketData);
+          await FirebaseFirestore.instance
+              .collection('admin_tickets')
+              .add(ticketData);
 
           // Fetch recipient's notification settings (Admin)
-          final adminQuery = await FirebaseFirestore.instance.collection(
-              'Admins').limit(1).get();
+          final adminQuery =
+              await FirebaseFirestore.instance
+                  .collection('Admins')
+                  .limit(1)
+                  .get();
           if (adminQuery.docs.isNotEmpty) {
             final adminDoc = adminQuery.docs.first;
             final adminUid = adminDoc.id;
-            final settingsDoc = await FirebaseFirestore.instance.collection(
-                'notificationSettings').doc(adminUid).get();
+            final settingsDoc =
+                await FirebaseFirestore.instance
+                    .collection('notificationSettings')
+                    .doc(adminUid)
+                    .get();
             final bool isPushEnabled = settingsDoc.data()?['push'] ?? true;
             final bool isInAppEnabled = settingsDoc.data()?['inApp'] ?? true;
 
@@ -404,26 +409,24 @@ class _SupportScreenState extends State<SupportScreen> {
               final adminToken = adminDoc.data()['fcmToken'];
 
               // Push Notification
-              if (isPushEnabled && adminToken != null && adminToken
-                  .toString()
-                  .isNotEmpty) {
+              if (isPushEnabled &&
+                  adminToken != null &&
+                  adminToken.toString().isNotEmpty) {
                 await FirebaseNotificationHelper.sendNotificationFromApp(
                   fcmToken: adminToken,
                   title: 'New Support Ticket',
-                  body: 'A new ticket has been submitted by ${_currentUserEmail} for ${_categoryController
-                      .text} - ${_subCategoryController.text}',
+                  body:
+                      'A new ticket has been submitted by ${_currentUserEmail} for ${_categoryController.text} - ${_subCategoryController.text}',
                 );
               }
 
               // In-app Notification
               if (isInAppEnabled) {
-                await FirebaseFirestore.instance
-                    .collection('notifications')
-                    .add({
+                await FirebaseFirestore.instance.collection('notifications').add({
                   'recipientId': adminUid,
                   'title': 'New Support Ticket',
-                  'message': 'A new ticket has been submitted by a Head for ${_categoryController
-                      .text}.',
+                  'message':
+                      'A new ticket has been submitted by a Head for ${_categoryController.text}.',
                   'timestamp': FieldValue.serverTimestamp(),
                   'isRead': false,
                   'type': 'newTicket',
@@ -445,49 +448,56 @@ class _SupportScreenState extends State<SupportScreen> {
           );
         } else {
           // Faculty or Student submits ticket to helpdesk collection
-          await FirebaseFirestore.instance.collection('helpdesk').add(
-              ticketData);
+          await FirebaseFirestore.instance
+              .collection('helpdesk')
+              .add(ticketData);
 
           // Fetch recipient's notification settings (Head)
-          final userDoc = await FirebaseFirestore.instance
-              .collection(
-              _currentUserRole! == 'Faculty' ? 'Faculties' : 'Students')
-              .doc(_currentUserId)
-              .get();
+          final userDoc =
+              await FirebaseFirestore.instance
+                  .collection(
+                    _currentUserRole! == 'Faculty' ? 'Faculties' : 'Students',
+                  )
+                  .doc(_currentUserId)
+                  .get();
           final headUid = userDoc.data()?['headUid'];
           if (headUid != null) {
-            final headTokenDoc = await FirebaseFirestore.instance.collection(
-                'Heads').doc(headUid).get();
+            final headTokenDoc =
+                await FirebaseFirestore.instance
+                    .collection('Heads')
+                    .doc(headUid)
+                    .get();
             final headToken = headTokenDoc.data()?['fcmToken'];
             final headName = headTokenDoc.data()?['fullName'];
 
-            final settingsDoc = await FirebaseFirestore.instance.collection(
-                'notificationSettings').doc(headUid).get();
+            final settingsDoc =
+                await FirebaseFirestore.instance
+                    .collection('notificationSettings')
+                    .doc(headUid)
+                    .get();
             final bool isPushEnabled = settingsDoc.data()?['push'] ?? true;
             final bool isInAppEnabled = settingsDoc.data()?['inApp'] ?? true;
 
             try {
               // Push Notification
-              if (isPushEnabled && headToken != null && headToken
-                  .toString()
-                  .isNotEmpty) {
+              if (isPushEnabled &&
+                  headToken != null &&
+                  headToken.toString().isNotEmpty) {
                 await FirebaseNotificationHelper.sendNotificationFromApp(
                   fcmToken: headToken,
                   title: 'New Support Ticket',
-                  body: 'A new ticket has been submitted by ${_currentUserEmail} for ${_categoryController
-                      .text} - ${_subCategoryController.text}',
+                  body:
+                      'A new ticket has been submitted by ${_currentUserEmail} for ${_categoryController.text} - ${_subCategoryController.text}',
                 );
               }
 
               // In-app Notification
               if (isInAppEnabled) {
-                await FirebaseFirestore.instance
-                    .collection('notifications')
-                    .add({
+                await FirebaseFirestore.instance.collection('notifications').add({
                   'recipientId': headUid,
                   'title': 'New Support Ticket',
-                  'message': 'A new ticket has been submitted by a ${_currentUserRole} for ${_categoryController
-                      .text}.',
+                  'message':
+                      'A new ticket has been submitted by a ${_currentUserRole} for ${_categoryController.text}.',
                   'timestamp': FieldValue.serverTimestamp(),
                   'isRead': false,
                   'type': 'newTicket',
@@ -987,15 +997,15 @@ class _SupportScreenState extends State<SupportScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildSocialButton(
-                    icon: Icons.facebook,
-                    label: 'Facebook',
+                    icon: Icons.work_outline,
+                    label: 'LinkedIn',
                     onTap: () async {
-                      final url = Uri.parse('https://facebook.com/your_app');
+                      final url = Uri.parse(
+                        'https://www.linkedin.com/in/moh-abuzar-6a880b30b?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
+                      );
                       if (await canLaunchUrl(url)) {
                         await launchUrl(url);
-                      } else {
-                        // Handle error gracefully
-                      }
+                      } else {}
                     },
                   ),
                   _buildSocialButton(
@@ -1007,23 +1017,17 @@ class _SupportScreenState extends State<SupportScreen> {
                       );
                       if (await canLaunchUrl(url)) {
                         await launchUrl(url);
-                      } else {
-                        // Handle error gracefully
-                      }
+                      } else {}
                     },
                   ),
                   _buildSocialButton(
-                    icon: Icons.camera_alt,
-                    label: 'Instagram',
+                    icon: Icons.language,
+                    label: 'Website',
                     onTap: () async {
-                      final url = Uri.parse(
-                        'https://instagram.com/emir_abuzar',
-                      );
+                      final url = Uri.parse('https://www.madarsaconnect.xyz');
                       if (await canLaunchUrl(url)) {
                         await launchUrl(url);
-                      } else {
-                        // Handle error gracefully
-                      }
+                      } else {}
                     },
                   ),
                 ],

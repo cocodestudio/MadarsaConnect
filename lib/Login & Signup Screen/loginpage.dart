@@ -299,15 +299,20 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
         backgroundColor: Colors.white,
-        resizeToAvoidBottomInset: false,
-        body: SafeArea(
+        elevation: 0,
+        leading: const BackButton(color: Colors.black),
+      ),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+        child: SafeArea(
           child: Stack(
             children: [
               GestureDetector(
@@ -325,7 +330,7 @@ class _LoginPageState extends State<LoginPage> {
                           // Image
                           SizedBox(
                             width: size.width * 0.4,
-                            height: size.height * 0.25,
+                            height: size.height * 0.20,
                             child: Image.asset(image4, fit: BoxFit.contain),
                           ),
 
@@ -525,7 +530,6 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                             ),
                           ),
-
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

@@ -3,7 +3,7 @@ description: "Madarsa Management."
 
 publish_to: 'none'
 
-version: 1.0.2+6
+version: 1.0.3
 
 environment:
   sdk: ^3.7.2
@@ -18,7 +18,7 @@ dependencies:
   http: ^1.0.0
   dropdown_search: ^6.0.2
   cloud_firestore: ^6.0.0
-  cloud_functions: ^6.0.0
+  cloud_functions: ^6.0.2
   firebase_auth: ^6.0.1
   firebase_core: ^4.1.0
   shared_preferences: ^2.5.3
@@ -53,6 +53,8 @@ dependencies:
   fl_chart: 0.66.2
   in_app_update: ^4.2.5
   google_mobile_ads: ^6.0.0
+  flutter_animate: ^4.5.2
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:
