@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 
 class SubjectManageScreen extends StatefulWidget {
   const SubjectManageScreen({super.key});
@@ -100,6 +101,8 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
 
     _nameController.addListener(_checkFields);
 
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -136,9 +139,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                     ),
                   ),
                 ),
-                const Text(
-                  'Add Subject',
-                  style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                Text(
+                  AppLocalizations.of(context)!.addSubject,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -148,7 +154,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   inputFormatters: [UpperCaseTextFormatter()],
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: "Enter Subject Name",
+                    hintText: AppLocalizations.of(context)!.enterSubjectName,
                     counterText: "",
                     prefixIcon: Icon(
                       Icons.drive_file_rename_outline,
@@ -180,7 +186,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   textInputAction: TextInputAction.done,
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: "Enter Subject Code",
+                    hintText: AppLocalizations.of(context)!.enterSubjectCode,
                     prefixIcon: Icon(
                       Icons.code,
                       color: Colors.black.withOpacity(0.8),
@@ -240,20 +246,22 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                     Navigator.pop(context);
                                     CustomPopup.show(
                                       context,
-                                      'Subject added successfully!',
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.subjectAddedSuccess,
                                     );
                                   } catch (e) {
                                     CustomPopup.show(
                                       context,
-                                      'Failed to add subject: $e',
+                                      '${AppLocalizations.of(context)!.failedToAddSubject}: $e',
                                     );
                                   }
                                 }
                                 : null,
-                        child: const Text(
-                          'Add Subject',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                        child: Text(
+                          AppLocalizations.of(context)!.addSubject,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontSize: 16,
                           ),
@@ -275,9 +283,19 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
     if (headUid == null) return;
     try {
       await _firestore.collection('subjects').doc(subjectId).delete();
-      CustomPopup.show(context, 'Subject deleted successfully!');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.subjectDeletedSuccess,
+        );
+      }
     } catch (e) {
-      CustomPopup.show(context, 'Failed to delete subject: $e');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToDeleteSubject}: $e',
+        );
+      }
     }
   }
 
@@ -335,9 +353,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                     ),
                   ),
                 ),
-                const Text(
-                  'Edit Subject',
-                  style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                Text(
+                  AppLocalizations.of(context)!.editSubject,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -346,7 +367,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   textInputAction: TextInputAction.next,
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: "Enter Subject Name",
+                    hintText: AppLocalizations.of(context)!.enterSubjectName,
                     prefixIcon: const Icon(Icons.drive_file_rename_outline),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -365,7 +386,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   textInputAction: TextInputAction.done,
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: "Enter Subject Code",
+                    hintText: AppLocalizations.of(context)!.enterSubjectCode,
                     prefixIcon: const Icon(Icons.code),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -406,20 +427,22 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                     Navigator.pop(context);
                                     CustomPopup.show(
                                       context,
-                                      'Subject updated successfully!',
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.subjectUpdatedSuccess,
                                     );
                                   } catch (e) {
                                     CustomPopup.show(
                                       context,
-                                      'Failed to update subject: $e',
+                                      '${AppLocalizations.of(context)!.failedToUpdateSubject}: $e',
                                     );
                                   }
                                 }
                                 : null,
-                        child: const Text(
-                          'Update Subject',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                        child: Text(
+                          AppLocalizations.of(context)!.updateSubject,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontSize: 16,
                           ),
@@ -438,7 +461,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
   }
 
   void _showDurationSelector(Map<String, dynamic> course) {
-    final yearSuffix = ['st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th'];
+    final yearSuffix = [
+      AppLocalizations.of(context)!.yearSuffixSt,
+      AppLocalizations.of(context)!.yearSuffixNd,
+      AppLocalizations.of(context)!.yearSuffixRd,
+      AppLocalizations.of(context)!.yearSuffixTh,
+    ];
     final duration = course['duration'] ?? 8;
 
     showModalBottomSheet(
@@ -471,10 +499,13 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Center(
+              Center(
                 child: Text(
-                  'Select Year',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                  AppLocalizations.of(context)!.selectYear,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -489,7 +520,22 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final year = index + 1;
-                    final suffix = yearSuffix[index];
+                    String suffix;
+                    if (year >= 11 && year <= 13) {
+                      suffix = AppLocalizations.of(context)!.yearSuffixTh;
+                    } else {
+                      int remainder = year % 10;
+                      if (remainder == 1) {
+                        suffix = AppLocalizations.of(context)!.yearSuffixSt;
+                      } else if (remainder == 2) {
+                        suffix = AppLocalizations.of(context)!.yearSuffixNd;
+                      } else if (remainder == 3) {
+                        suffix = AppLocalizations.of(context)!.yearSuffixRd;
+                      } else {
+                        suffix = AppLocalizations.of(context)!.yearSuffixTh;
+                      }
+                    }
+
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
@@ -517,10 +563,10 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            '$year$suffix Year',
+                            '$year$suffix ${AppLocalizations.of(context)!.year}',
                             style: const TextStyle(
                               fontSize: 16,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             ),
                           ),
@@ -538,10 +584,23 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
   }
 
   String _getYearLabel(int year) {
-    if (year == 1) return '1st Year';
-    if (year == 2) return '2nd Year';
-    if (year == 3) return '3rd Year';
-    return '${year}th Year';
+    // Similar suffix logic here for display
+    String suffix;
+    if (year >= 11 && year <= 13) {
+      suffix = AppLocalizations.of(context)!.yearSuffixTh;
+    } else {
+      int remainder = year % 10;
+      if (remainder == 1) {
+        suffix = AppLocalizations.of(context)!.yearSuffixSt;
+      } else if (remainder == 2) {
+        suffix = AppLocalizations.of(context)!.yearSuffixNd;
+      } else if (remainder == 3) {
+        suffix = AppLocalizations.of(context)!.yearSuffixRd;
+      } else {
+        suffix = AppLocalizations.of(context)!.yearSuffixTh;
+      }
+    }
+    return '$year$suffix ${AppLocalizations.of(context)!.year}';
   }
 
   @override
@@ -573,11 +632,11 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
           ),
           title: Text(
             selectedCourse == null
-                ? 'Subject Management'
+                ? AppLocalizations.of(context)!.subjectManagement
                 : '${selectedCourse!['name']}',
             style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
             overflow: TextOverflow.ellipsis,
@@ -598,10 +657,11 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const CourseCard(
-              title: 'Select Course',
-              subtitle: 'Add subjects to each course.',
-              gradientColors: [Color(0xFFFFF8F1), Color(0xFFD1A66C)],
+            CourseCard(
+              title: AppLocalizations.of(context)!.selectCourse,
+              subtitle: AppLocalizations.of(context)!.addSubjectsToCourse,
+              gradientColors: const [Color(0xFFFFF8F1), Color(0xFFD1A66C)],
+              onTap: () {},
             ),
             const SizedBox(height: 26),
             ...courses.map((course) {
@@ -634,12 +694,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                 course['name'] ?? '',
                                 style: TextStyle(
                                   fontSize: baseFontSize.clamp(14, 22),
-                                  fontFamily: 'Gilroy-Bold',
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Code: ${course['code'] ?? ''}',
+                                '${AppLocalizations.of(context)!.code}: ${course['code'] ?? ''}',
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 13,
@@ -647,7 +707,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Duration: ${course['duration']} Years',
+                                '${AppLocalizations.of(context)!.duration}: ${course['duration']} ${AppLocalizations.of(context)!.years}',
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 13,
@@ -676,8 +736,8 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SubjectCard(
-              title: 'Add Subject',
-              subtitle: 'Let’s add a new subject for this course',
+              title: AppLocalizations.of(context)!.addSubject,
+              subtitle: AppLocalizations.of(context)!.letsAddSubject,
               gradientColors: const [Color(0xFFFFF1DC), Color(0xFFE2C290)],
               onTap:
                   () => _showAddSubjectDialog(
@@ -700,13 +760,19 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Text(
+                      '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
-                      'No subjects added yet for ${_getYearLabel(year)}.',
-                      style: const TextStyle(fontFamily: 'Gilroy-Regular'),
+                      AppLocalizations.of(
+                        context,
+                      )!.noSubjectsAddedForYear(_getYearLabel(year)),
+                      style: const TextStyle(),
                     ),
                   );
                 }
@@ -742,7 +808,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                       data['name'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 16,
-                                        fontFamily: 'Gilroy-Bold',
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -755,7 +821,7 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Year: ${data['year'] ?? 'N/A'}',
+                                      '${AppLocalizations.of(context)!.year}: ${data['year'] ?? 'N/A'}',
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Colors.black54,
@@ -812,10 +878,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                               ),
                                             ),
                                             ListTile(
-                                              title: const Text(
-                                                'Edit',
-                                                style: TextStyle(
-                                                  fontFamily: 'Gilroy-Bold',
+                                              title: Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.edit,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
                                                   fontSize: 17,
                                                 ),
                                               ),
@@ -828,10 +896,12 @@ class _SubjectManageScreenState extends State<SubjectManageScreen> {
                                               },
                                             ),
                                             ListTile(
-                                              title: const Text(
-                                                'Delete',
-                                                style: TextStyle(
-                                                  fontFamily: 'Gilroy-Bold',
+                                              title: Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.delete,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
                                                   fontSize: 17,
                                                   color: Colors.redAccent,
                                                 ),
@@ -867,12 +937,14 @@ class CourseCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final List<Color> gradientColors;
+  final VoidCallback onTap;
 
   const CourseCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.gradientColors,
+    required this.onTap,
   });
 
   @override
@@ -885,6 +957,7 @@ class _CourseCardState extends State<CourseCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: widget.onTap,
       onTapDown: (_) {
         HapticFeedback.lightImpact();
         setState(() => isPressed = true);
@@ -922,17 +995,13 @@ class _CourseCardState extends State<CourseCard> {
                 style: const TextStyle(
                   fontSize: 22,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 widget.subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
           ),
@@ -1004,17 +1073,13 @@ class _SubjectCardState extends State<SubjectCard> {
                 style: const TextStyle(
                   fontSize: 22,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 widget.subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
               const Spacer(),
               Container(

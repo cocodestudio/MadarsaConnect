@@ -4,11 +4,11 @@ import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:madarsaConnect/Home%20Screen/upload_provider.dart';
+import 'package:madarsaconnect/Home%20Screen/upload_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class PostUploadScreen extends StatefulWidget {
   const PostUploadScreen({super.key});
@@ -140,7 +140,10 @@ class _PostUploadScreenState extends State<PostUploadScreen>
 
   void _uploadPost() {
     if (_captionController.text.trim().isEmpty && _selectedMedia.isEmpty) {
-      CustomPopup.show(context,"Please write something or add media to post.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.writeSomethingOrAddMedia,
+      );
       return;
     }
 
@@ -174,7 +177,7 @@ class _PostUploadScreenState extends State<PostUploadScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Who can see this post?',
+                  AppLocalizations.of(context)!.whoCanSeePost,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -183,14 +186,16 @@ class _PostUploadScreenState extends State<PostUploadScreen>
                 ),
                 const SizedBox(height: 10),
                 _buildPrivacyOption(
-                  'Public',
-                  'Anyone on the platform',
+                  AppLocalizations.of(context)!.public,
+                  AppLocalizations.of(context)!.anyoneOnPlatform,
                   Icons.public,
+                  'Public', // Internal Key
                 ),
                 _buildPrivacyOption(
-                  'Only Me',
-                  'Only you can see this post',
+                  AppLocalizations.of(context)!.onlyMe,
+                  AppLocalizations.of(context)!.onlyYouCanSee,
                   Icons.lock,
+                  'Only Me', // Internal Key
                 ),
               ],
             ),
@@ -202,18 +207,23 @@ class _PostUploadScreenState extends State<PostUploadScreen>
     });
   }
 
-  Widget _buildPrivacyOption(String title, String subtitle, IconData icon) {
+  Widget _buildPrivacyOption(
+    String title,
+    String subtitle,
+    IconData icon,
+    String internalValue,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Colors.black),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
       trailing:
-          _privacySetting == title
+          _privacySetting == internalValue
               ? const Icon(Icons.check_circle, color: Colors.redAccent)
               : null,
       onTap: () {
         setState(() {
-          _privacySetting = title;
+          _privacySetting = internalValue;
         });
         Navigator.pop(context);
       },
@@ -223,6 +233,14 @@ class _PostUploadScreenState extends State<PostUploadScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+
+    // Translate displayed privacy setting
+    String displayPrivacySetting = _privacySetting;
+    if (_privacySetting == 'Public') {
+      displayPrivacySetting = AppLocalizations.of(context)!.public;
+    } else if (_privacySetting == 'Only Me') {
+      displayPrivacySetting = AppLocalizations.of(context)!.onlyMe;
+    }
 
     return WillPopScope(
       onWillPop: () async {
@@ -271,9 +289,9 @@ class _PostUploadScreenState extends State<PostUploadScreen>
                         ),
                         minimumSize: const Size(0, 0),
                       ),
-                      child: const Text(
-                        "Post",
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.postBtn,
+                        style: const TextStyle(
                           fontSize: 13,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -354,7 +372,7 @@ class _PostUploadScreenState extends State<PostUploadScreen>
                                         ),
                                         const SizedBox(width: 5),
                                         Text(
-                                          _privacySetting,
+                                          displayPrivacySetting,
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.blueGrey[700],
@@ -389,7 +407,8 @@ class _PostUploadScreenState extends State<PostUploadScreen>
                           color: Colors.black87,
                         ),
                         decoration: InputDecoration(
-                          hintText: "What's happening?",
+                          hintText:
+                              AppLocalizations.of(context)!.whatsHappening,
                           hintStyle: TextStyle(color: Colors.grey[500]),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
@@ -471,14 +490,14 @@ class _PostUploadScreenState extends State<PostUploadScreen>
                       ),
                     ),
                     onPressed: _pickMedia,
-                    tooltip: 'Add Photo',
+                    tooltip: AppLocalizations.of(context)!.addPhoto,
                   ),
                   Text(
-                    '${_captionCharacterCount}/2200',
+                    '$_captionCharacterCount/2200',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.black,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],

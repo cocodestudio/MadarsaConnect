@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class StudentFeePaymentScreen extends StatefulWidget {
   const StudentFeePaymentScreen({super.key});
@@ -79,7 +79,6 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
           .replaceAll(RegExp(r'[^a-z0-9_]'), '');
     }
 
-    // Student ka naam fetch karein
     String name = (user.displayName ?? '').toString().trim();
     final possibleKeys = [
       data['name'],
@@ -103,11 +102,6 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
     setState(() {
       _studentName = name;
     });
-
-    debugPrint('[_fetchStudentContext] studentCourseName: $_studentCourseName');
-    debugPrint(
-      '[_fetchStudentContext] normalizedCourseId: $_normalizedCourseId',
-    );
   }
 
   Future<void> _fetchPaymentHistory() async {
@@ -135,7 +129,6 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
       _paidAmount = _paymentHistory
           .where((payment) => payment['status'] == 'approved')
           .fold(0.0, (sum, item) => sum + (item['amount'] as double));
-      debugPrint('[_fetchPaymentHistory] paidAmount: $_paidAmount');
     } catch (e) {
       print('Error fetching payment history: $e');
     }
@@ -154,8 +147,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
 
     try {
       final candidates = <String>{};
-      if (_normalizedCourseId != null && _normalizedCourseId!.isNotEmpty)
+      if (_normalizedCourseId != null && _normalizedCourseId!.isNotEmpty) {
         candidates.add(_normalizedCourseId!);
+      }
       if (_studentCourseName != null && _studentCourseName!.isNotEmpty) {
         candidates.add(_studentCourseName!.trim());
         candidates.add(_studentCourseName!.toLowerCase().trim());
@@ -167,15 +161,12 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
         );
       }
 
-      debugPrint('[fetchFeeDetails] trying candidates: $candidates');
-
       DocumentSnapshot<Map<String, dynamic>>? found;
       for (final id in candidates) {
         final doc =
             await FirebaseFirestore.instance.collection('fees').doc(id).get();
         if (doc.exists) {
           found = doc;
-          debugPrint('[fetchFeeDetails] matched fees docId: $id');
           break;
         }
       }
@@ -194,13 +185,15 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
     } catch (e) {
       print('Error fetching fee details: $e');
       if (mounted) {
-        CustomPopup.show(context, 'Failed to fetch fee details: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToFetchFeeDetails}: $e',
+        );
       }
     }
   }
 
   Future<void> _bootstrap() async {
-    // Ensure the UI shows loading state initially
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -241,7 +234,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
     final utr = utrRaw.trim().replaceAll(RegExp(r'\s+'), '');
     if (utr.isEmpty) {
       if (mounted) {
-        CustomPopup.show(context, 'Please enter the UTR Number.');
+        CustomPopup.show(context, AppLocalizations.of(context)!.pleaseEnterUtr);
       }
       return;
     }
@@ -250,7 +243,8 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User is not logged in.');
+      if (user == null)
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
 
       final paymentData = <String, dynamic>{
         'userId': user.uid,
@@ -293,14 +287,17 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
       if (mounted) {
         CustomPopup.show(
           context,
-          'Your fee deposit request has been submitted successfully.',
+          AppLocalizations.of(context)!.feeDepositSubmitted,
         );
         _bootstrap();
       }
     } catch (e) {
       print("Error submitting fee request: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to submit request: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToSubmitRequest}: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -348,21 +345,21 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Complete Your Payment',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.completeYourPayment,
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black, // black heading
+                      color: Colors.black,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Scan the QR code to make the payment and enter the UTR number.',
+                    AppLocalizations.of(context)!.scanQrInstructions,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black.withOpacity(0.7), // grey text
+                      color: Colors.black.withOpacity(0.7),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -389,11 +386,13 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                             _qrCodeUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Center(
+                              return Center(
                                 child: Text(
-                                  'QR Code\nFailed to Load',
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.qrCodeLoadingFailed,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.black54),
+                                  style: const TextStyle(color: Colors.black54),
                                 ),
                               );
                             },
@@ -415,7 +414,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                   const SizedBox(height: 24),
                   _buildTextField(
                     controller: _amountController,
-                    labelText: 'Amount (₹)',
+                    labelText: AppLocalizations.of(context)!.amountInRupees,
                     keyboardType: TextInputType.number,
                     icon: Icons.currency_rupee_rounded,
                     readOnly: true,
@@ -423,15 +422,15 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _purposeController,
-                    labelText: 'Payment Purpose',
+                    labelText: AppLocalizations.of(context)!.paymentPurpose,
                     icon: Icons.description_rounded,
                     readOnly: true,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _utrController,
-                    labelText: 'Enter UTR Number',
-                    hintText: 'Example: 123456789012',
+                    labelText: AppLocalizations.of(context)!.enterUtrNumber,
+                    hintText: AppLocalizations.of(context)!.utrExample,
                     keyboardType: TextInputType.number,
                     icon: Icons.numbers_rounded,
                     readOnly: false,
@@ -449,7 +448,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                               Navigator.pop(context);
                             },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE50914), // red accent
+                      backgroundColor: const Color(0xFFE50914),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -467,9 +466,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                                 strokeWidth: 2,
                               ),
                             )
-                            : const Text(
-                              'Verify Payment',
-                              style: TextStyle(
+                            : Text(
+                              AppLocalizations.of(context)!.verifyPayment,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -506,11 +505,11 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Fees',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.fees,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -533,7 +532,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'Hello, $_studentName!',
+                              AppLocalizations.of(
+                                context,
+                              )!.helloStudent(_studentName),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -541,9 +542,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Manage Your Payments',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.manageYourPayments,
+                              style: const TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
@@ -556,19 +557,27 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                               children: [
                                 Expanded(
                                   child: _buildActionButton(
-                                    title: 'Pay Full Amount',
+                                    title:
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.payFullAmount,
                                     icon: Icons.monetization_on_rounded,
                                     onTap: () {
                                       if (_dueAmount > 0) {
                                         _showDepositScreen(
                                           initialAmount: _dueAmount,
-                                          purpose: 'Full Fees Payment',
+                                          purpose:
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.fullFeesPayment,
                                         );
                                       } else {
                                         if (mounted) {
                                           CustomPopup.show(
                                             context,
-                                            'No due amount to pay.',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.noDueAmount,
                                           );
                                         }
                                       }
@@ -578,7 +587,10 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: _buildActionButton(
-                                    title: 'Pay Other Amount',
+                                    title:
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.payOtherAmount,
                                     icon: Icons.account_balance_rounded,
                                     onTap: () {
                                       if (_dueAmount > 0) {
@@ -587,7 +599,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                                         if (mounted) {
                                           CustomPopup.show(
                                             context,
-                                            'No due amount to pay.',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.noDueAmount,
                                           );
                                         }
                                       }
@@ -627,21 +641,21 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoRow(
-            title: 'Total Fees',
+            title: AppLocalizations.of(context)!.totalFees,
             value: '₹${_totalFees.toStringAsFixed(2)}',
             icon: Icons.account_balance_wallet_rounded,
             iconColor: Colors.blue.shade600,
           ),
           const Divider(color: Colors.black26, height: 32),
           _buildInfoRow(
-            title: 'Paid Amount',
+            title: AppLocalizations.of(context)!.paidAmount,
             value: '₹${_paidAmount.toStringAsFixed(2)}',
             icon: Icons.check_circle_rounded,
             iconColor: Colors.green.shade600,
           ),
           const Divider(color: Colors.black26, height: 32),
           _buildInfoRow(
-            title: 'Due Amount',
+            title: AppLocalizations.of(context)!.dueAmount,
             value: '₹${_dueAmount.toStringAsFixed(2)}',
             icon: Icons.warning_rounded,
             iconColor:
@@ -687,7 +701,6 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
     );
   }
 
-  // Premium button design
   Widget _buildActionButton({
     required String title,
     required IconData icon,
@@ -696,7 +709,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        height: 120, // equal height for both buttons
+        height: 120,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
@@ -749,9 +762,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Enter Payment Amount',
-            style: TextStyle(color: Colors.black),
+          title: Text(
+            AppLocalizations.of(context)!.enterPaymentAmount,
+            style: const TextStyle(color: Colors.black),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -761,7 +774,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  hintText: 'Enter amount...',
+                  hintText: AppLocalizations.of(context)!.enterAmountHint,
                   hintStyle: TextStyle(color: Colors.black.withOpacity(0.5)),
                   prefixIcon: const Icon(
                     Icons.currency_rupee_rounded,
@@ -783,9 +796,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.black54),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(color: Colors.black54),
               ),
             ),
             ElevatedButton(
@@ -796,13 +809,13 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                   Navigator.of(context).pop();
                   _showDepositScreen(
                     initialAmount: customAmount!,
-                    purpose: 'Partial Fees Payment',
+                    purpose: AppLocalizations.of(context)!.partialFeesPayment,
                   );
                 } else {
                   if (mounted) {
                     CustomPopup.show(
                       context,
-                      'Invalid amount. Must be greater than 0 and less than or equal to due amount.',
+                      AppLocalizations.of(context)!.invalidAmountError,
                     );
                   }
                 }
@@ -815,7 +828,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
                 ),
                 elevation: 0,
               ),
-              child: const Text('Pay'),
+              child: Text(AppLocalizations.of(context)!.pay),
             ),
           ],
         );
@@ -841,9 +854,9 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Payment History',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.paymentHistory,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -853,7 +866,7 @@ class _StudentFeePaymentScreenState extends State<StudentFeePaymentScreen> {
           if (_paymentHistory.isEmpty)
             Center(
               child: Text(
-                'No payment history found.',
+                AppLocalizations.of(context)!.noPaymentHistory,
                 style: TextStyle(color: Colors.black.withOpacity(0.5)),
               ),
             )

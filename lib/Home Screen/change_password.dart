@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -27,24 +28,32 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     super.dispose();
   }
 
-  String? _validateNewPassword(String oldPass, String newPass, String confirm) {
+  // Modified to use context for localization
+  String? _validateNewPassword(
+    BuildContext context,
+    String oldPass,
+    String newPass,
+    String confirm,
+  ) {
+    final localizations = AppLocalizations.of(context)!;
+
     if (newPass.isEmpty || confirm.isEmpty) {
-      return "⚠️ Please fill all fields";
+      return localizations.fillAllFields;
     }
     if (newPass.length < 8) {
-      return "⚠️ Password must be at least 8 characters";
+      return localizations.passwordMinLength;
     }
     final strongPattern = RegExp(
       r'^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%^&*]).{8,}$',
     );
     if (!strongPattern.hasMatch(newPass)) {
-      return "⚠️ Password must contain uppercase, number & special char";
+      return localizations.passwordComplexity;
     }
     if (newPass != confirm) {
-      return "⚠️ Passwords do not match";
+      return localizations.passwordsDoNotMatch;
     }
     if (oldPass == newPass) {
-      return "⚠️ New password must be different from current password";
+      return localizations.newPasswordDifferent;
     }
     return null;
   }
@@ -54,7 +63,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final newPass = _newPassword.text.trim();
     final confirm = _confirmPassword.text.trim();
 
-    final validationError = _validateNewPassword(oldPass, newPass, confirm);
+    final validationError = _validateNewPassword(
+      context,
+      oldPass,
+      newPass,
+      confirm,
+    );
     if (validationError != null) {
       CustomPopup.show(context, validationError);
       return;
@@ -65,7 +79,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || user.email == null) {
-        CustomPopup.show(context, "❌ User not logged in.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.userNotLoggedIn,
+          );
+        }
         return;
       }
 
@@ -78,7 +97,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       await user.updatePassword(newPass);
 
       if (!mounted) return;
-      CustomPopup.show(context, "✅ Password changed successfully");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.passwordChangedSuccess,
+      );
       _currentPassword.clear();
       _newPassword.clear();
       _confirmPassword.clear();
@@ -86,20 +108,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       String msg;
       switch (e.code) {
         case 'wrong-password':
-          msg = "❌ Current password is incorrect";
+          msg = AppLocalizations.of(context)!.currentPasswordIncorrect;
           break;
         case 'weak-password':
-          msg = "⚠️ Password too weak";
+          msg = AppLocalizations.of(context)!.passwordTooWeak;
           break;
         case 'requires-recent-login':
-          msg = "⚠️ Please login again to change password";
+          msg = AppLocalizations.of(context)!.loginAgain;
           break;
         default:
           msg = "❌ ${e.message}";
       }
-      CustomPopup.show(context, msg);
+      if (mounted) CustomPopup.show(context, msg);
     } catch (e) {
-      CustomPopup.show(context, "❌ Error: ${e.toString()}");
+      if (mounted) CustomPopup.show(context, "❌ Error: ${e.toString()}");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -152,11 +174,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Change Password',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.changePassword,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
             color: Colors.black,
           ),
         ),
@@ -181,27 +203,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         child: Image.asset('assets/images/reset.png'),
                       ),
                       const SizedBox(height: 15),
-                      const Text(
-                        'Secure Your Account',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.secureYourAccount,
+                        style: const TextStyle(
                           fontSize: 25,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                         ),
                       ),
                       const SizedBox(height: 1),
-                      const Text(
-                        'Please enter your current and new password',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.enterPasswords,
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
-                          fontFamily: 'Gilroy-Medium',
+                          fontWeight: FontWeight.w500, // Replaced Gilroy-Medium
                         ),
                       ),
                       const SizedBox(height: 18),
 
                       // TextFields
                       _buildTextField(
-                        hint: "Current Password",
+                        hint: AppLocalizations.of(context)!.currentPassword,
                         controller: _currentPassword,
                         obscureText: _isCurrentHidden,
                         toggleVisibility: () {
@@ -210,7 +232,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        hint: "New Password",
+                        hint: AppLocalizations.of(context)!.newPassword,
                         controller: _newPassword,
                         obscureText: _isNewHidden,
                         toggleVisibility: () {
@@ -219,7 +241,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        hint: "Confirm Password",
+                        hint: AppLocalizations.of(context)!.confirmPassword,
                         controller: _confirmPassword,
                         obscureText: _isConfirmHidden,
                         toggleVisibility: () {
@@ -244,12 +266,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 ? const CircularProgressIndicator(
                                   color: Colors.white,
                                 )
-                                : const Text(
-                                  "Change Password",
-                                  style: TextStyle(
+                                : Text(
+                                  AppLocalizations.of(context)!.changePassword,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
-                                    fontFamily: 'Gilroy-Bold',
+                                    fontWeight:
+                                        FontWeight.bold, // Replaced Gilroy-Bold
                                   ),
                                 ),
                       ),

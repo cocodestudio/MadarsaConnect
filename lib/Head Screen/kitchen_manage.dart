@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 InputDecoration premiumInputDecoration(String labelText) {
   return InputDecoration(
@@ -58,11 +59,11 @@ class _KitchenAdminPanelScreenState extends State<KitchenAdminPanelScreen>
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Kitchen Management',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.kitchenManagement,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -72,7 +73,10 @@ class _KitchenAdminPanelScreenState extends State<KitchenAdminPanelScreen>
           indicatorColor: Colors.redAccent,
           labelColor: const Color(0xFF1B263B),
           unselectedLabelColor: Colors.grey,
-          tabs: const [Tab(text: 'INGREDIENTS'), Tab(text: 'RECIPES')],
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.ingredientsTab),
+            Tab(text: AppLocalizations.of(context)!.recipesTab),
+          ],
         ),
       ),
       body: TabBarView(
@@ -111,26 +115,31 @@ class IngredientsManagementTab extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Delete Ingredient',
+          title: Text(
+            AppLocalizations.of(context)!.deleteIngredientTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'Are you sure you want to delete "${data['name']}"?',
+            AppLocalizations.of(
+              context,
+            )!.deleteIngredientConfirmation(data['name']),
             textAlign: TextAlign.center,
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(color: Colors.grey),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.redAccent),
+              child: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.redAccent),
               ),
               onPressed: () async {
                 try {
@@ -141,7 +150,7 @@ class IngredientsManagementTab extends StatelessWidget {
                     Navigator.of(context).pop();
                     CustomPopup.show(
                       context,
-                      'Failed to delete ingredient: $e',
+                      '${AppLocalizations.of(context)!.failedToDeleteIngredient}: $e',
                     );
                   }
                 }
@@ -169,7 +178,9 @@ class IngredientsManagementTab extends StatelessWidget {
             return const Center(child: GradientSpinner());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No ingredients added yet."));
+            return Center(
+              child: Text(AppLocalizations.of(context)!.noIngredientsYet),
+            );
           }
           final ingredients = snapshot.data!.docs;
           return ListView.builder(
@@ -190,7 +201,9 @@ class IngredientsManagementTab extends StatelessWidget {
                     data['name'],
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('Unit: ${data['unit']}'),
+                  subtitle: Text(
+                    '${AppLocalizations.of(context)!.unit}: ${data['unit']}',
+                  ),
                   trailing: Text(
                     '₹${data['price']}/${data['unit']}',
                     style: const TextStyle(
@@ -218,9 +231,9 @@ class IngredientsManagementTab extends StatelessWidget {
         onPressed: () => _showIngredientBottomSheet(context),
         backgroundColor: Colors.redAccent,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Add Ingredient',
-          style: TextStyle(color: Colors.white),
+        label: Text(
+          AppLocalizations.of(context)!.addIngredient,
+          style: const TextStyle(color: Colors.white),
         ),
       ),
     );
@@ -287,7 +300,10 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Failed to save ingredient: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToSaveIngredient}: $e',
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -303,10 +319,10 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Select a Unit',
+          title: Text(
+            AppLocalizations.of(context)!.selectUnit,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
           content: SizedBox(
@@ -372,11 +388,13 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  _isEditing ? 'Edit Ingredient' : 'Add New Ingredient',
+                  _isEditing
+                      ? AppLocalizations.of(context)!.editIngredient
+                      : AppLocalizations.of(context)!.addNewIngredient,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
@@ -385,17 +403,22 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
                   decoration: premiumInputDecoration(
-                    'Ingredient Name (e.g., Rice)',
+                    AppLocalizations.of(context)!.ingredientNameHint,
                   ),
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Name is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.nameIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _unitDisplayController,
                   textCapitalization: TextCapitalization.words,
                   readOnly: true,
-                  decoration: premiumInputDecoration('Select Unit').copyWith(
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.selectUnit,
+                  ).copyWith(
                     suffixIcon: const Icon(
                       Icons.arrow_drop_down,
                       color: Colors.grey,
@@ -405,21 +428,26 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
                   validator:
                       (value) =>
                           value == null || value.isEmpty
-                              ? 'Please select a unit'
+                              ? AppLocalizations.of(context)!.unitIsRequired
                               : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _priceController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: premiumInputDecoration('Price per Unit (in ₹)'),
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.pricePerUnit,
+                  ),
                   keyboardType: TextInputType.number,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Price is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.priceIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 32),
                 _isLoading
-                    ? const Center(child: GradientSpinner())
+                    ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                       onPressed: _saveIngredient,
                       style: ElevatedButton.styleFrom(
@@ -432,7 +460,9 @@ class _IngredientFormSheetState extends State<_IngredientFormSheet> {
                         elevation: 0,
                       ),
                       child: Text(
-                        _isEditing ? 'Update Ingredient' : 'Save Ingredient',
+                        _isEditing
+                            ? AppLocalizations.of(context)!.updateIngredient
+                            : AppLocalizations.of(context)!.saveIngredient,
                       ),
                     ),
               ],
@@ -472,26 +502,31 @@ class RecipesManagementTab extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Delete Recipe',
+          title: Text(
+            AppLocalizations.of(context)!.deleteRecipeTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'Are you sure you want to delete "${data['dishName']}"?',
+            AppLocalizations.of(
+              context,
+            )!.deleteRecipeConfirmation(data['dishName']),
             textAlign: TextAlign.center,
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(color: Colors.grey),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.redAccent),
+              child: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.redAccent),
               ),
               onPressed: () async {
                 try {
@@ -500,7 +535,10 @@ class RecipesManagementTab extends StatelessWidget {
                 } catch (e) {
                   if (context.mounted) {
                     Navigator.of(context).pop();
-                    CustomPopup.show(context, 'Failed to delete recipe: $e');
+                    CustomPopup.show(
+                      context,
+                      '${AppLocalizations.of(context)!.failedToDeleteRecipe}: $e',
+                    );
                   }
                 }
               },
@@ -527,7 +565,9 @@ class RecipesManagementTab extends StatelessWidget {
             return const Center(child: GradientSpinner());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No recipes added yet."));
+            return Center(
+              child: Text(AppLocalizations.of(context)!.noRecipesYet),
+            );
           }
           final recipes = snapshot.data!.docs;
           return ListView.builder(
@@ -550,7 +590,9 @@ class RecipesManagementTab extends StatelessWidget {
                     data['dishName'],
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('${ingredientsList.length} ingredients'),
+                  subtitle: Text(
+                    '${ingredientsList.length} ${AppLocalizations.of(context)!.ingredientsLowerCase}',
+                  ),
                   trailing: const Icon(
                     Icons.edit_note_rounded,
                     color: Color(0xFF1B263B),
@@ -571,7 +613,10 @@ class RecipesManagementTab extends StatelessWidget {
         onPressed: () => _showRecipeBottomSheet(context),
         backgroundColor: Colors.redAccent,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Recipe', style: TextStyle(color: Colors.white)),
+        label: Text(
+          AppLocalizations.of(context)!.addRecipe,
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -627,7 +672,10 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
   Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) return;
     if (_recipeIngredients.isEmpty) {
-      CustomPopup.show(context, 'Please add at least one ingredient.');
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.addAtLeastOneIngredient,
+      );
       return;
     }
     setState(() => _isLoading = true);
@@ -648,7 +696,10 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Failed to save recipe: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToSaveRecipe}: $e',
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -675,11 +726,13 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  _isEditing ? 'Edit Recipe' : 'Add New Recipe',
+                  _isEditing
+                      ? AppLocalizations.of(context)!.editRecipe
+                      : AppLocalizations.of(context)!.addNewRecipe,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
@@ -688,14 +741,17 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
                   controller: _dishNameController,
                   textCapitalization: TextCapitalization.words,
                   decoration: premiumInputDecoration(
-                    'Dish Name (e.g., Daal Chawal)',
+                    AppLocalizations.of(context)!.dishNameHint,
                   ),
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Dish name is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.dishNameRequired
+                              : null,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Ingredients (per student)',
+                  AppLocalizations.of(context)!.ingredientsPerStudent,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -704,9 +760,9 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
                 ),
                 const SizedBox(height: 8),
                 if (_recipeIngredients.isEmpty)
-                  const Text(
-                    'No ingredients added yet.',
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    AppLocalizations.of(context)!.noIngredientsAdded,
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ..._recipeIngredients.map(
                   (ing) => Card(
@@ -732,7 +788,7 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
                 OutlinedButton.icon(
                   onPressed: _showAddIngredientSheet,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Ingredient'),
+                  label: Text(AppLocalizations.of(context)!.addIngredient),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF1B263B),
                     side: BorderSide(color: Colors.grey.shade300),
@@ -749,7 +805,11 @@ class _RecipeFormSheetState extends State<_RecipeFormSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 0,
                       ),
-                      child: Text(_isEditing ? 'Update Recipe' : 'Save Recipe'),
+                      child: Text(
+                        _isEditing
+                            ? AppLocalizations.of(context)!.updateRecipe
+                            : AppLocalizations.of(context)!.saveRecipe,
+                      ),
                     ),
               ],
             ),
@@ -790,10 +850,10 @@ class _AddIngredientToRecipeSheetState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Select an Ingredient',
+          title: Text(
+            AppLocalizations.of(context)!.selectAnIngredient,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
           content: SizedBox(
@@ -886,12 +946,12 @@ class _AddIngredientToRecipeSheetState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Add Ingredient to Recipe',
+                Text(
+                  AppLocalizations.of(context)!.addIngredientToRecipe,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
@@ -901,7 +961,7 @@ class _AddIngredientToRecipeSheetState
                   textCapitalization: TextCapitalization.words,
                   readOnly: true,
                   decoration: premiumInputDecoration(
-                    'Select Ingredient',
+                    AppLocalizations.of(context)!.selectIngredient,
                   ).copyWith(
                     suffixIcon: const Icon(
                       Icons.arrow_drop_down,
@@ -912,7 +972,9 @@ class _AddIngredientToRecipeSheetState
                   validator:
                       (value) =>
                           value == null || value.isEmpty
-                              ? 'Please select an ingredient'
+                              ? AppLocalizations.of(
+                                context,
+                              )!.pleaseSelectIngredient
                               : null,
                 ),
                 const SizedBox(height: 16),
@@ -920,11 +982,14 @@ class _AddIngredientToRecipeSheetState
                   controller: _quantityController,
                   textCapitalization: TextCapitalization.words,
                   decoration: premiumInputDecoration(
-                    'Quantity (e.g., 0.100 for 100g)',
+                    AppLocalizations.of(context)!.quantityExample,
                   ),
                   keyboardType: TextInputType.number,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Quantity is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.enterQuantity
+                              : null,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
@@ -935,7 +1000,7 @@ class _AddIngredientToRecipeSheetState
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                   ),
-                  child: const Text('Add to Recipe'),
+                  child: Text(AppLocalizations.of(context)!.addToRecipe),
                 ),
               ],
             ),

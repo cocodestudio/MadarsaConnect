@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Student%20Screen/quiz_attempt.dart';
+import 'package:madarsaconnect/Student%20Screen/quiz_attempt.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class StudentQuizListScreen extends StatefulWidget {
   const StudentQuizListScreen({super.key});
@@ -55,7 +57,10 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Failed to fetch student details: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToFetchStudentDetails}: $e',
+        );
         setState(() {
           _isLoading = false;
         });
@@ -83,18 +88,18 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
             icon: const Icon(Icons.arrow_back, size: 26),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            'Available Quizzes',
-            style: TextStyle(
+          title: Text(
+            AppLocalizations.of(context)!.availableQuizzes,
+            style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
           centerTitle: true,
         ),
-        body: const Center(
-          child: Text('Could not find student course details.'),
+        body: Center(
+          child: Text(AppLocalizations.of(context)!.courseDetailsNotFound),
         ),
       );
     }
@@ -110,11 +115,11 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Available Quizzes',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.availableQuizzes,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -134,26 +139,31 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
             }
             if (quizSnapshot.hasError) {
               return Center(
-                child: Text('Failed to load quizzes: ${quizSnapshot.error}'),
+                child: Text(
+                  '${AppLocalizations.of(context)!.failedToLoadQuizzes}: ${quizSnapshot.error}',
+                ),
               );
             }
             if (!quizSnapshot.hasData || quizSnapshot.data!.docs.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.assignment_late_outlined,
                         size: 64,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
-                        'No quizzes available for your course at the moment.',
+                        AppLocalizations.of(context)!.noQuizzesAvailable,
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -183,7 +193,7 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                 if (attemptSnapshot.hasError) {
                   return Center(
                     child: Text(
-                      'Failed to load attempts: ${attemptSnapshot.error}',
+                      '${AppLocalizations.of(context)!.failedToLoadAttempts}: ${attemptSnapshot.error}',
                     ),
                   );
                 }
@@ -219,13 +229,35 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                     final quizData = quiz.data() as Map<String, dynamic>;
                     final quizId = quiz.id;
 
-                    final status = _getQuizStatus(
+                    final statusKey = _getQuizStatus(
                       quizData,
                       quizId,
                       attemptedQuizIds,
                     );
-                    final statusColor = _getQuizStatusColor(status);
-                    final hasAttempted = status == 'Completed';
+                    final statusColor = _getQuizStatusColor(statusKey);
+                    final hasAttempted = statusKey == 'Completed';
+
+                    String displayStatus;
+                    switch (statusKey) {
+                      case 'Active':
+                        displayStatus =
+                            AppLocalizations.of(context)!.quizStatusActive;
+                        break;
+                      case 'Upcoming':
+                        displayStatus =
+                            AppLocalizations.of(context)!.quizStatusUpcoming;
+                        break;
+                      case 'Completed':
+                        displayStatus =
+                            AppLocalizations.of(context)!.quizStatusCompleted;
+                        break;
+                      case 'Expired':
+                        displayStatus =
+                            AppLocalizations.of(context)!.quizStatusExpired;
+                        break;
+                      default:
+                        displayStatus = statusKey;
+                    }
 
                     return GestureDetector(
                       onTap: () {
@@ -239,7 +271,7 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                                   ),
                             ),
                           );
-                        } else if (status == 'Active') {
+                        } else if (statusKey == 'Active') {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -303,7 +335,7 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                                       ),
                                     ),
                                     child: Text(
-                                      status,
+                                      displayStatus,
                                       style: TextStyle(
                                         color: statusColor,
                                         fontWeight: FontWeight.bold,
@@ -320,7 +352,7 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                               ),
                               _buildInfoRow(
                                 icon: Icons.access_time,
-                                label: 'Starts',
+                                label: AppLocalizations.of(context)!.starts,
                                 value: DateFormat(
                                   'dd MMM yyyy, hh:mm a',
                                 ).format(
@@ -330,7 +362,7 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                               ),
                               _buildInfoRow(
                                 icon: Icons.timer_off_outlined,
-                                label: 'Ends',
+                                label: AppLocalizations.of(context)!.ends,
                                 value: DateFormat(
                                   'dd MMM yyyy, hh:mm a',
                                 ).format(
@@ -339,9 +371,9 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                                 color: Colors.blueGrey,
                               ),
                               const SizedBox(height: 15),
-                              const Text(
-                                'Rules:',
-                                style: TextStyle(
+                              Text(
+                                '${AppLocalizations.of(context)!.rules}:',
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF555555),
                                   fontSize: 16,
@@ -374,7 +406,10 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen>
                                             as Map<String, dynamic>;
                                     return _buildInfoRow(
                                       icon: Icons.bar_chart,
-                                      label: 'Your Score',
+                                      label:
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.yourScore,
                                       value:
                                           '${scoreData['score']} / ${quizData['questions'].length}',
                                       color: Colors.purple,
@@ -490,11 +525,11 @@ class StudentQuizWarningScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Rules & Regulations',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.rulesRegulations,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -517,18 +552,20 @@ class StudentQuizWarningScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Center(
+                      Center(
                         child: Column(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.warning_amber_rounded,
                               color: Colors.redAccent,
                               size: 60,
                             ),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             Text(
-                              'Important Instructions',
-                              style: TextStyle(
+                              AppLocalizations.of(
+                                context,
+                              )!.importantInstructions,
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.redAccent,
@@ -539,16 +576,18 @@ class StudentQuizWarningScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       _buildInstructionRow(
-                        'Once you start, you cannot go back.',
+                        AppLocalizations.of(context)!.quizInstruction1,
                       ),
                       _buildInstructionRow(
-                        'Exiting the quiz or network issues will end your attempt.',
+                        AppLocalizations.of(context)!.quizInstruction2,
                       ),
                       _buildInstructionRow(
-                        'You must complete the quiz within the given time duration.',
+                        AppLocalizations.of(context)!.quizInstruction3,
                       ),
                       _buildInstructionRow(
-                        'Time Duration: ${quizData['estimationTime']} minutes',
+                        AppLocalizations.of(
+                          context,
+                        )!.timeDuration(quizData['estimationTime'].toString()),
                       ),
                     ],
                   ),
@@ -579,9 +618,9 @@ class StudentQuizWarningScreen extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Start Quiz',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context)!.startQuiz,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -665,11 +704,11 @@ class _StudentQuizViewResultScreenState
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Quiz Result',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.quizResult,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -680,13 +719,17 @@ class _StudentQuizViewResultScreenState
           stream: _attemptStream,
           builder: (context, attemptSnapshot) {
             if (attemptSnapshot.connectionState == ConnectionState.waiting) {
-              return _buildWaitingScreen('Loading your result...');
+              return _buildWaitingScreen(
+                AppLocalizations.of(context)!.loadingResult,
+              );
             }
 
             if (attemptSnapshot.hasError ||
                 !attemptSnapshot.hasData ||
                 !attemptSnapshot.data!.exists) {
-              return _buildErrorScreen('Failed to load quiz attempt data.');
+              return _buildErrorScreen(
+                AppLocalizations.of(context)!.failedToLoadResult,
+              );
             }
 
             final attemptData =
@@ -739,7 +782,7 @@ class _StudentQuizViewResultScreenState
                   const Icon(Icons.check_circle, color: Colors.green, size: 80),
                   const SizedBox(height: 24),
                   Text(
-                    'Quiz Completed!',
+                    AppLocalizations.of(context)!.quizCompleted,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -780,7 +823,9 @@ class _StudentQuizViewResultScreenState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Score: $score / $totalMarks',
+                              AppLocalizations.of(
+                                context,
+                              )!.scoreDisplay(score, totalMarks),
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.black54,
@@ -811,9 +856,9 @@ class _StudentQuizViewResultScreenState
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Done',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.done,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,

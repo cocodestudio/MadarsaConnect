@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Faculty%20Screen/quiz_upload.dart';
+import 'package:madarsaconnect/Faculty%20Screen/quiz_upload.dart';
+import '../Data/loader.dart';
 import '../Home Screen/home_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class StudentManagementScreen extends StatefulWidget {
   final String headUid;
@@ -67,11 +68,11 @@ class StudentDetailsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Student Details',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.studentDetailsTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -125,7 +126,7 @@ class StudentDetailsPage extends StatelessWidget {
                           student['fullName'] ?? '',
                           style: const TextStyle(
                             fontSize: 18,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
@@ -146,38 +147,56 @@ class StudentDetailsPage extends StatelessWidget {
                 ],
               ),
             ),
-            const Text(
-              "PERSONAL DETAILS",
-              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.personalDetailsHeader,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            _buildField("Date of Birth", "dateOfBirth"),
-            _buildField("Father Name", "fatherName"),
-            _buildField("Mother Name", "motherName"),
-            _buildField("Student Unique Code", "sucId"),
+            _buildField(
+              AppLocalizations.of(context)!.dateOfBirth,
+              "dateOfBirth",
+            ),
+            _buildField(AppLocalizations.of(context)!.fatherName, "fatherName"),
+            _buildField(AppLocalizations.of(context)!.motherName, "motherName"),
+            _buildField(AppLocalizations.of(context)!.sucId, "sucId"),
             const SizedBox(height: 10),
-            const Text(
-              "ACADEMIC DETAILS",
-              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.academicDetails,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            _buildField("Course", "course"),
-            _buildField("Duration", "courseDuration"),
-            _buildField("Academic Year", "academicYear"),
+            _buildField(AppLocalizations.of(context)!.course, "course"),
+            _buildField(
+              AppLocalizations.of(context)!.duration,
+              "courseDuration",
+            ),
+            _buildField(
+              AppLocalizations.of(context)!.academicYear,
+              "academicYear",
+            ),
             const SizedBox(height: 10),
-            const Text(
-              "ADDRESS DETAILS",
-              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.addressHeader,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            _buildField("Address", "address"),
-            _buildField("Town/City", "address.townCity"),
-            _buildField("State", "address.state"),
-            _buildField("District", "address.district"),
+            _buildField(AppLocalizations.of(context)!.address, "address"),
+            _buildField(
+              AppLocalizations.of(context)!.townCity,
+              "address.townCity",
+            ),
+            _buildField(AppLocalizations.of(context)!.state, "address.state"),
+            _buildField(
+              AppLocalizations.of(context)!.district,
+              "address.district",
+            ),
             const SizedBox(height: 10),
-            const Text(
-              "IDENTIFICATION DETAILS",
-              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.identificationDetailsHeader,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            _buildField("Aadhaar", "aadhaarNumber"),
-            _buildField("PAN", "panCard"),
+            _buildField(
+              AppLocalizations.of(context)!.aadhaarNumber,
+              "aadhaarNumber",
+            ),
+            _buildField(AppLocalizations.of(context)!.panCard, "panCard"),
           ],
         ),
       ),
@@ -236,14 +255,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   Future<void> fetchStudents(String courseName, int year) async {
     setState(() => _isLoading = true);
 
-    final duration =
-        '${year}${year == 1
-            ? 'st'
-            : year == 2
-            ? 'nd'
-            : year == 3
-            ? 'rd'
-            : 'th'} Year';
+    final yearSuffix = ['st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th'];
+    final duration = '$year${yearSuffix[year > 3 ? 3 : year - 1]} Year';
 
     final snapshot =
         await FirebaseFirestore.instance
@@ -265,85 +278,6 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  void _showHelpSheet(BuildContext context) {
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.4,
-          minChildSize: 0.3,
-          maxChildSize: 0.5,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Center(
-                    child: SizedBox(
-                      width: 40,
-                      height: 3,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.all(Radius.circular(10)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    "Add Subjects",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                  ),
-                  Text(
-                    "Assign specific subjects to each course for organized academic structure.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
-                  ),
-                  SizedBox(height: 19),
-                  Text(
-                    "Manage Subjects",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                  ),
-                  Text(
-                    "Edit or update subject details as per curriculum changes.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
-                  ),
-                  SizedBox(height: 19),
-                  Text(
-                    "Delete Subjects",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                  ),
-                  Text(
-                    "Remove outdated or unnecessary subjects from courses.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   void _showDurationSelector(
@@ -376,10 +310,13 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Center(
+              Center(
                 child: Text(
-                  'Select Course Duration',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                  AppLocalizations.of(context)!.selectCourseDuration,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -412,9 +349,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            '$year$suffix Year',
+                            '$year$suffix ${AppLocalizations.of(context)!.year}',
                             style: const TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             ),
                           ),
@@ -458,25 +395,30 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Gilroy-Bold',
                   ),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  'Total Students',
-                  style: TextStyle(fontSize: 14, fontFamily: 'Gilroy-Regular'),
+                Text(
+                  AppLocalizations.of(context)!.totalStudents,
+                  style: const TextStyle(fontSize: 14),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 25.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Name', style: TextStyle(fontFamily: 'Gilroy-Bold')),
-                Text('Roll No', style: TextStyle(fontFamily: 'Gilroy-Bold')),
+                Text(
+                  AppLocalizations.of(context)!.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  AppLocalizations.of(context)!.rollNo,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
@@ -550,8 +492,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: SingleActionCard(
-        title: 'Quiz Upload',
-        subtitle: 'Upload a quiz for a specific course and duration.',
+        title: AppLocalizations.of(context)!.quizUpload,
+        subtitle: AppLocalizations.of(context)!.uploadQuizSubtitle,
         gradientColors: const [Color(0xFFE3E4E5), Color(0xFFB5B5B5)],
         icon: Icons.quiz,
         onTap: () {
@@ -584,10 +526,12 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           },
         ),
         title: Text(
-          showStudentList ? 'Student List' : 'Student Management',
+          showStudentList
+              ? AppLocalizations.of(context)!.studentListTitle
+              : AppLocalizations.of(context)!.studentManagementTitle,
           style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -606,16 +550,16 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Row(
                 children: [
-                  const Text(
-                    'Select Course',
-                    style: TextStyle(fontSize: 17, fontFamily: 'Gilroy-Bold'),
+                  Text(
+                    AppLocalizations.of(context)!.selectCourse,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     ' (${courses.length})',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
@@ -656,7 +600,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                                   style: const TextStyle(
                                     fontSize: 18,
                                     color: Colors.black,
-                                    fontFamily: 'Gilroy-Bold',
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -719,7 +663,6 @@ class SingleActionCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Gilroy-Bold',
                       color: Colors.black87,
                     ),
                   ),

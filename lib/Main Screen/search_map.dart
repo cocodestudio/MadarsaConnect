@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Home%20Screen/change_password.dart';
-import 'package:madarsaConnect/Home%20Screen/support_screen.dart';
+import '../Home Screen/change_password.dart';
 import '../Home Screen/notification_settings.dart';
+import '../Home Screen/support_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/manage_notifications': (context) => const ManageNotificationsScreen(),

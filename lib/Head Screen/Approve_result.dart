@@ -13,6 +13,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class ApproveMarksScreen extends StatefulWidget {
@@ -104,7 +105,11 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
       _imageTypeToUpload = type;
       if (mounted) _showCropper();
     } else {
-      CustomPopup.show(context, "No image selected.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noImageSelected,
+        );
     }
   }
 
@@ -142,10 +147,18 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
           _isSignatureUploading = false;
         }
       });
-      CustomPopup.show(context, "$type updated successfully!");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.updatedSuccess(type),
+        );
     } catch (e) {
       debugPrint("Failed to upload image: $e");
-      CustomPopup.show(context, "Failed to upload $type.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToUpload(type),
+        );
     } finally {
       if (mounted) {
         setState(() {
@@ -181,11 +194,19 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
       });
 
       if (mounted) Navigator.pop(context);
-      CustomPopup.show(context, "$type deleted successfully!");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.deletedSuccess(type),
+        );
     } catch (e) {
       if (mounted) Navigator.pop(context);
       debugPrint("Error deleting image: $e");
-      CustomPopup.show(context, "Failed to delete $type.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToDelete(type),
+        );
     }
   }
 
@@ -213,7 +234,11 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         status = await Permission.storage.request();
       }
       if (!status.isGranted) {
-        CustomPopup.show(context, "Gallery permission denied.");
+        if (mounted)
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.galleryPermissionDenied,
+          );
         return false;
       }
     }
@@ -266,8 +291,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         children: [
           _buildDragHandle(),
           Text(
-            isLogo ? "Crop Logo" : "Crop Signature",
-            style: const TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+            isLogo
+                ? AppLocalizations.of(context)!.cropLogo
+                : AppLocalizations.of(context)!.cropSignature,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -307,15 +334,20 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildCropperButton("Try Again", Icons.refresh, () {
-                  Navigator.pop(context);
-                  _pickImage(_imageTypeToUpload!);
-                }, isPrimary: false),
+                child: _buildCropperButton(
+                  AppLocalizations.of(context)!.tryAgain,
+                  Icons.refresh,
+                  () {
+                    Navigator.pop(context);
+                    _pickImage(_imageTypeToUpload!);
+                  },
+                  isPrimary: false,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _buildCropperButton(
-                  "Apply",
+                  AppLocalizations.of(context)!.apply,
                   Icons.check_circle_outline,
                   () async {
                     localSetState(() => _isCropping = true);
@@ -414,7 +446,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     } catch (e) {
       debugPrint("Error fetching pending courses: $e");
       if (mounted) {
-        CustomPopup.show(context, "Error fetching courses: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingCourses}: $e",
+        );
         setState(() => _screenState = _ScreenState.initial);
       }
     }
@@ -454,7 +489,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     } catch (e) {
       debugPrint("Error fetching pending durations: $e");
       if (mounted) {
-        CustomPopup.show(context, "Error fetching durations: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingDurations}: $e",
+        );
         setState(() => _screenState = _ScreenState.courseList);
       }
     }
@@ -524,7 +562,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     } catch (e) {
       debugPrint("Error fetching unapproved results: $e");
       if (mounted) {
-        CustomPopup.show(context, "Error fetching data: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingData}: $e",
+        );
         setState(() => _screenState = _ScreenState.durationList);
       }
     }
@@ -547,7 +588,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
       if (studentQuery.docs.isEmpty) {
         setState(() => _screenState = _ScreenState.noResults);
         if (mounted) {
-          CustomPopup.show(context, "No student found with this SUC ID.");
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noStudentFoundSuc,
+          );
         }
         return;
       }
@@ -595,7 +639,10 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     } catch (e) {
       debugPrint("Error searching for student: $e");
       if (mounted) {
-        CustomPopup.show(context, "Failed to search for student: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.failedToSearchStudent}: $e",
+        );
         setState(() => _screenState = _ScreenState.noResults);
       }
     }
@@ -605,7 +652,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     if (_selectedResults.value.isEmpty) {
       CustomPopup.show(
         context,
-        "Please select at least one result to approve.",
+        AppLocalizations.of(context)!.selectResultToApprove,
       );
       return;
     }
@@ -649,9 +696,11 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         final isPushEnabled = settingsDoc.data()?['push'] ?? true;
         final isInAppEnabled = settingsDoc.data()?['inApp'] ?? true;
 
-        final notificationTitle = 'Result Approved!';
-        final notificationBody =
-            'Your result for the $examType exam ($duration) has been approved.';
+        final notificationTitle =
+            AppLocalizations.of(context)!.resultApprovedTitle;
+        final notificationBody = AppLocalizations.of(
+          context,
+        )!.resultApprovedBody(examType, duration);
 
         if (isPushEnabled && fcmToken != null && fcmToken.isNotEmpty) {
           notificationsToSend.add({
@@ -732,7 +781,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         Navigator.pop(context);
         CustomPopup.show(
           context,
-          "All selected results approved successfully!",
+          AppLocalizations.of(context)!.allResultsApproved,
         );
 
         if (_screenState == _ScreenState.searching) {
@@ -749,7 +798,11 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     } catch (e) {
       if (mounted) Navigator.pop(context);
       debugPrint("Error approving selected results: $e");
-      CustomPopup.show(context, "Failed to approve selected results.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToApproveResults,
+        );
     }
   }
 
@@ -819,21 +872,21 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     String titleText;
     switch (_screenState) {
       case _ScreenState.initial:
-        titleText = 'Approve Marks';
+        titleText = AppLocalizations.of(context)!.approveMarks;
         break;
       case _ScreenState.courseList:
       case _ScreenState.durationList:
       case _ScreenState.studentList:
-        titleText = 'Pending Results';
+        titleText = AppLocalizations.of(context)!.pendingResults;
         break;
       case _ScreenState.searching:
-        titleText = 'Search by SUC ID';
+        titleText = AppLocalizations.of(context)!.searchBySucId;
         break;
       case _ScreenState.management:
-        titleText = 'Certificate Management';
+        titleText = AppLocalizations.of(context)!.certificateManagement;
         break;
       default:
-        titleText = 'Approve Marks';
+        titleText = AppLocalizations.of(context)!.approveMarks;
     }
 
     return Container(
@@ -857,7 +910,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
           ),
           Text(
             titleText,
-            style: const TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 26),
         ],
@@ -883,8 +936,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                     }
                   },
                   child: _buildOptionCard(
-                    'Pending Results',
-                    'View all pending results',
+                    AppLocalizations.of(context)!.pendingResults,
+                    AppLocalizations.of(context)!.viewAllPendingResults,
                     Icons.pending_actions,
                     _screenState == _ScreenState.courseList ||
                         _screenState == _ScreenState.durationList ||
@@ -903,8 +956,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                     });
                   },
                   child: _buildOptionCard(
-                    'Search Student',
-                    'Search by student ID',
+                    AppLocalizations.of(context)!.searchStudent,
+                    AppLocalizations.of(context)!.searchByStudentId,
                     Icons.search,
                     _screenState == _ScreenState.searching,
                   ),
@@ -920,8 +973,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                 setState(() => _screenState = _ScreenState.management);
               },
               child: _buildOptionCard(
-                'Certificate',
-                'Manage logo and signature',
+                AppLocalizations.of(context)!.certificate,
+                AppLocalizations.of(context)!.manageLogoSignature,
                 Icons.settings,
                 _screenState == _ScreenState.management,
               ),
@@ -935,7 +988,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                   Expanded(
                     child: _buildInputField(
                       controller: _searchController,
-                      hintText: 'Enter Student SUC ID',
+                      hintText: AppLocalizations.of(context)!.enterStudentSucId,
                       icon: Icons.qr_code,
                     ),
                   ),
@@ -947,7 +1000,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       } else {
                         CustomPopup.show(
                           context,
-                          "Please enter a SUC ID to search.",
+                          AppLocalizations.of(context)!.enterSucIdToSearch,
                         );
                       }
                     },
@@ -997,7 +1050,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
           Text(
             title,
             style: const TextStyle(
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               fontSize: 14,
               color: Colors.black87,
             ),
@@ -1016,8 +1069,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
   Widget _buildCourseList() {
     return _pendingCourses.isEmpty
         ? _buildNoResultsScreen(
-          message: "No pending results found.",
-          subMessage: "All marks have been approved.",
+          message: AppLocalizations.of(context)!.noPendingResults,
+          subMessage: AppLocalizations.of(context)!.allMarksApproved,
         )
         : ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -1048,7 +1101,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                     Text(
                       course['courseName'],
                       style: const TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Colors.black87,
                       ),
@@ -1070,8 +1123,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
   Widget _buildDurationList() {
     return _pendingDurations.isEmpty
         ? _buildNoResultsScreen(
-          message: "No pending results found.",
-          subMessage: "All marks have been approved.",
+          message: AppLocalizations.of(context)!.noPendingResults,
+          subMessage: AppLocalizations.of(context)!.allMarksApproved,
         )
         : ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -1104,7 +1157,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                     Text(
                       duration,
                       style: const TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Colors.black87,
                       ),
@@ -1130,8 +1183,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildManagementCard(
-            title: 'Madarsa Logo',
-            subtitle: 'Upload or update the logo for marksheets.',
+            title: AppLocalizations.of(context)!.madarsaLogo,
+            subtitle: AppLocalizations.of(context)!.uploadLogoDesc,
             currentUrl: _currentLogoUrl,
             onUpload: () => _pickImage('logo'),
             onDelete: () => _deleteImage('logo'),
@@ -1139,8 +1192,8 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
           ),
           const SizedBox(height: 16.0),
           _buildManagementCard(
-            title: 'Head Signature',
-            subtitle: 'Upload or update your signature for marksheets.',
+            title: AppLocalizations.of(context)!.headSignature,
+            subtitle: AppLocalizations.of(context)!.uploadSignatureDesc,
             currentUrl: _currentSignatureUrl,
             onUpload: () => _pickImage('signature'),
             onDelete: () => _deleteImage('signature'),
@@ -1177,7 +1230,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                   fontSize: 18,
                   color: Colors.black87,
                 ),
@@ -1270,9 +1323,9 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       child: ElevatedButton.icon(
                         onPressed: isUploading ? null : onUpload,
                         icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text(
-                          'Update',
-                          style: TextStyle(color: Colors.white),
+                        label: Text(
+                          AppLocalizations.of(context)!.update,
+                          style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
@@ -1289,9 +1342,9 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       child: ElevatedButton.icon(
                         onPressed: isUploading ? null : onDelete,
                         icon: const Icon(Icons.delete, color: Colors.white),
-                        label: const Text(
-                          'Delete',
-                          style: TextStyle(color: Colors.white),
+                        label: Text(
+                          AppLocalizations.of(context)!.delete,
+                          style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
@@ -1307,9 +1360,9 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       child: ElevatedButton.icon(
                         onPressed: isUploading ? null : onUpload,
                         icon: const Icon(Icons.upload, color: Colors.white),
-                        label: const Text(
-                          'Upload',
-                          style: TextStyle(color: Colors.white),
+                        label: Text(
+                          AppLocalizations.of(context)!.upload,
+                          style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
@@ -1343,14 +1396,14 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
         return _buildResultsList();
       case _ScreenState.noResults:
         return _buildNoResultsScreen(
-          message: "No pending results found.",
-          subMessage: "All marks have been approved.",
+          message: AppLocalizations.of(context)!.noPendingResults,
+          subMessage: AppLocalizations.of(context)!.allMarksApproved,
         );
       case _ScreenState.searching:
         return _unapprovedResults.isEmpty && _searchController.text.isEmpty
             ? _buildNoResultsScreen(
-              message: "Enter SUC ID",
-              subMessage: "Enter student's ID to search for pending marks.",
+              message: AppLocalizations.of(context)!.enterSucIdTitle,
+              subMessage: AppLocalizations.of(context)!.enterSucIdDesc,
             )
             : _buildResultsList();
       case _ScreenState.management:
@@ -1365,17 +1418,11 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
   }) {
     return TextField(
       controller: controller,
-      style: const TextStyle(
-        color: Colors.black87,
-        fontFamily: 'Gilroy-Regular',
-      ),
+      style: const TextStyle(color: Colors.black87),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.redAccent),
         hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Colors.black54,
-          fontFamily: 'Gilroy-Regular',
-        ),
+        hintStyle: const TextStyle(color: Colors.black54),
         filled: true,
         fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(
@@ -1413,7 +1460,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                   );
                 },
               ),
-              const Text('Select All'),
+              Text(AppLocalizations.of(context)!.selectAll),
               const Spacer(),
               ValueListenableBuilder<Set<String>>(
                 valueListenable: _selectedResults,
@@ -1423,7 +1470,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                         selectedIds.isEmpty ? null : _approveSelectedResults,
                     icon: const Icon(Icons.check, color: Colors.white),
                     label: Text(
-                      'Approve Selected (${selectedIds.length})',
+                      '${AppLocalizations.of(context)!.approveSelected} (${selectedIds.length})',
                       style: const TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -1499,7 +1546,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       Text(
                         result['fullName'] ?? 'N/A',
                         style: TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color:
                               isSelected
@@ -1509,7 +1556,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        'Course: ${result['course'] ?? 'N/A'} - ${result['courseDuration'] ?? 'N/A'}',
+                        '${AppLocalizations.of(context)!.course}: ${result['course'] ?? 'N/A'} - ${result['courseDuration'] ?? 'N/A'}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
@@ -1546,10 +1593,7 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
     );
   }
 
-  Widget _buildNoResultsScreen({
-    String message = "Welcome!",
-    String subMessage = "Select an option above to get started.",
-  }) {
+  Widget _buildNoResultsScreen({String? message, String? subMessage}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1564,22 +1608,18 @@ class _ApproveMarksScreenState extends State<ApproveMarksScreen> {
               ),
             const SizedBox(height: 20),
             Text(
-              message,
+              message ?? AppLocalizations.of(context)!.welcome,
               style: const TextStyle(
                 fontSize: 24,
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              subMessage,
+              subMessage ?? AppLocalizations.of(context)!.selectOptionToStart,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy-Regular',
-                color: Colors.black54,
-              ),
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
           ],
         ),

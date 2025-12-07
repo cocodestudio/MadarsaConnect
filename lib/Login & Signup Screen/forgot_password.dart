@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -64,18 +64,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   size: 70,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  "Link Sent!",
+                Text(
+                  AppLocalizations.of(context)!.linkSent,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "A password reset link has been sent to your email. Please check your inbox (and spam folder).",
+                  AppLocalizations.of(context)!.resetEmailSent,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
@@ -96,9 +95,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
                     },
-                    child: const Text(
-                      "OK",
-                      style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+                    child: Text(
+                      AppLocalizations.of(context)!.ok,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -122,18 +124,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _showSuccessDialog();
       }
     } on FirebaseAuthException catch (e) {
-      String message = 'An error occurred. Please try again.';
+      String message = AppLocalizations.of(context)!.errorOccurred;
       if (e.code == 'user-not-found') {
-        message = 'No user found for that email address.';
+        message = AppLocalizations.of(context)!.userNotFoundEmail;
       } else if (e.code == 'invalid-email') {
-        message = 'The email address is not valid.';
+        message = AppLocalizations.of(context)!.emailInvalid;
       }
-      CustomPopup.show(context, (message));
+      if (mounted) CustomPopup.show(context, message);
     } catch (e) {
-      CustomPopup.show(
-        context,
-        'An unexpected error occurred. Please check your connection.',
-      );
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.unexpectedErrorCheckConnection,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -155,11 +159,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Forgot Password',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.forgotPassword,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -191,13 +195,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           ),
                         ),
                         SizedBox(height: size.height * 0.01),
-                        const Align(
+                        Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "Reset Password",
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.resetPassword,
+                            style: const TextStyle(
                               fontSize: 25,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -205,7 +209,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Enter the email associated with your account and we\'ll send an email with instructions to reset your password.',
+                            AppLocalizations.of(context)!.enterEmailResetDesc,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black.withOpacity(0.5),
@@ -220,7 +224,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           decoration: InputDecoration(
-                            hintText: "Email Address",
+                            hintText:
+                                AppLocalizations.of(context)!.emailAddress,
                             filled: true,
                             fillColor: Colors.white,
                             prefixIcon: Padding(
@@ -278,10 +283,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                       color: Colors.white,
                                     ),
                                   )
-                                  : const Text(
-                                    "Send Link",
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy-Bold',
+                                  : Text(
+                                    AppLocalizations.of(context)!.sendLink,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
                                   ),
@@ -308,11 +313,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               ),
                             ),
                           ),
-                          child: const Text(
-                            "Back to login",
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.backToLogin,
+                            style: const TextStyle(
                               color: Colors.black54,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
                           ),

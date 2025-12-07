@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Home%20Screen/pending_payment.dart';
+import 'package:madarsaconnect/Home%20Screen/pending_payment.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -41,7 +42,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       debugPrint('Failed to load QR code: $e');
       if (mounted) {
-        CustomPopup.show(context, 'Could not load QR Code.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.couldNotLoadQrCode,
+        );
       }
     } finally {
       if (mounted) {
@@ -55,7 +59,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _handleVerification() async {
     final utr = _utrController.text.trim();
     if (utr.isEmpty) {
-      CustomPopup.show(context, 'Please enter the UTR Number.');
+      CustomPopup.show(context, AppLocalizations.of(context)!.pleaseEnterUtr);
       return;
     }
 
@@ -66,7 +70,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw Exception('User not logged in.');
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
       }
 
       await FirebaseFirestore.instance.collection('subscriptionRequests').add({
@@ -90,9 +94,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (adminQuery.docs.isNotEmpty) {
           final adminDoc = adminQuery.docs.first;
           final adminToken = adminDoc.data()['fcmToken'];
-          final adminUid = adminDoc.id; // Admin ki UID
+          final adminUid = adminDoc.id;
 
-          // Push Notification
           if (adminToken != null && adminToken.toString().isNotEmpty) {
             await FirebaseNotificationHelper.sendNotificationFromApp(
               fcmToken: adminToken,
@@ -126,7 +129,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       print("Error submitting payment request: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to submit request: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToSubmitRequest}: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -163,9 +169,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Complete Your Payment',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.completePayment,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -174,7 +180,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Scan the QR code to make the payment and enter the UTR number.',
+                AppLocalizations.of(context)!.scanQrInstructions,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.black.withOpacity(0.8),
@@ -201,9 +207,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'Scan QR Code for Payment',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.scanQrForPayment,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
@@ -242,22 +248,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     );
                                   },
                                   errorBuilder:
-                                      (context, error, stackTrace) =>
-                                          const Center(
-                                            child: Text(
-                                              'QR Code\nLoading Failed',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                              ),
-                                            ),
+                                      (context, error, stackTrace) => Center(
+                                        child: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.qrCodeLoadingFailed,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.black,
                                           ),
+                                        ),
+                                      ),
                                 )
-                                : const Center(
+                                : Center(
                                   child: Text(
-                                    'QR Code not available.\nPlease contact support.',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.qrCodeNotAvailable,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.black),
+                                    style: const TextStyle(color: Colors.black),
                                   ),
                                 ),
                       ),
@@ -271,9 +280,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  labelText: 'Enter UTR Number',
+                  labelText: AppLocalizations.of(context)!.enterUtrNumber,
                   labelStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
-                  hintText: 'Example: 123456789012',
+                  hintText: AppLocalizations.of(context)!.utrExample,
                   hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
                   filled: true,
                   fillColor: Colors.grey[100],
@@ -313,9 +322,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           width: 20,
                           child: GradientSpinner(),
                         )
-                        : const Text(
-                          'Verify Payment',
-                          style: TextStyle(
+                        : Text(
+                          AppLocalizations.of(context)!.verifyPayment,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),

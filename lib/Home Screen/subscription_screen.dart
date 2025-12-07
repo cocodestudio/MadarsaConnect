@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Home%20Screen/payment_gateway.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:madarsaConnect/Home%20Screen/pending_payment.dart';
 import 'package:intl/intl.dart';
+import 'package:madarsaconnect/Home%20Screen/payment_gateway.dart';
+import 'package:madarsaconnect/Home%20Screen/pending_payment.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -54,12 +55,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       } else if (planName.contains('Monthly')) {
         expiryDate = verificationDate.add(const Duration(days: 30));
       } else {
-        // Yearly
         expiryDate = verificationDate.add(const Duration(days: 365));
       }
 
       if (expiryDate.isBefore(DateTime.now())) {
-        // Subscription is EXPIRED
         if (mounted) {
           setState(() {
             _userStatus = 'none';
@@ -68,7 +67,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           });
         }
       } else {
-        // Subscription is ACTIVE
         if (mounted) {
           setState(() {
             _userStatus = 'approved';
@@ -122,8 +120,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   void _handleSubscription() {
     final selectedPlanDetails =
         _selectedPlanIndex == 0
-            ? {'planName': '5 Years Plan', 'price': '4499'}
-            : {'planName': 'Yearly Plan', 'price': '999'};
+            ? {'planName': '5 Years Plan', 'price': '19999'}
+            : {'planName': 'Yearly Plan', 'price': '4999'};
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -161,7 +159,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFF9F9F9),
         body: Center(child: GradientSpinner()),
       );
     }
@@ -171,80 +169,84 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF9F9F9),
         elevation: 0,
+        surfaceTintColor: const Color(0xFFF9F9F9),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(flex: 1),
-              const Text(
-                'Choose your plan',
-                style: TextStyle(
+              const SizedBox(height: 20),
+              Text(
+                AppLocalizations.of(context)!.choosePlan,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
-                'Unlock exclusive features and enhance your experience.',
+                AppLocalizations.of(context)!.unlockFeatures,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black.withOpacity(0.8),
+                  color: Colors.grey[700],
+                  height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const Spacer(flex: 2),
+              const SizedBox(height: 40),
               SubscriptionPlanCard(
-                title: '5 Years Plan',
-                price: '₹4499',
-                features: const [
-                  'All Yearly Plan features',
-                  'All future updates included',
-                  'Highest priority support',
+                title: AppLocalizations.of(context)!.plan5Years,
+                price: '₹19999',
+                tag: AppLocalizations.of(context)!.save20,
+                features: [
+                  AppLocalizations.of(context)!.allYearlyFeatures,
+                  AppLocalizations.of(context)!.futureUpdates,
+                  AppLocalizations.of(context)!.highestPriority,
                 ],
                 isHighlighted: _selectedPlanIndex == 0,
                 onTap: () => _onPlanTapped(0),
               ),
               const SizedBox(height: 24),
               SubscriptionPlanCard(
-                title: 'Yearly Plan',
-                price: '₹999',
-                tag: 'SAVE 15%',
+                title: AppLocalizations.of(context)!.yearlyPlan,
+                price: '₹4999',
                 isHighlighted: _selectedPlanIndex == 1,
-                features: const [
-                  'Unlimited student accounts',
-                  'Attendance tracking',
-                  'Advanced analytics',
-                  'Priority support',
+                features: [
+                  AppLocalizations.of(context)!.unlimitedAccounts,
+                  AppLocalizations.of(context)!.attendanceTracking,
+                  AppLocalizations.of(context)!.advancedAnalytics,
+                  AppLocalizations.of(context)!.prioritySupport,
                 ],
                 onTap: () => _onPlanTapped(1),
               ),
-              const Spacer(flex: 3),
+              const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: _handleSubscription,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,
                 ),
                 child: Text(
-                  _isExpired ? 'Renew Subscription' : 'Continue',
+                  _isExpired
+                      ? AppLocalizations.of(context)!.renewSubscription
+                      : AppLocalizations.of(context)!.continueText,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -255,16 +257,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Center(
                 child: TextButton(
                   onPressed: _showTermsAndConditions,
-                  child: const Text(
-                    'Terms & Conditions',
-                    style: TextStyle(
-                      color: Colors.black,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[600],
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.termsConditions,
+                    style: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
               ),
-              const Spacer(flex: 1),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -283,26 +287,20 @@ class ActiveSubscriptionScreen extends StatelessWidget {
     final String price = '₹${planDetails['price'] ?? 'N/A'}';
     final Timestamp? timestamp =
         planDetails['verificationTimestamp'] as Timestamp?;
-
-    DateTime? verificationDate;
-    if (timestamp != null) {
-      verificationDate = timestamp.toDate();
-    }
+    DateTime? verificationDate = timestamp?.toDate();
 
     DateTime validityDate;
+    int totalDays;
     if (planName.contains('5 Years')) {
-      validityDate =
-          verificationDate?.add(const Duration(days: 365 * 5)) ??
-          DateTime.now().add(const Duration(days: 365 * 5));
+      totalDays = 365 * 5;
     } else if (planName.contains('Monthly')) {
-      validityDate =
-          verificationDate?.add(const Duration(days: 30)) ??
-          DateTime.now().add(const Duration(days: 30));
+      totalDays = 30;
     } else {
-      validityDate =
-          verificationDate?.add(const Duration(days: 365)) ??
-          DateTime.now().add(const Duration(days: 365));
+      totalDays = 365;
     }
+    validityDate =
+        verificationDate?.add(Duration(days: totalDays)) ??
+        DateTime.now().add(Duration(days: totalDays));
 
     final String formattedValidity = DateFormat(
       'dd MMMM, yyyy',
@@ -310,18 +308,10 @@ class ActiveSubscriptionScreen extends StatelessWidget {
     final int daysRemaining = validityDate.difference(DateTime.now()).inDays;
 
     final double progressValue =
-        daysRemaining > 0
-            ? 1 -
-                (daysRemaining /
-                    (planName.contains('5 Years')
-                        ? (365 * 5)
-                        : planName.contains('Monthly')
-                        ? 30
-                        : 365))
-            : 1.0;
+        daysRemaining > 0 ? (daysRemaining / totalDays) : 0.0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9F9F9),
       body: SafeArea(
         child: Column(
           children: [
@@ -339,9 +329,9 @@ class ActiveSubscriptionScreen extends StatelessWidget {
                       size: 100,
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Subscription Active!',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.subscriptionActive,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
@@ -350,22 +340,25 @@ class ActiveSubscriptionScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enjoy all premium features with your active plan.',
+                      AppLocalizations.of(context)!.enjoyFeatures,
                       style: TextStyle(
                         color: Colors.black.withOpacity(0.7),
                         fontSize: 16,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 40),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDFDFD),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
@@ -373,40 +366,45 @@ class ActiveSubscriptionScreen extends StatelessWidget {
                         children: [
                           _buildInfoRow(
                             Icons.star_rounded,
-                            'Current Plan',
+                            AppLocalizations.of(context)!.currentPlan,
                             planName,
                             const Color(0xFFFF9800),
                           ),
                           const Divider(color: Colors.black12, height: 32),
                           _buildInfoRow(
                             Icons.payments_rounded,
-                            'Amount Paid',
+                            AppLocalizations.of(context)!.amountPaid,
                             price,
                             Colors.green,
                           ),
                           const Divider(color: Colors.black12, height: 32),
                           _buildInfoRow(
                             Icons.calendar_month_rounded,
-                            'Valid Until',
+                            AppLocalizations.of(context)!.validUntil,
                             formattedValidity,
                             Colors.blue,
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'Days Remaining: $daysRemaining',
+                            AppLocalizations.of(
+                              context,
+                            )!.daysRemaining(daysRemaining.toString()),
                             style: TextStyle(
                               color: Colors.black.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          LinearProgressIndicator(
-                            value: progressValue,
-                            backgroundColor: Colors.black12,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.green,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: progressValue,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.green,
+                              ),
+                              minHeight: 10,
                             ),
-                            borderRadius: BorderRadius.circular(5),
-                            minHeight: 10,
                           ),
                         ],
                       ),
@@ -417,7 +415,7 @@ class ActiveSubscriptionScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -425,9 +423,9 @@ class ActiveSubscriptionScreen extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   icon: const Icon(Icons.home_rounded, color: Colors.white),
-                  label: const Text(
-                    'Go to Home',
-                    style: TextStyle(
+                  label: Text(
+                    AppLocalizations.of(context)!.goToHome,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -437,7 +435,7 @@ class ActiveSubscriptionScreen extends StatelessWidget {
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
@@ -491,8 +489,8 @@ class SubscriptionPlanCard extends StatelessWidget {
   final String title;
   final String price;
   final String? tag;
-  final bool isHighlighted;
   final List<String> features;
+  final bool isHighlighted;
   final VoidCallback onTap;
 
   const SubscriptionPlanCard({
@@ -500,112 +498,119 @@ class SubscriptionPlanCard extends StatelessWidget {
     required this.title,
     required this.price,
     this.tag,
-    this.isHighlighted = false,
     required this.features,
+    required this.isHighlighted,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border:
-              isHighlighted
-                  ? Border.all(color: Colors.redAccent, width: 3)
-                  : Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isHighlighted ? 0.1 : 0.05),
-              blurRadius: isHighlighted ? 20 : 10,
-              offset: const Offset(0, 10),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16.0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.0),
+              border: Border.all(
+                color: isHighlighted ? Colors.redAccent : Colors.grey[200]!,
+                width: isHighlighted ? 2.0 : 1.0,
+              ),
+              boxShadow:
+                  isHighlighted
+                      ? [
+                        BoxShadow(
+                          color: Colors.redAccent.withOpacity(0.15),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                      : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
-                if (tag != null) ...[
-                  const SizedBox(width: 8),
-                  Chip(
-                    label: Text(
-                      tag!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ],
-                const Spacer(),
+                const SizedBox(height: 12),
                 Text(
                   price,
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
+                const SizedBox(height: 16),
+                Divider(color: Colors.grey[200]),
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children:
+                      features
+                          .map((feature) => _buildFeatureRow(feature))
+                          .toList(),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:
-                  features
-                      .map(
-                        (feature) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.check_circle_outline,
-                                color: Colors.redAccent,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  feature,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-            ),
-          ],
+          ),
         ),
+        if (tag != null)
+          Positioned(
+            top: -14,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Text(
+                tag!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureRow(String feature) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              feature,
+              style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -617,7 +622,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -625,9 +630,12 @@ class TermsAndConditionsScreen extends StatelessWidget {
           icon: const Icon(Icons.close, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Terms & Conditions',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context)!.termsConditions,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -636,85 +644,59 @@ class TermsAndConditionsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'By subscribing, you agree to our terms of service and privacy policy.',
+              AppLocalizations.of(context)!.termsIntro,
               style: TextStyle(
                 color: Colors.black.withOpacity(0.7),
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              '1. Terms of Service',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 18,
-              ),
+            ..._buildSection(
+              AppLocalizations.of(context)!.termsTitle1,
+              AppLocalizations.of(context)!.termsBody1,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'These terms govern your use of the application and its features. The subscription renews automatically unless canceled at least 24 hours before the end of the current period.',
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+            ..._buildSection(
+              AppLocalizations.of(context)!.termsTitle2,
+              AppLocalizations.of(context)!.termsBody2,
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '2. Privacy Policy',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 18,
-              ),
+            ..._buildSection(
+              AppLocalizations.of(context)!.termsTitle3,
+              AppLocalizations.of(context)!.termsBody3,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'We are committed to protecting your privacy. Data collected is used solely for improving our services and providing personalized content.',
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+            ..._buildSection(
+              AppLocalizations.of(context)!.termsTitle4,
+              AppLocalizations.of(context)!.termsBody4,
             ),
-            const SizedBox(height: 24),
-            const Text(
-              '3. Billing and Payments',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Your subscription will automatically renew at the end of each billing cycle (monthly or yearly), and your chosen payment method will be charged accordingly. We may, at our discretion, change pricing and features at any time, but you will be notified of this in advance. In case of failed payments, your subscription may be temporarily suspended.',
-              style: TextStyle(color: Colors.black54, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '4. Cancellation and Refunds',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'You can cancel your subscription at any time. Even after cancellation, you will continue to have access to all features until the end of the current billing cycle. We do not provide any refunds for any active subscription period. Once cancelled, your account will be converted to a free plan.',
-              style: TextStyle(color: Colors.black54, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '5. Account Security',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'You are responsible for the security of your account and for keeping your password confidential. Immediately notify us of any unauthorized use.',
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+            ..._buildSection(
+              AppLocalizations.of(context)!.termsTitle5,
+              AppLocalizations.of(context)!.termsBody5,
             ),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _buildSection(String title, String content) {
+    return [
+      Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+          fontSize: 18,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        content,
+        style: const TextStyle(
+          color: Colors.black54,
+          fontSize: 14,
+          height: 1.5,
+        ),
+      ),
+      const SizedBox(height: 24),
+    ];
   }
 }

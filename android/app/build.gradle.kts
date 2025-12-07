@@ -23,7 +23,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.cocode.madarsaconnect"
     compileSdk = 36
-    ndkVersion = "29.0.13599879"
+    ndkVersion = "29.0.14206865"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -48,7 +48,7 @@ android {
 
     defaultConfig {
         applicationId = "com.cocode.madarsaconnect"
-        minSdk = 29
+        minSdk = 23
         targetSdk = 36
         versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
         versionName = localProperties.getProperty("flutter.versionName")

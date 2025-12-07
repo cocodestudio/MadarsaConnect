@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:math';
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
 import '../Data/main_page.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class FacultyQuizUploadScreen extends StatefulWidget {
@@ -21,18 +22,18 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
   final _quizNameController = TextEditingController();
   final _estimationTimeController = TextEditingController(text: '10');
   final _marksPerQuestionController = TextEditingController(text: '1');
-  final _quizRulesController = TextEditingController(
-    text: 'This is a multiple-choice/True-False quiz.',
-  );
+  final _quizRulesController =
+      TextEditingController(); // Removed default text to localize later
   final _startDateController = TextEditingController();
   final _startTimeController = TextEditingController();
   final _endDateController = TextEditingController();
   final _endTimeController = TextEditingController();
 
-  final List<String> _quizTypes = ['Multiple Choice', 'True/False'];
+  // Localized strings will be fetched in build
+  List<String> _quizTypes = ['Multiple Choice', 'True/False'];
   String _selectedQuizType = 'Multiple Choice';
 
-  final List<String> _randomizeOptions = [
+  List<String> _randomizeOptions = [
     'Keep choices in current order',
     'Randomize',
   ];
@@ -65,6 +66,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
     super.initState();
     _updateQuestionList();
     _fetchHeadUidAndCourses();
+
+    // We can't access context here for localization of default values.
+    // Handled in build or by checking empty/defaults.
   }
 
   @override
@@ -84,7 +88,10 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       if (mounted) {
-        CustomPopup.show(context, 'You must be logged in to upload a quiz.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.loginToUploadQuiz,
+        );
       }
       return;
     }
@@ -124,7 +131,11 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
         }
       }
     } catch (e) {
-      if (mounted) CustomPopup.show(context, 'Error fetching data: $e');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.errorFetchingData}: $e',
+        );
     }
   }
 
@@ -218,7 +229,10 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
         _endTimeController.text.isEmpty ||
         _selectedCourseId == null ||
         _selectedDuration == null) {
-      CustomPopup.show(context, 'Please fill all required fields.');
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.fillAllRequiredFields,
+      );
       return;
     }
 
@@ -240,26 +254,32 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
     if (endDateTime.isBefore(startDateTime)) {
       CustomPopup.show(
         context,
-        'End date and time cannot be before start date and time.',
+        AppLocalizations.of(context)!.endDateBeforeStartDateError,
       );
       return;
     }
 
     for (var i = 0; i < _questions.length; i++) {
       if (_questions[i]['questionText'].isEmpty) {
-        CustomPopup.show(context, 'Please enter text for all questions.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.enterTextForAllQuestions,
+        );
         return;
       }
       if (_questions[i]['options'].length < 2) {
         CustomPopup.show(
           context,
-          'Each question must have at least two options.',
+          AppLocalizations.of(context)!.twoOptionsRequired,
         );
         return;
       }
       for (var option in _questions[i]['options']) {
         if (option.isEmpty) {
-          CustomPopup.show(context, 'Please fill all option fields.');
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.fillAllOptionFields,
+          );
           return;
         }
       }
@@ -272,20 +292,33 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        CustomPopup.show(context, 'You must be logged in to upload a quiz.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.loginToUploadQuiz,
+        );
         return;
       }
 
       final quizId = const Uuid().v4();
+
+      // Using default rules if empty
+      String rules = _quizRulesController.text.trim();
+      if (rules.isEmpty) {
+        rules = AppLocalizations.of(context)!.defaultQuizRules;
+      }
+
       final quizData = {
         'quizId': quizId,
         'title': _quizNameController.text.trim(),
-        'type': _selectedQuizType,
+        'type':
+            _selectedQuizType, // Keeping internal English values for DB if needed, or map
         'numberOfQuestions': _numberOfQuestions,
         'estimationTime': int.tryParse(_estimationTimeController.text) ?? 10,
         'marksPerQuestion': int.tryParse(_marksPerQuestionController.text) ?? 1,
-        'randomizeOrder': _selectedRandomizeOption == 'Randomize',
-        'rules': _quizRulesController.text.trim(),
+        'randomizeOrder':
+            _selectedRandomizeOption ==
+            'Randomize', // Mapping based on English string? Better use index or bool
+        'rules': rules,
         'startDate': Timestamp.fromDate(startDateTime),
         'endDate': Timestamp.fromDate(endDateTime),
         'facultyId': user.uid,
@@ -298,6 +331,16 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
               final options = List<String>.from(q['options']);
               final correctAnswerIndex = q['correctIndex'];
               final shuffledOptions = List<String>.from(options);
+
+              // Check against localized string if UI is localized, or better, rely on index/bool logic.
+              // Assuming _selectedRandomizeOption holds the localized string or English?
+              // In initState we initialized with English.
+              // To support localization, we should compare against index or maintain a separate value.
+              // For simplicity here, assuming English value is stored in variable.
+
+              // Correct approach: Use index or separate value.
+              // _selectedRandomizeOption currently holds string.
+              // Let's assume we keep English strings in variable for logic, but display localized.
 
               if (_selectedRandomizeOption == 'Randomize') {
                 shuffledOptions.shuffle(Random());
@@ -329,6 +372,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
 
       final batch = FirebaseFirestore.instance.batch();
       final quizTitle = _quizNameController.text.trim();
+      // Localizing notification message is tricky as it goes to DB.
+      // We can store English or construct based on receiver language (hard).
+      // Storing in English or sender's language is standard for MVP.
       final notificationMessage =
           "A new quiz, '$quizTitle', is now available for your course. It starts on ${DateFormat('dd MMM hh:mm a').format(startDateTime)}.";
 
@@ -374,7 +420,10 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
       }
       await batch.commit();
 
-      CustomPopup.show(context, 'Quiz uploaded successfully!');
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.quizUploadedSuccessfully,
+      );
 
       _quizNameController.clear();
       _estimationTimeController.clear();
@@ -409,7 +458,11 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
         );
       }
     } catch (e) {
-      if (mounted) CustomPopup.show(context, 'Failed to upload quiz: $e');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToUploadQuiz}: $e',
+        );
     } finally {
       if (mounted) {
         setState(() {
@@ -421,6 +474,11 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_quizRulesController.text.isEmpty) {
+      _quizRulesController.text =
+          AppLocalizations.of(context)!.defaultQuizRules;
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -432,11 +490,11 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Create New Quiz',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.createNewQuiz,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -471,15 +529,16 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Quiz Name *',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            AppLocalizations.of(context)!.quizNameRequired,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8.0),
                           TextFormField(
                             controller: _quizNameController,
                             decoration: _inputDecoration(
-                              hintText: 'e.g., Introduction to Chemistry',
+                              hintText:
+                                  AppLocalizations.of(context)!.quizNameHint,
                             ),
                           ),
                         ],
@@ -489,9 +548,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Quiz Type',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            AppLocalizations.of(context)!.quizType,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8.0),
                           _buildAnimatedDropdown(
@@ -525,9 +584,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Number of Questions',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            AppLocalizations.of(context)!.numberOfQuestions,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8.0),
                           TextFormField(
@@ -551,14 +610,15 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Course *',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            AppLocalizations.of(context)!.courseRequired,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8.0),
                           _buildAnimatedDropdown(
                             selectedOption:
-                                _selectedCourseName ?? 'Select Course',
+                                _selectedCourseName ??
+                                AppLocalizations.of(context)!.selectCourse,
                             options:
                                 _courses
                                     .map((e) => e['name'] as String)
@@ -597,14 +657,15 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Duration *',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            AppLocalizations.of(context)!.durationRequired,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8.0),
                           _buildAnimatedDropdown(
                             selectedOption:
-                                _selectedDuration ?? 'Select Duration',
+                                _selectedDuration ??
+                                AppLocalizations.of(context)!.selectDuration,
                             options: _durations,
                             onChanged: (String? newValue) {
                               setState(() {
@@ -616,16 +677,16 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       ),
                     ),
                     const SizedBox(height: 15.0),
-                    const Text(
-                      'Quiz Settings',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.quizSettings,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 12.0),
                     _buildSettingField(
-                      title: 'Randomize Order',
+                      title: AppLocalizations.of(context)!.randomizeOrder,
                       child: _buildAnimatedDropdown(
                         selectedOption: _selectedRandomizeOption,
                         options: _randomizeOptions,
@@ -637,7 +698,7 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       ),
                     ),
                     _buildSettingField(
-                      title: 'Estimation Time (mins)',
+                      title: AppLocalizations.of(context)!.estimationTimeMins,
                       child: TextFormField(
                         controller: _estimationTimeController,
                         keyboardType: TextInputType.number,
@@ -645,7 +706,7 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       ),
                     ),
                     _buildSettingField(
-                      title: 'Marks per Question',
+                      title: AppLocalizations.of(context)!.marksPerQuestion,
                       child: TextFormField(
                         controller: _marksPerQuestionController,
                         keyboardType: TextInputType.number,
@@ -653,67 +714,70 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                       ),
                     ),
                     _buildSettingField(
-                      title: 'Quiz Rules',
+                      title: AppLocalizations.of(context)!.quizRules,
                       child: TextFormField(
                         controller: _quizRulesController,
                         maxLines: null,
                         decoration: _inputDecoration(
-                          hintText:
-                              'e.g., 1. Do not use any external resources. 2. The quiz is timed.',
+                          hintText: AppLocalizations.of(context)!.quizRulesHint,
                         ),
                       ),
                     ),
                     _buildSettingField(
-                      title: 'Start Date *',
+                      title: AppLocalizations.of(context)!.startDateRequired,
                       child: GestureDetector(
                         onTap: () => _selectDate(context, true),
                         child: AbsorbPointer(
                           child: TextFormField(
                             controller: _startDateController,
                             decoration: _inputDecoration(
-                              hintText: 'Select date',
+                              hintText:
+                                  AppLocalizations.of(context)!.selectDate,
                             ),
                           ),
                         ),
                       ),
                     ),
                     _buildSettingField(
-                      title: 'Start Time *',
+                      title: AppLocalizations.of(context)!.startTimeRequired,
                       child: GestureDetector(
                         onTap: () => _selectTime(context, true),
                         child: AbsorbPointer(
                           child: TextFormField(
                             controller: _startTimeController,
                             decoration: _inputDecoration(
-                              hintText: 'Select time',
+                              hintText:
+                                  AppLocalizations.of(context)!.selectTime,
                             ),
                           ),
                         ),
                       ),
                     ),
                     _buildSettingField(
-                      title: 'End Date *',
+                      title: AppLocalizations.of(context)!.endDateRequired,
                       child: GestureDetector(
                         onTap: () => _selectDate(context, false),
                         child: AbsorbPointer(
                           child: TextFormField(
                             controller: _endDateController,
                             decoration: _inputDecoration(
-                              hintText: 'Select date',
+                              hintText:
+                                  AppLocalizations.of(context)!.selectDate,
                             ),
                           ),
                         ),
                       ),
                     ),
                     _buildSettingField(
-                      title: 'End Time *',
+                      title: AppLocalizations.of(context)!.endTimeRequired,
                       child: GestureDetector(
                         onTap: () => _selectTime(context, false),
                         child: AbsorbPointer(
                           child: TextFormField(
                             controller: _endTimeController,
                             decoration: _inputDecoration(
-                              hintText: 'Select time',
+                              hintText:
+                                  AppLocalizations.of(context)!.selectTime,
                             ),
                           ),
                         ),
@@ -750,9 +814,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                                 width: 24,
                                 child: GradientSpinner(),
                               )
-                              : const Text(
-                                'Upload Quiz',
-                                style: TextStyle(
+                              : Text(
+                                AppLocalizations.of(context)!.uploadQuiz,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
                                 ),
@@ -795,7 +859,10 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
     return GestureDetector(
       onTap: () {
         if (options.isEmpty) {
-          CustomPopup.show(context, 'No options available.');
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noOptionsAvailable,
+          );
           return;
         }
         showDialog(
@@ -811,9 +878,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Select Option',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.selectOption,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
@@ -894,14 +961,14 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Question ${questionIndex + 1} *',
+            '${AppLocalizations.of(context)!.question} ${questionIndex + 1} *',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8.0),
           TextFormField(
             initialValue: _questions[questionIndex]['questionText'],
             decoration: _inputDecoration(
-              hintText: 'Write your question here...',
+              hintText: AppLocalizations.of(context)!.writeQuestionHere,
             ),
             maxLines: null,
             onChanged: (value) {
@@ -909,9 +976,9 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
             },
           ),
           const Divider(height: 24, color: Colors.grey),
-          const Text(
-            'Choices *',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Text(
+            '${AppLocalizations.of(context)!.choices} *',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8.0),
           ListView.builder(
@@ -932,14 +999,14 @@ class _FacultyQuizUploadScreenState extends State<FacultyQuizUploadScreen> {
               onPressed: () {
                 setState(() {
                   _questions[questionIndex]['options'].add(
-                    'Option ${_questions[questionIndex]['options'].length + 1}',
+                    '${AppLocalizations.of(context)!.option} ${_questions[questionIndex]['options'].length + 1}',
                   );
                 });
               },
               icon: const Icon(Icons.add, color: Colors.black),
-              label: const Text(
-                'Add answers',
-                style: TextStyle(color: Colors.black),
+              label: Text(
+                AppLocalizations.of(context)!.addAnswers,
+                style: const TextStyle(color: Colors.black),
               ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.black, width: 0.3),
@@ -1023,8 +1090,10 @@ class MyUploadedQuizzesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('You must be logged in to view this page.')),
+      return Scaffold(
+        body: Center(
+          child: Text(AppLocalizations.of(context)!.loginToViewPage),
+        ),
       );
     }
 
@@ -1039,11 +1108,11 @@ class MyUploadedQuizzesScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'My Uploaded Quizzes',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.myUploadedQuizzes,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -1063,13 +1132,17 @@ class MyUploadedQuizzesScreen extends StatelessWidget {
               );
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(
+                child: Text(
+                  '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                ),
+              );
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  'You have not uploaded any quizzes yet.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  AppLocalizations.of(context)!.noQuizzesUploaded,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               );
             }
@@ -1091,13 +1164,13 @@ class MyUploadedQuizzesScreen extends StatelessWidget {
                 String status;
                 Color statusColor;
                 if (now.isBefore(startDate)) {
-                  status = 'Upcoming';
+                  status = AppLocalizations.of(context)!.quizStatusUpcoming;
                   statusColor = Colors.orange;
                 } else if (now.isAfter(endDate)) {
-                  status = 'Expired';
+                  status = AppLocalizations.of(context)!.quizStatusExpired;
                   statusColor = Colors.red;
                 } else {
-                  status = 'Active';
+                  status = AppLocalizations.of(context)!.quizStatusActive;
                   statusColor = Colors.green;
                 }
 
@@ -1163,33 +1236,33 @@ class MyUploadedQuizzesScreen extends StatelessWidget {
                             const Divider(height: 24, thickness: 0.5),
                             _buildInfoRow(
                               Icons.timer,
-                              'Duration',
-                              '${quizData['estimationTime']} mins',
+                              AppLocalizations.of(context)!.duration,
+                              '${quizData['estimationTime']} ${AppLocalizations.of(context)!.mins}',
                             ),
                             _buildInfoRow(
                               Icons.calendar_today,
-                              'Starts',
+                              AppLocalizations.of(context)!.starts,
                               DateFormat(
                                 'dd MMM yyyy, hh:mm a',
                               ).format(startDate),
                             ),
                             _buildInfoRow(
                               Icons.event_busy,
-                              'Ends',
+                              AppLocalizations.of(context)!.ends,
                               DateFormat(
                                 'dd MMM yyyy, hh:mm a',
                               ).format(endDate),
                             ),
                             _buildInfoRow(
                               Icons.person_outline,
-                              'Attempts',
-                              '$attempts Students',
+                              AppLocalizations.of(context)!.attempts,
+                              '$attempts ${AppLocalizations.of(context)!.totalStudents}',
                             ),
                             if (quizData.containsKey('courseName') &&
                                 quizData['courseName'] != null)
                               _buildInfoRow(
                                 Icons.school,
-                                'Course',
+                                AppLocalizations.of(context)!.course,
                                 '${quizData['courseName'] ?? 'N/A'} - ${quizData['courseDuration'] ?? 'N/A'}',
                               ),
                           ],

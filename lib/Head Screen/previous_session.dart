@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class PreviousSessionsScreen extends StatefulWidget {
   final String headUid;
@@ -46,9 +47,13 @@ class _PreviousSessionsScreenState extends State<PreviousSessionsScreen> {
           }).toList();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to fetch sessions: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToFetchSessions}: $e',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -62,14 +67,14 @@ class _PreviousSessionsScreenState extends State<PreviousSessionsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Previous Sessions'),
+        title: Text(AppLocalizations.of(context)!.previousSessions),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: const TextStyle(
           fontSize: 20,
-          fontFamily: 'Gilroy-Bold',
+          fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
           color: Colors.black,
         ),
       ),
@@ -77,10 +82,10 @@ class _PreviousSessionsScreenState extends State<PreviousSessionsScreen> {
           _isLoading
               ? const Center(child: GradientSpinner())
               : _sessions.isEmpty
-              ? const Center(
+              ? Center(
                 child: Text(
-                  'No previous sessions found.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  AppLocalizations.of(context)!.noPreviousSessionsFound,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               )
               : ListView.builder(
@@ -95,6 +100,14 @@ class _PreviousSessionsScreenState extends State<PreviousSessionsScreen> {
   }
 
   Widget _buildSessionCard(Map<String, dynamic> session) {
+    // Use current locale for date formatting
+    final locale = Localizations.localeOf(context).toString();
+    final startDate = DateFormat(
+      'd MMM yyyy',
+      locale,
+    ).format(session['startDate']);
+    final endDate = DateFormat('d MMM yyyy', locale).format(session['endDate']);
+
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
@@ -112,17 +125,20 @@ class _PreviousSessionsScreenState extends State<PreviousSessionsScreen> {
               '${session['course']} - ${session['duration']}',
               style: const TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
               ),
             ),
             const SizedBox(height: 8),
-            _buildDetailRow(Icons.tag, 'Term:', session['term']),
+            _buildDetailRow(
+              Icons.tag,
+              '${AppLocalizations.of(context)!.term}:',
+              session['term'],
+            ),
             const SizedBox(height: 4),
             _buildDetailRow(
               Icons.date_range,
-              'Period:',
-              '${DateFormat('d MMM yyyy').format(session['startDate'])} - ${DateFormat('d MMM yyyy').format(session['endDate'])}',
+              '${AppLocalizations.of(context)!.period}:',
+              '$startDate - $endDate',
             ),
           ],
         ),

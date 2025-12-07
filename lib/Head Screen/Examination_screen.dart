@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class ExaminationScreen extends StatefulWidget {
@@ -189,9 +189,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Subject",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectSubject,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: screenHeight * 0.3,
@@ -243,9 +243,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Course",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectCourse,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: screenHeight * 0.3,
@@ -299,7 +299,10 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
   void _showDurationPopupDialog() {
     if (_selectedCourseDuration == 0) {
-      CustomPopup.show(context, "Please select a course first");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.pleaseSelectCourseDurationFirst,
+      );
       return;
     }
 
@@ -307,7 +310,7 @@ class _ExaminationScreenState extends State<ExaminationScreen>
     List<String> suffix = ['st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th'];
 
     for (int i = 1; i <= _selectedCourseDuration; i++) {
-      years.add('$i${suffix[i - 1]} Year');
+      years.add('$i${suffix[i - 1]} ${AppLocalizations.of(context)!.year}');
     }
 
     String? tempSelected = _durationController.text;
@@ -320,9 +323,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Duration",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectDuration,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: screenHeight * 0.3,
@@ -373,9 +376,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Exam Type",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectExamType,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: screenHeight * 0.3,
@@ -415,7 +418,7 @@ class _ExaminationScreenState extends State<ExaminationScreen>
 
   void _showSessionSelector() {
     final now = DateTime.now();
-    final startYear = 2020;
+    final startYear = 2025;
     final currentYear = now.month >= 4 ? now.year : now.year - 1;
 
     List<Widget> sessionWidgets = [];
@@ -492,23 +495,26 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Center(
+                  Center(
                     child: Text(
-                      "Create Exam Schedule",
-                      style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                      AppLocalizations.of(context)!.createExamSchedule,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   _buildCustomTextField(
                     controller: _examTypeController,
-                    hint: "Select Exam Type",
+                    hint: AppLocalizations.of(context)!.selectExamType,
                     icon: Icons.assignment_outlined,
                     onTap: _showExamTypeDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildCustomTextField(
                     controller: _courseController,
-                    hint: "Select Course",
+                    hint: AppLocalizations.of(context)!.selectCourse,
                     icon: Icons.book_outlined,
                     onTap: () async {
                       if (_courseList.length <= 1)
@@ -519,28 +525,28 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                   const SizedBox(height: 10),
                   _buildCustomTextField(
                     controller: _durationController,
-                    hint: "Select Duration",
+                    hint: AppLocalizations.of(context)!.selectDuration,
                     icon: Icons.access_time,
                     onTap: _showDurationPopupDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildCustomTextField(
                     controller: _subjectController,
-                    hint: "Select Subject",
+                    hint: AppLocalizations.of(context)!.selectSubject,
                     icon: Icons.menu_book,
                     onTap: _showSubjectPopupDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildCustomTextField(
                     controller: _dateController,
-                    hint: "Examination Date",
+                    hint: AppLocalizations.of(context)!.examinationDate,
                     icon: Icons.date_range,
                     onTap: _selectExamDate,
                   ),
                   const SizedBox(height: 10),
                   _buildCustomTextField(
                     controller: _endDateController,
-                    hint: "End Date",
+                    hint: AppLocalizations.of(context)!.endDate,
                     icon: Icons.date_range,
                     onTap: _selectEndDate,
                   ),
@@ -562,17 +568,18 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                             _dateController.text.isEmpty) {
                           CustomPopup.show(
                             context,
-                            "Please fill in all fields",
+                            AppLocalizations.of(context)!.fillAllRequiredFields,
                           );
                           return;
                         }
 
-                        if (mounted)
+                        if (mounted) {
                           showDialog(
                             context: context,
                             barrierDismissible: false,
                             builder: (context) => const GradientSpinner(),
                           );
+                        }
 
                         try {
                           final now = DateTime.now();
@@ -624,9 +631,14 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                 settingsDoc.data()?['inApp'] ?? true;
 
                             final token = userDoc.data()['fcmToken'];
-                            final notificationTitle = 'New Exam Schedule';
-                            final notificationBody =
-                                'A new exam has been scheduled for ${_examTypeController.text} in ${_courseController.text}';
+                            final notificationTitle =
+                                AppLocalizations.of(context)!.newExamSchedule;
+                            final notificationBody = AppLocalizations.of(
+                              context,
+                            )!.newExamBody(
+                              _examTypeController.text,
+                              _courseController.text,
+                            );
 
                             if (isPushEnabled &&
                                 token != null &&
@@ -672,14 +684,19 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                           _subjectController.clear();
                         } catch (e) {
                           if (mounted) Navigator.pop(context);
-                          if (mounted) CustomPopup.show(context, "Error: $e");
+                          if (mounted) {
+                            CustomPopup.show(
+                              context,
+                              "${AppLocalizations.of(context)!.error}: $e",
+                            );
+                          }
                         }
                       },
-                      child: const Text(
-                        "Add",
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.add,
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
                       ),
@@ -731,9 +748,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Exam Schedule",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectExamSchedule,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SafeArea(
             child: SizedBox(
@@ -827,9 +844,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  title: const Text(
-                    "Edit",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold'),
+                  title: Text(
+                    AppLocalizations.of(context)!.edit,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -837,9 +854,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                   },
                 ),
                 ListTile(
-                  title: const Text(
-                    "Delete",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold'),
+                  title: Text(
+                    AppLocalizations.of(context)!.delete,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onTap: () async {
                     Navigator.pop(context);
@@ -897,35 +914,42 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    "Edit Schedule",
-                    style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                  Text(
+                    AppLocalizations.of(context)!.editSchedule,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _buildEditField(
                     _examTypeController,
-                    "Exam Type",
+                    AppLocalizations.of(context)!.examType,
                     _showExamTypeDialog,
                   ),
                   _buildEditField(
                     _courseController,
-                    "Course",
+                    AppLocalizations.of(context)!.course,
                     _showCoursePopupDialog,
                   ),
                   _buildEditField(
                     _durationController,
-                    "Duration",
+                    AppLocalizations.of(context)!.duration,
                     _showDurationPopupDialog,
                   ),
                   _buildEditField(
                     _subjectController,
-                    "Subject",
+                    AppLocalizations.of(context)!.subject,
                     _showSubjectPopupDialog,
                   ),
-                  _buildEditField(_dateController, "Date", _selectExamDate),
+                  _buildEditField(
+                    _dateController,
+                    AppLocalizations.of(context)!.date,
+                    _selectExamDate,
+                  ),
                   _buildEditField(
                     _endDateController,
-                    "End Date",
+                    AppLocalizations.of(context)!.endDate,
                     _selectEndDate,
                   ),
                   const SizedBox(height: 20),
@@ -934,12 +958,13 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (mounted)
+                        if (mounted) {
                           showDialog(
                             context: context,
                             barrierDismissible: false,
                             builder: (context) => const GradientSpinner(),
                           );
+                        }
 
                         try {
                           await _firestore
@@ -958,7 +983,12 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                           if (mounted) Navigator.pop(context);
                         } catch (e) {
                           if (mounted) Navigator.pop(context);
-                          if (mounted) CustomPopup.show(context, "Error: $e");
+                          if (mounted) {
+                            CustomPopup.show(
+                              context,
+                              "${AppLocalizations.of(context)!.error}: $e",
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -968,9 +998,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        "Update",
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        AppLocalizations.of(context)!.update,
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   ),
@@ -1037,7 +1067,7 @@ class _ExaminationScreenState extends State<ExaminationScreen>
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               fontSize: 16,
               color: isSelected ? Colors.white : Colors.black87,
             ),
@@ -1091,10 +1121,12 @@ class _ExaminationScreenState extends State<ExaminationScreen>
           },
         ),
         title: Text(
-          _showHistoryScreen ? 'History' : 'Examination',
+          _showHistoryScreen
+              ? AppLocalizations.of(context)!.history
+              : AppLocalizations.of(context)!.examination,
           style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -1108,7 +1140,7 @@ class _ExaminationScreenState extends State<ExaminationScreen>
               },
             )
           else
-            const SizedBox(width: 48), // To balance the back button
+            const SizedBox(width: 48),
         ],
       ),
       body: SafeArea(
@@ -1120,8 +1152,11 @@ class _ExaminationScreenState extends State<ExaminationScreen>
               if (!_showHistoryScreen) ...[
                 Row(
                   children: [
-                    _buildTabBox("Schedule", 0),
-                    _buildTabBox("Reports Manage", 1),
+                    _buildTabBox(AppLocalizations.of(context)!.schedule, 0),
+                    _buildTabBox(
+                      AppLocalizations.of(context)!.reportsManage,
+                      1,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -1146,7 +1181,10 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                               fontSize: 14,
                             ),
                             decoration: InputDecoration(
-                              hintText: "Select Exam Schedule",
+                              hintText:
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.selectExamSchedule,
                               prefixIcon: const Icon(Icons.event),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -1187,44 +1225,44 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildDetailRow(
-                                    "Exam Type",
+                                    AppLocalizations.of(context)!.examType,
                                     _selectedScheduleData!['examType'],
                                   ),
                                   _buildDetailRow(
-                                    "Course",
+                                    AppLocalizations.of(context)!.course,
                                     _selectedScheduleData!['course'],
                                   ),
                                   _buildDetailRow(
-                                    "Duration",
+                                    AppLocalizations.of(context)!.duration,
                                     _selectedScheduleData!['duration'],
                                   ),
                                   _buildDetailRow(
-                                    "Subject",
+                                    AppLocalizations.of(context)!.subject,
                                     _selectedScheduleData!['subject'],
                                   ),
                                   _buildDetailRow(
-                                    "Date",
+                                    AppLocalizations.of(context)!.date,
                                     _selectedScheduleData!['date'],
                                   ),
                                   _buildDetailRow(
-                                    "End Date",
+                                    AppLocalizations.of(context)!.endDate,
                                     _selectedScheduleData!['endDate'],
                                   ),
                                   _buildDetailRow(
-                                    "Session",
+                                    AppLocalizations.of(context)!.session,
                                     _selectedScheduleData!['session'],
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                "Set Value",
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.setValue,
+                                style: const TextStyle(
                                   fontSize: 16,
-                                  fontFamily: 'Gilroy-Bold',
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -1237,7 +1275,8 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                 fontSize: 14,
                               ),
                               decoration: InputDecoration(
-                                hintText: "Max Marks",
+                                hintText:
+                                    AppLocalizations.of(context)!.maxMarks,
                                 prefixIcon: const Icon(Icons.score),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
@@ -1267,7 +1306,10 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                               keyboardType: TextInputType.number,
                               controller: _passingMarksController,
                               decoration: InputDecoration(
-                                hintText: "Set Passing Value",
+                                hintText:
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.setPassingValue,
                                 prefixIcon: const Icon(Icons.check_circle),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
@@ -1309,17 +1351,20 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                       _passingMarksController.text.isEmpty) {
                                     CustomPopup.show(
                                       context,
-                                      "Please fill Max & Passing values",
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.fillMaxAndPassing,
                                     );
                                     return;
                                   }
-                                  if (mounted)
+                                  if (mounted) {
                                     showDialog(
                                       context: context,
                                       barrierDismissible: false,
                                       builder:
                                           (context) => const GradientSpinner(),
                                     );
+                                  }
                                   try {
                                     final docId = _selectedScheduleData!['id'];
                                     await _firestore
@@ -1334,28 +1379,36 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                           ),
                                         });
                                     if (mounted) Navigator.pop(context);
-                                    if (mounted)
+                                    if (mounted) {
                                       CustomPopup.show(
                                         context,
-                                        "Marks successfully updated",
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.marksUpdatedSuccessfully,
                                       );
+                                    }
                                     _maxMarksController.clear();
                                     _passingMarksController.clear();
                                     _scheduleSelectController.clear();
-                                    if (mounted)
+                                    if (mounted) {
                                       setState(
                                         () => _selectedScheduleData = null,
                                       );
+                                    }
                                   } catch (e) {
-                                    if (mounted)
-                                      CustomPopup.show(context, "Error: $e");
+                                    if (mounted) {
+                                      CustomPopup.show(
+                                        context,
+                                        "${AppLocalizations.of(context)!.error}: $e",
+                                      );
+                                    }
                                   }
                                 },
-                                child: const Text(
-                                  "Save",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.save,
+                                  style: const TextStyle(
                                     color: Colors.white,
-                                    fontFamily: 'Gilroy-Bold',
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
                                 ),
@@ -1384,7 +1437,7 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
                       child: Container(
-                        height: 180,
+                        constraints: const BoxConstraints(minHeight: 180),
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -1404,25 +1457,25 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              "Create Schedule",
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.createSchedule,
+                              style: const TextStyle(
                                 fontSize: 22,
                                 color: Colors.black,
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 5),
-                            const Text(
-                              "Ensure timely exams with smart schedule planning.",
-                              style: TextStyle(
+                            const SizedBox(height: 8),
+                            Text(
+                              AppLocalizations.of(context)!.scheduleDescription,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
-                                fontFamily: 'Gilroy-Regular',
                               ),
                             ),
-                            const Spacer(),
+                            const SizedBox(height: 20),
                             Container(
                               width: 35,
                               height: 35,
@@ -1466,8 +1519,12 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                             }
                             if (!snapshot.hasData ||
                                 snapshot.data!.docs.isEmpty) {
-                              return const Center(
-                                child: Text("No Schedules Added Yet"),
+                              return Center(
+                                child: Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.noSchedulesAdded,
+                                ),
                               );
                             }
                             final rawDocs = snapshot.data!.docs;
@@ -1523,11 +1580,11 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                       data['examType'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 16,
-                                        fontFamily: 'Gilroy-Bold',
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     subtitle: Text(
-                                      "Date: ${data['date'] ?? 'N/A'}",
+                                      "${AppLocalizations.of(context)!.date}: ${data['date'] ?? 'N/A'}",
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: Colors.black54,
@@ -1577,9 +1634,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Select Session',
-                style: TextStyle(color: Colors.black54),
+              Text(
+                AppLocalizations.of(context)!.selectSessionTitle,
+                style: const TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 8),
               GestureDetector(
@@ -1604,7 +1661,9 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _selectedSession.isEmpty ? 'Select' : _selectedSession,
+                        _selectedSession.isEmpty
+                            ? AppLocalizations.of(context)!.select
+                            : _selectedSession,
                         style: const TextStyle(fontSize: 16),
                       ),
                       const Icon(Icons.arrow_drop_down),
@@ -1631,8 +1690,10 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                   return const Center(child: GradientSpinner());
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text("No data found for this session"),
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.noDataFoundForSession,
+                    ),
                   );
                 }
                 final docs = snapshot.data!.docs;
@@ -1670,7 +1731,8 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  data['examType'] ?? 'Exam Type',
+                                  data['examType'] ??
+                                      AppLocalizations.of(context)!.examType,
                                   style: const TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.bold,
@@ -1699,16 +1761,34 @@ class _ExaminationScreenState extends State<ExaminationScreen>
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _buildDetailRow("Course", data['course']),
-                          _buildDetailRow("Duration", data['duration']),
-                          _buildDetailRow("Subject", data['subject']),
-                          _buildDetailRow("Exam Date", data['date']),
-                          _buildDetailRow("End Date", data['endDate']),
+                          _buildDetailRow(
+                            AppLocalizations.of(context)!.course,
+                            data['course'],
+                          ),
+                          _buildDetailRow(
+                            AppLocalizations.of(context)!.duration,
+                            data['duration'],
+                          ),
+                          _buildDetailRow(
+                            AppLocalizations.of(context)!.subject,
+                            data['subject'],
+                          ),
+                          _buildDetailRow(
+                            AppLocalizations.of(context)!.examDate,
+                            data['date'],
+                          ),
+                          _buildDetailRow(
+                            AppLocalizations.of(context)!.endDate,
+                            data['endDate'],
+                          ),
                           if (data['maxMarks'] != null)
-                            _buildDetailRow("Max Marks", data['maxMarks']),
+                            _buildDetailRow(
+                              AppLocalizations.of(context)!.maxMarks,
+                              data['maxMarks'],
+                            ),
                           if (data['passingMarks'] != null)
                             _buildDetailRow(
-                              "Passing Marks",
+                              AppLocalizations.of(context)!.passingMarks,
                               data['passingMarks'],
                             ),
                         ],

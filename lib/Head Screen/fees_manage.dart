@@ -5,9 +5,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
-import 'package:madarsaConnect/Data/loader.dart';
-
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 enum AdminSection { dashboard, qr, fees }
 
@@ -169,7 +169,10 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
   Future<void> _uploadQrCode(String type) async {
     if (_imageFile == null) {
       if (mounted) {
-        CustomPopup.show(context, 'Please select a QR code image.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.selectQrCodeImage,
+        );
       }
       return;
     }
@@ -208,12 +211,15 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
           }
           _imageFile = null;
         });
-        CustomPopup.show(context, 'QR code successfully updated.');
+        CustomPopup.show(context, AppLocalizations.of(context)!.qrCodeUpdated);
       }
     } catch (e) {
       debugPrint("Error uploading QR code: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to upload QR code: $e');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToUploadQr,
+        );
       }
     } finally {
       if (mounted) {
@@ -235,7 +241,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
 
     if (urlToDelete == null) {
       if (mounted) {
-        CustomPopup.show(context, 'No QR code to delete.');
+        CustomPopup.show(context, AppLocalizations.of(context)!.noQrToDelete);
       }
       return;
     }
@@ -258,12 +264,15 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
           }
           _imageFile = null;
         });
-        CustomPopup.show(context, 'QR code successfully deleted.');
+        CustomPopup.show(context, AppLocalizations.of(context)!.qrCodeDeleted);
       }
     } catch (e) {
       debugPrint("Error deleting QR code: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to delete QR code: $e');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToDeleteQr,
+        );
       }
     }
   }
@@ -273,7 +282,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
       if (mounted) {
         CustomPopup.show(
           context,
-          'Please select a course and enter the total fees.',
+          AppLocalizations.of(context)!.selectCourseEnterFees,
         );
       }
       return;
@@ -298,12 +307,18 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
         setState(() {
           _currentTotalFees = totalFees;
         });
-        CustomPopup.show(context, 'Total fees successfully updated.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.totalFeesUpdated,
+        );
       }
     } catch (e) {
       debugPrint("Error setting total fees: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to set total fees: $e');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToSetFees,
+        );
       }
     } finally {
       if (mounted) {
@@ -390,11 +405,11 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
   String _getAppBarTitle() {
     switch (_currentSection) {
       case AdminSection.dashboard:
-        return 'Admin Panel';
+        return AppLocalizations.of(context)!.feesAndQrManagement;
       case AdminSection.qr:
-        return 'QR Management';
+        return AppLocalizations.of(context)!.qrManagement;
       case AdminSection.fees:
-        return 'Fee Management';
+        return AppLocalizations.of(context)!.feeManagement;
     }
   }
 
@@ -413,10 +428,10 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('QR Code Management'),
+        _buildSectionTitle(AppLocalizations.of(context)!.qrCodeManagement),
         const SizedBox(height: 24),
         _buildQrCard(
-          title: 'Main QR Code',
+          title: AppLocalizations.of(context)!.mainQrCode,
           url: _currentQrCodeUrl,
           isUploading: _isUploadingMainQr,
           onUpload: () => _uploadQrCode('main'),
@@ -424,7 +439,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
         ),
         const SizedBox(height: 24),
         _buildQrCard(
-          title: 'Donation QR Code',
+          title: AppLocalizations.of(context)!.donationQrCode,
           url: _currentDonationQrCodeUrl,
           isUploading: _isUploadingDonationQr,
           onUpload: () => _uploadQrCode('donation'),
@@ -491,35 +506,39 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) {
-                                return const Column(
+                                return Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.qr_code_rounded,
                                       size: 60,
                                       color: Colors.black54,
                                     ),
-                                    SizedBox(height: 8),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      'QR code loading failed',
-                                      style: TextStyle(color: Colors.black54),
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.qrLoadingFailed,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                      ),
                                     ),
                                   ],
                                 );
                               },
                             )
-                            : const Column(
+                            : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.cloud_upload_rounded,
                                   size: 60,
                                   color: Colors.black54,
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
-                                  'Tap to upload QR code',
-                                  style: TextStyle(color: Colors.black54),
+                                  AppLocalizations.of(context)!.tapToUploadQr,
+                                  style: const TextStyle(color: Colors.black54),
                                 ),
                               ],
                             )),
@@ -543,9 +562,9 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
                             ),
                           )
                           : const Icon(Icons.upload_rounded),
-                  label: const Text(
-                    'Upload QR Code',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  label: Text(
+                    AppLocalizations.of(context)!.uploadQrCode,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
@@ -583,7 +602,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Fee Management'),
+        _buildSectionTitle(AppLocalizations.of(context)!.feeManagement),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
@@ -600,7 +619,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
                   if (_courses.isNotEmpty) {
                     _showSelectorDialog(
                       context: context,
-                      title: 'Select Course',
+                      title: AppLocalizations.of(context)!.selectCourse,
                       options: _courses,
                       onSelected: (course) {
                         setState(() {
@@ -627,8 +646,8 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
                         child: Text(
                           _selectedCourse != null
                               ? (_selectedCourse!['name'] as String? ??
-                                  'Select a course')
-                              : 'Select a course',
+                                  AppLocalizations.of(context)!.selectACourse)
+                              : AppLocalizations.of(context)!.selectACourse,
                           style: TextStyle(
                             fontSize: 16,
                             color:
@@ -661,9 +680,9 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
                           ),
                         )
                         : const Icon(Icons.edit_rounded),
-                label: const Text(
-                  'Set Total Fees',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                label: Text(
+                  AppLocalizations.of(context)!.setTotalFees,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
@@ -693,9 +712,9 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Current Fees',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.currentFees,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -721,7 +740,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.black),
       decoration: InputDecoration(
-        labelText: 'Enter New Total Fees',
+        labelText: AppLocalizations.of(context)!.enterNewTotalFees,
         labelStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
         hintText: 'e.g., 5000',
         hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
@@ -754,8 +773,8 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildDashboardOption(
-            title: 'QR Code Management',
-            description: 'Update your payment QR code.',
+            title: AppLocalizations.of(context)!.qrCodeManagement,
+            description: AppLocalizations.of(context)!.updatePaymentQr,
             icon: Icons.qr_code_rounded,
             onTap: () {
               setState(() {
@@ -767,8 +786,8 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
           ),
           const SizedBox(height: 15),
           _buildDashboardOption(
-            title: 'Fees Management',
-            description: 'Set total fees for courses.',
+            title: AppLocalizations.of(context)!.feeManagement,
+            description: AppLocalizations.of(context)!.setTotalFeesForCourses,
             icon: Icons.monetization_on_rounded,
             onTap: () {
               setState(() {
@@ -870,7 +889,7 @@ class _AdminQrUpdateScreenState extends State<AdminQrUpdateScreen> {
             _getAppBarTitle(),
             style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 InputDecoration premiumInputDecoration(String labelText) {
   return InputDecoration(
@@ -69,7 +70,7 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
       double tempGrandTotal = 0.0;
 
       if (recipeIngredients.isEmpty) {
-        throw Exception("This recipe has no ingredients added.");
+        throw Exception(AppLocalizations.of(context)!.recipeHasNoIngredients);
       }
 
       final ingredientIds =
@@ -115,7 +116,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
       });
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Error calculating cost: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.errorCalculatingCost}: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -145,7 +149,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
       });
 
       if (mounted) {
-        CustomPopup.show(context, 'Record saved successfully!');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.recordSavedSuccessfully,
+        );
         setState(() {
           _isCalculated = false;
           _studentCountController.clear();
@@ -157,7 +164,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Error saving record: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.errorSavingRecord}: $e',
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -173,10 +183,11 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Select a Dish',
+          // Font family removed, using fontWeight
+          title: Text(
+            AppLocalizations.of(context)!.selectDish,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
           content: SizedBox(
@@ -246,10 +257,11 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Select Meal Type',
+          // Font family removed
+          title: Text(
+            AppLocalizations.of(context)!.selectMealType,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
           content: SizedBox(
@@ -308,11 +320,12 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Meal Cost Calculator',
-          style: TextStyle(
+        // Font family removed
+        title: Text(
+          AppLocalizations.of(context)!.mealCostCalculator,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -340,9 +353,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Calculate Cost',
-                      style: TextStyle(
+                    // Font family removed
+                    child: Text(
+                      AppLocalizations.of(context)!.calculateCost,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -351,7 +365,7 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 icon: const Icon(Icons.history_rounded),
-                label: const Text('View Previous Records'),
+                label: Text(AppLocalizations.of(context)!.viewPreviousRecords),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -384,13 +398,15 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
         TextFormField(
           controller: _studentCountController,
           keyboardType: TextInputType.number,
-          decoration: premiumInputDecoration('Number of Students'),
+          decoration: premiumInputDecoration(
+            AppLocalizations.of(context)!.numberOfStudents,
+          ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter number of students';
+              return AppLocalizations.of(context)!.enterNumberOfStudents;
             }
             if (int.tryParse(value) == null || int.parse(value) <= 0) {
-              return 'Please enter a valid number';
+              return AppLocalizations.of(context)!.enterValidNumber;
             }
             return null;
           },
@@ -399,28 +415,32 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
         TextFormField(
           controller: _dishDisplayController,
           readOnly: true,
-          decoration: premiumInputDecoration('Select Dish').copyWith(
+          decoration: premiumInputDecoration(
+            AppLocalizations.of(context)!.selectDish,
+          ).copyWith(
             suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
           ),
           onTap: _showDishSelectionDialog,
           validator:
               (value) =>
                   value == null || value.isEmpty
-                      ? 'Please select a dish'
+                      ? AppLocalizations.of(context)!.pleaseSelectDish
                       : null,
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: _mealTypeDisplayController,
           readOnly: true,
-          decoration: premiumInputDecoration('Select Meal Type').copyWith(
+          decoration: premiumInputDecoration(
+            AppLocalizations.of(context)!.selectMealType,
+          ).copyWith(
             suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
           ),
           onTap: _showMealTypeSelectionDialog,
           validator:
               (value) =>
                   value == null || value.isEmpty
-                      ? 'Please select a meal type'
+                      ? AppLocalizations.of(context)!.pleaseSelectMealType
                       : null,
         ),
       ],
@@ -433,9 +453,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Font family removed
         Text(
-          "Estimation for $_calculatedDishName",
-          style: const TextStyle(fontSize: 22, fontFamily: 'Gilroy-Bold'),
+          AppLocalizations.of(context)!.estimationFor(_calculatedDishName),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         ..._calculationResult.map(
@@ -452,7 +473,10 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                'Quantity: ${item['quantity'].toStringAsFixed(2)} ${item['unit']}',
+                AppLocalizations.of(context)!.quantityUnit(
+                  item['quantity'].toStringAsFixed(2),
+                  item['unit'],
+                ),
               ),
               trailing: Text(
                 currencyFormat.format(item['cost']),
@@ -473,7 +497,7 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
               child: ElevatedButton.icon(
                 onPressed: _saveMealRecord,
                 icon: const Icon(Icons.save_alt_rounded, size: 20),
-                label: const Text("Save This Record"),
+                label: Text(AppLocalizations.of(context)!.saveThisRecord),
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: Colors.green.withOpacity(0.1),
@@ -502,20 +526,20 @@ class _KitchenCalculatorScreenState extends State<KitchenCalculatorScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Grand Total',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.grandTotal,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
+          // Font family removed
           Text(
             currencyFormat.format(_grandTotal),
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Gilroy-Bold',
               color: Colors.white,
             ),
           ),
@@ -566,7 +590,10 @@ class _PreviousMealsScreenState extends State<PreviousMealsScreen> {
       });
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Error fetching records: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingRecords}: $e",
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -612,9 +639,10 @@ class _PreviousMealsScreenState extends State<PreviousMealsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Previous Meal Records',
-          style: TextStyle(fontFamily: 'Gilroy-Bold'),
+        // Font family removed
+        title: Text(
+          AppLocalizations.of(context)!.previousMealRecords,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -645,8 +673,10 @@ class _PreviousMealsScreenState extends State<PreviousMealsScreen> {
                 _isLoading
                     ? const Center(child: GradientSpinner())
                     : _records.isEmpty
-                    ? const Center(
-                      child: Text("No records found for this date."),
+                    ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.noRecordsFoundForDate,
+                      ),
                     )
                     : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -669,12 +699,16 @@ class _PreviousMealsScreenState extends State<PreviousMealsScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              "${data['mealType']} - ${data['studentCount']} students",
+                              AppLocalizations.of(context)!.mealTypeStudents(
+                                data['mealType'],
+                                data['studentCount'].toString(),
+                              ),
                             ),
+                            // Font family removed
                             trailing: Text(
                               currencyFormat.format(data['totalCost']),
                               style: const TextStyle(
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
@@ -684,7 +718,10 @@ class _PreviousMealsScreenState extends State<PreviousMealsScreen> {
                                   dense: true,
                                   title: Text(item['name']),
                                   subtitle: Text(
-                                    'Qty: ${item['quantity'].toStringAsFixed(2)} ${item['unit']}',
+                                    AppLocalizations.of(context)!.quantityUnit(
+                                      item['quantity'].toStringAsFixed(2),
+                                      item['unit'],
+                                    ),
                                   ),
                                   trailing: Text(
                                     currencyFormat.format(item['cost']),

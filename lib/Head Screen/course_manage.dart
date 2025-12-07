@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 
 void main() {
   runApp(const MaterialApp(home: CourseManageScreen()));
@@ -25,10 +26,17 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String _suffix(int n) {
-    if (n == 1) return 'st';
-    if (n == 2) return 'nd';
-    if (n == 3) return 'rd';
-    return 'th';
+    if (n >= 11 && n <= 13) return 'th';
+    switch (n % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   final TextEditingController nameController = TextEditingController();
@@ -122,7 +130,10 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
       codeController.text = course['code'] ?? '';
       final dur = course['duration'] ?? 0;
       selectedDuration = dur;
-      durationController.text = dur > 0 ? '$dur${_suffix(dur)} Year' : '';
+      durationController.text =
+          dur > 0
+              ? '$dur${_suffix(dur)} ${AppLocalizations.of(context)!.year}'
+              : '';
     }
 
     nameController.addListener(() {
@@ -182,10 +193,12 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                   children: [
                     Center(
                       child: Text(
-                        course == null ? "Add Course" : "Edit Course",
+                        course == null
+                            ? AppLocalizations.of(context)!.addCourse
+                            : AppLocalizations.of(context)!.editCourse,
                         style: TextStyle(
                           fontSize: screenWidth * 0.05,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -202,7 +215,7 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                         color: Colors.black,
                       ),
                       decoration: InputDecoration(
-                        hintText: "Enter Course Name",
+                        hintText: AppLocalizations.of(context)!.enterCourseName,
                         prefixIcon: Icon(
                           Icons.drive_file_rename_outline,
                           color: Colors.black.withOpacity(0.8),
@@ -235,7 +248,8 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                             color: Colors.black,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Select Duration",
+                            hintText:
+                                AppLocalizations.of(context)!.selectDuration,
                             prefixIcon: Icon(
                               Icons.access_time_filled,
                               color: Colors.black.withOpacity(0.8),
@@ -268,7 +282,7 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                         color: Colors.black,
                       ),
                       decoration: InputDecoration(
-                        hintText: "Enter Course Code",
+                        hintText: AppLocalizations.of(context)!.enterCourseCode,
                         prefixIcon: Icon(
                           Icons.code,
                           color: Colors.black.withOpacity(0.8),
@@ -326,9 +340,11 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                                 }
                                 : null,
                         child: Text(
-                          course == null ? "Add" : "Save",
+                          course == null
+                              ? AppLocalizations.of(context)!.add
+                              : AppLocalizations.of(context)!.save,
                           style: TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             fontSize: screenWidth * 0.04,
                             color: Colors.white,
                           ),
@@ -379,10 +395,13 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Center(
+              Center(
                 child: Text(
-                  'Select Course Duration',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                  AppLocalizations.of(context)!.selectCourseDuration,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -415,7 +434,7 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                           child: Text(
                             '$year$suffix Year',
                             style: const TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             ),
                           ),
@@ -471,10 +490,10 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
               ),
               ListTile(
                 title: Text(
-                  "Edit",
+                  AppLocalizations.of(context)!.edit,
                   style: TextStyle(
-                    fontFamily: 'Gilroy-Bold',
-                    fontSize: screenWidth * 0.045, // responsive font size
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.045,
                   ),
                 ),
                 onTap: () {
@@ -489,9 +508,9 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
               ),
               ListTile(
                 title: Text(
-                  "Delete",
+                  AppLocalizations.of(context)!.delete,
                   style: TextStyle(
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     fontSize: screenWidth * 0.045,
                   ),
                 ),
@@ -537,17 +556,17 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Warning",
-                    style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+                  Text(
+                    AppLocalizations.of(context)!.warning,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    "Are you sure you want to edit this course? Unsaved data may be lost.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
+                  Text(
+                    AppLocalizations.of(context)!.editCourseWarning,
+                    style: const TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -555,9 +574,9 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          "Cancel",
-                          style: TextStyle(color: Colors.black),
+                        child: Text(
+                          AppLocalizations.of(context)!.cancel,
+                          style: const TextStyle(color: Colors.black),
                         ),
                       ),
                       TextButton(
@@ -565,9 +584,9 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                           Navigator.pop(context);
                           onOk();
                         },
-                        child: const Text(
-                          "OK",
-                          style: TextStyle(color: Colors.redAccent),
+                        child: Text(
+                          AppLocalizations.of(context)!.ok,
+                          style: const TextStyle(color: Colors.redAccent),
                         ),
                       ),
                     ],
@@ -596,11 +615,11 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Course Management',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.courseManagement,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -617,8 +636,9 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CourseCard(
-                        title: 'Add Course Name',
-                        subtitle: 'Empowering minds, one lecture at a time.',
+                        title: AppLocalizations.of(context)!.addCourseName,
+                        subtitle:
+                            AppLocalizations.of(context)!.addCourseSubtitle,
                         gradientColors: const [
                           Color(0xFFFFF1DC),
                           Color(0xFFE2C290),
@@ -653,12 +673,12 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                                       course['name'] ?? '',
                                       style: TextStyle(
                                         fontSize: baseFontSize.clamp(14, 22),
-                                        fontFamily: 'Gilroy-Bold',
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Code: ${course['code'] ?? ''}',
+                                      '${AppLocalizations.of(context)!.code}: ${course['code'] ?? ''}',
                                       style: const TextStyle(
                                         color: Colors.black54,
                                         fontSize: 13,
@@ -666,7 +686,7 @@ class _CourseManageScreenState extends State<CourseManageScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Duration: ${course['duration'] != null ? '${course['duration']}${_suffix(course['duration'])} Year' : 'N/A'}',
+                                      '${AppLocalizations.of(context)!.duration}: ${course['duration'] != null ? '${course['duration']}${_suffix(course['duration'])} ${AppLocalizations.of(context)!.year}' : 'N/A'}',
                                       style: const TextStyle(
                                         color: Colors.black54,
                                         fontSize: 13,
@@ -757,17 +777,13 @@ class _CourseCardState extends State<CourseCard> {
                 style: const TextStyle(
                   fontSize: 22,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 widget.subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
               const Spacer(),
               Container(
@@ -791,75 +807,4 @@ class _CourseCardState extends State<CourseCard> {
       ),
     );
   }
-}
-
-void _showHelpSheet(BuildContext context) {
-  showModalBottomSheet(
-    backgroundColor: Colors.white,
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-    ),
-    isScrollControlled: true,
-    builder: (context) {
-      return DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.4,
-        minChildSize: 0.3,
-        maxChildSize: 0.5,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                const Text(
-                  "Add Courses",
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                ),
-                const Text(
-                  "Easily add new courses to keep your curriculum up to date.",
-                  style: TextStyle(fontSize: 14, fontFamily: 'Gilroy-Regular'),
-                ),
-                const SizedBox(height: 19),
-
-                const Text(
-                  "Manage Courses",
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                ),
-                const Text(
-                  "View and update course details to ensure accuracy and relevance.",
-                  style: TextStyle(fontSize: 14, fontFamily: 'Gilroy-Regular'),
-                ),
-                const SizedBox(height: 19),
-
-                const Text(
-                  "Delete Courses",
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
-                ),
-                const Text(
-                  "Remove courses that are no longer offered or needed.",
-                  style: TextStyle(fontSize: 14, fontFamily: 'Gilroy-Regular'),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
 }

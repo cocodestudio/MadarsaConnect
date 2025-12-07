@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Home%20Screen/searchable_items.dart';
+import 'package:madarsaconnect/Home%20Screen/searchable_items.dart';
+import '../l10n/app_localizations.dart';
 
 class SearchOverlayScreen extends StatefulWidget {
   const SearchOverlayScreen({super.key});
@@ -30,11 +31,14 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
       if (input.isEmpty) {
         _filteredFields = _allFields;
       } else {
-        _filteredFields = _allFields
-            .where((item) =>
-        item.title.toLowerCase().contains(input) ||
-            item.subtitle.toLowerCase().contains(input))
-            .toList();
+        _filteredFields =
+            _allFields
+                .where(
+                  (item) =>
+                      item.title.toLowerCase().contains(input) ||
+                      item.subtitle.toLowerCase().contains(input),
+                )
+                .toList();
       }
     });
   }
@@ -69,7 +73,10 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     IconButton(
@@ -88,8 +95,9 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
                           child: TextField(
                             controller: _controller,
                             autofocus: true,
-                            decoration: const InputDecoration(
-                              hintText: 'Search for...',
+                            decoration: InputDecoration(
+                              hintText:
+                                  AppLocalizations.of(context)!.searchHint,
                               border: InputBorder.none,
                             ),
                           ),
@@ -101,9 +109,10 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
               ),
               const Divider(),
               Expanded(
-                child: _controller.text.isEmpty
-                    ? _buildRecentSearches()
-                    : _buildSuggestions(),
+                child:
+                    _controller.text.isEmpty
+                        ? _buildRecentSearches()
+                        : _buildSuggestions(),
               ),
             ],
           ),
@@ -114,10 +123,10 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
 
   Widget _buildSuggestions() {
     if (_filteredFields.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No results found',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          AppLocalizations.of(context)!.noResultsFound,
+          style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
       );
     }
@@ -138,10 +147,10 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
 
   Widget _buildRecentSearches() {
     if (_recentSearches.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Start typing to search...',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          AppLocalizations.of(context)!.startTypingToSearch,
+          style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
       );
     }
@@ -154,15 +163,20 @@ class _SearchOverlayScreenState extends State<SearchOverlayScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Recent Searches',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                AppLocalizations.of(context)!.recentSearches,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   setState(() {
                     _recentSearches.clear();
                   });
                 },
-                child: const Text('Clear All'),
+                child: Text(AppLocalizations.of(context)!.clearAll),
               ),
             ],
           ),

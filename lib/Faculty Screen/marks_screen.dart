@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class MarksManagementScreen extends StatefulWidget {
   final String headUid;
@@ -14,7 +15,6 @@ class MarksManagementScreen extends StatefulWidget {
 }
 
 class _MarksManagementScreenState extends State<MarksManagementScreen> {
-  // Controllers for text fields
   final TextEditingController _scheduleController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
@@ -151,7 +151,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
 
   Future<void> _fetchCourses() async {
     if (widget.headUid.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Head UID not available.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.headUidNotAvailable,
+        );
       return;
     }
 
@@ -167,13 +171,21 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
 
       if (mounted) setState(() {});
     } catch (e) {
-      if (mounted) CustomPopup.show(context, "Error fetching courses: $e");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingCourses}: $e",
+        );
     }
   }
 
   Future<void> _fetchSchedules() async {
     if (widget.headUid.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Head UID not available.");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.headUidNotAvailable,
+        );
       return;
     }
 
@@ -201,7 +213,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
 
       if (mounted) setState(() {});
     } catch (e) {
-      if (mounted) CustomPopup.show(context, "Error fetching schedules: $e");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingSchedules}: $e",
+        );
     }
   }
 
@@ -211,7 +227,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     final examType = _examController.text.trim();
 
     if (sucId.isEmpty || session.isEmpty || examType.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Please fill all fields");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.pleaseFillAllFields,
+        );
       return;
     }
 
@@ -234,7 +254,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
               .get();
 
       if (studentSnap.docs.isEmpty) {
-        if (mounted) CustomPopup.show(context, "Student not found");
+        if (mounted)
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.studentNotFound,
+          );
         if (mounted) setState(() => _isLoading = false);
         return;
       }
@@ -267,7 +291,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         });
       }
     } catch (e) {
-      if (mounted) CustomPopup.show(context, "❌ Error in fetch: $e");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          "❌ ${AppLocalizations.of(context)!.errorInFetch}: $e",
+        );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -365,7 +393,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           backgroundColor: Colors.white,
           title: Text(
             title,
-            style: const TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.4,
@@ -398,7 +426,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     final types = ['Half Yearly Exam', 'Annually Exam'];
     _showSelectionDialog(
       context: context,
-      title: "Select Exam Type",
+      title: AppLocalizations.of(context)!.selectExamType,
       options: types,
       controller: _examController,
     );
@@ -411,9 +439,9 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text(
-            "Select Schedule",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectSchedule,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.4,
@@ -503,7 +531,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         child: Text(
           text,
           style: const TextStyle(
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             fontSize: 15,
             color: Colors.white,
           ),
@@ -550,7 +578,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               fontSize: 15,
               color: isSelected ? Colors.white : Colors.black87,
             ),
@@ -562,12 +590,12 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
 
   Widget _buildFormUI() {
     if (_allSchedules.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          "No Available Schedule or Examination!",
-          style: TextStyle(
+          AppLocalizations.of(context)!.noScheduleAvailable,
+          style: const TextStyle(
             fontSize: 16,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black54,
           ),
           textAlign: TextAlign.center,
@@ -581,19 +609,19 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         children: [
           _buildTextField(
             controller: _scheduleController,
-            hint: "Select Schedule",
+            hint: AppLocalizations.of(context)!.selectSchedule,
             icon: Icons.schedule,
             onTap: _showScheduleDialog,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _courseController,
-            hint: "Select Course",
+            hint: AppLocalizations.of(context)!.selectCourse,
             icon: Icons.book,
             onTap:
                 () => _showSelectionDialog(
                   context: context,
-                  title: "Select Course",
+                  title: AppLocalizations.of(context)!.selectCourse,
                   options:
                       _allCourses.map((e) => e['name'].toString()).toList(),
                   controller: _courseController,
@@ -602,11 +630,14 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           const SizedBox(height: 16),
           _buildTextField(
             controller: _durationController,
-            hint: "Select Duration",
+            hint: AppLocalizations.of(context)!.selectDuration,
             icon: Icons.access_time_filled,
             onTap: () {
               if (_selectedCourse == null) {
-                CustomPopup.show(context, 'Please select a course first');
+                CustomPopup.show(
+                  context,
+                  AppLocalizations.of(context)!.pleaseSelectCourseDurationFirst,
+                );
                 return;
               }
               final int duration = _selectedCourse?['duration'] ?? 0;
@@ -617,7 +648,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
               });
               _showSelectionDialog(
                 context: context,
-                title: "Select Duration",
+                title: AppLocalizations.of(context)!.selectDuration,
                 options: yearOptions,
                 controller: _durationController,
               );
@@ -626,13 +657,13 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           const SizedBox(height: 16),
           _buildTextField(
             controller: _subjectController,
-            hint: "Select Subject",
+            hint: AppLocalizations.of(context)!.selectSubject,
             icon: Icons.menu_book,
             onTap: _fetchAndShowSubjects,
           ),
           const SizedBox(height: 30),
           _buildElevatedButton(
-            text: "Fetch Students",
+            text: AppLocalizations.of(context)!.fetchStudents,
             onPressed: _fetchStudents,
           ),
         ],
@@ -679,10 +710,13 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         children: [
           Text(
             _filteredStudents.length.toString(),
-            style: const TextStyle(fontSize: 24, fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
-          const Text("Total Students", style: TextStyle(fontSize: 14)),
+          Text(
+            AppLocalizations.of(context)!.totalStudents,
+            style: const TextStyle(fontSize: 14),
+          ),
         ],
       ),
     );
@@ -730,7 +764,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
             _buildGradeField(),
             const SizedBox(height: 30),
             _buildElevatedButton(
-              text: "Save",
+              text: AppLocalizations.of(context)!.save,
               onPressed: _saveMarks,
               enabled: !_marksLocked,
             ),
@@ -759,17 +793,20 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow("Name", _selectedStudent?['fullName'] ?? ''),
           _buildDetailRow(
-            "Roll No",
+            AppLocalizations.of(context)!.name,
+            _selectedStudent?['fullName'] ?? '',
+          ),
+          _buildDetailRow(
+            AppLocalizations.of(context)!.rollNo,
             _selectedStudent?['rollNo']?.toString() ?? '',
           ),
           _buildDetailRow(
-            "Course",
+            AppLocalizations.of(context)!.course,
             _selectedStudent?['course']?.toString() ?? '',
           ),
           _buildDetailRow(
-            "Duration",
+            AppLocalizations.of(context)!.duration,
             _selectedStudent?['courseDuration']?.toString() ?? '',
           ),
         ],
@@ -784,7 +821,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       controller: _obtainedMarksController,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        hintText: "Obtained Marks",
+        hintText: AppLocalizations.of(context)!.obtainedMarks,
         prefixIcon: const Icon(Icons.score),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -810,7 +847,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       controller: _passingMarksController,
       readOnly: true,
       decoration: InputDecoration(
-        hintText: "Grade",
+        hintText: AppLocalizations.of(context)!.grade,
         prefixIcon: const Icon(Icons.check_circle),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -851,10 +888,10 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Find & Update Marks',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                  Text(
+                    AppLocalizations.of(context)!.findAndUpdateMarks,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: Colors.black87,
                     ),
@@ -862,28 +899,28 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
                   const SizedBox(height: 15),
                   _buildTextField(
                     controller: _examController,
-                    hint: "Select Exam Types",
+                    hint: AppLocalizations.of(context)!.selectExamTypes,
                     icon: Icons.badge_outlined,
                     onTap: _showExamTypeDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: _reportYearController,
-                    hint: 'Select Session',
+                    hint: AppLocalizations.of(context)!.selectSession,
                     icon: Icons.calendar_month,
                     onTap: _showYearBottomSheet,
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: _sucIdController,
-                    hint: "Enter SUC ID",
+                    hint: AppLocalizations.of(context)!.enterSucId,
                     icon: Icons.badge_outlined,
                     onTap: () {},
                     readOnly: false,
                   ),
                   const SizedBox(height: 16),
                   _buildElevatedButton(
-                    text: 'Search',
+                    text: AppLocalizations.of(context)!.search,
                     onPressed: _searchStudentBySUC,
                   ),
                 ],
@@ -930,12 +967,16 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
                   Text(
                     _studentData?['fullName'] ?? '',
                     style: const TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  Text("Roll No: ${_studentData?['rollNo'] ?? ''}"),
-                  Text("SUC ID: ${_studentData?['sucId'] ?? ''}"),
+                  Text(
+                    "${AppLocalizations.of(context)!.rollNo}: ${_studentData?['rollNo'] ?? ''}",
+                  ),
+                  Text(
+                    "${AppLocalizations.of(context)!.sucId}: ${_studentData?['sucId'] ?? ''}",
+                  ),
                 ],
               ),
             ),
@@ -956,7 +997,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
             const SizedBox(height: 10),
             _buildTextField(
               controller: _courseController,
-              hint: "Course",
+              hint: AppLocalizations.of(context)!.course,
               icon: Icons.book,
               onTap: () {},
               enabled: false,
@@ -964,14 +1005,14 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
             const SizedBox(height: 10),
             _buildTextField(
               controller: _durationController,
-              hint: "Select Duration",
+              hint: AppLocalizations.of(context)!.selectDuration,
               icon: Icons.access_time_filled,
               onTap: _showDurationForStudent,
             ),
             const SizedBox(height: 10),
             _buildTextField(
               controller: _subjectController,
-              hint: "Select Subject",
+              hint: AppLocalizations.of(context)!.selectSubject,
               icon: Icons.menu_book,
               onTap: _showSubjectsForStudent,
             ),
@@ -979,7 +1020,10 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
             if (_showMarksFields) _buildRecordsManageMarksFields(),
             const SizedBox(height: 20),
             if (_showMarksFields)
-              _buildElevatedButton(text: "Update", onPressed: _updateMarks),
+              _buildElevatedButton(
+                text: AppLocalizations.of(context)!.update,
+                onPressed: _updateMarks,
+              ),
           ],
         ),
       ),
@@ -1004,7 +1048,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           keyboardType: TextInputType.number,
           style: const TextStyle(color: Colors.black, fontSize: 14),
           decoration: InputDecoration(
-            hintText: "Obtained Marks",
+            hintText: AppLocalizations.of(context)!.obtainedMarks,
             prefixIcon: const Icon(Icons.score),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
@@ -1023,7 +1067,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           readOnly: true,
           style: const TextStyle(color: Colors.black, fontSize: 14),
           decoration: InputDecoration(
-            hintText: "Grade",
+            hintText: AppLocalizations.of(context)!.grade,
             prefixIcon: const Icon(Icons.check_circle),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
@@ -1042,7 +1086,10 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
   Future<void> _fetchAndShowSubjects() async {
     if (_selectedCourse == null || _selectedYear == null) {
       if (mounted)
-        CustomPopup.show(context, 'Please select course and duration first');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.pleaseSelectCourseDurationFirst,
+        );
       return;
     }
 
@@ -1076,11 +1123,15 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     }
 
     if (_subjectOptions.isEmpty) {
-      if (mounted) CustomPopup.show(context, 'No subjects found for this year');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noSubjectsFoundYear,
+        );
     } else {
       _showSelectionDialog(
         context: context,
-        title: "Select Subject",
+        title: AppLocalizations.of(context)!.selectSubject,
         options: _subjectOptions,
         controller: _subjectController,
       );
@@ -1092,7 +1143,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         _courseController.text.isEmpty ||
         _durationController.text.isEmpty ||
         _subjectController.text.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Please select all fields");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.pleaseFillRequiredFields,
+        );
       return;
     }
 
@@ -1133,7 +1188,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       if (mounted) Navigator.pop(context);
 
       if (_filteredStudents.isEmpty) {
-        if (mounted) CustomPopup.show(context, "No students found");
+        if (mounted)
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noStudentsFound,
+          );
       } else {
         if (mounted) {
           setState(() {
@@ -1144,7 +1203,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
-      if (mounted) CustomPopup.show(context, "Error fetching students: $e");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingStudents}: $e",
+        );
     }
   }
 
@@ -1242,12 +1305,15 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
   void _showDurationForStudent() {
     if (_availableDurationsForStudent.isEmpty) {
       if (mounted)
-        CustomPopup.show(context, "No durations found for this exam.");
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noDurationsFound,
+        );
       return;
     }
     _showSelectionDialog(
       context: context,
-      title: "Select Duration",
+      title: AppLocalizations.of(context)!.selectDuration,
       options: _availableDurationsForStudent,
       controller: _durationController,
     );
@@ -1258,7 +1324,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     final selectedDuration = _durationController.text.trim();
 
     if (selectedDuration.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Please select a duration first");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.pleaseSelectDurationFirst,
+        );
       return;
     }
 
@@ -1285,13 +1355,17 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     }
 
     if (_availableSubjectsForStudent.isEmpty) {
-      if (mounted) CustomPopup.show(context, "No subjects available");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noSubjectsAvailable,
+        );
       return;
     }
 
     _showSelectionDialog(
       context: context,
-      title: "Select Subject",
+      title: AppLocalizations.of(context)!.selectSubject,
       options: _availableSubjectsForStudent,
       controller: _subjectController,
     );
@@ -1303,7 +1377,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         _durationController.text.isEmpty ||
         _subjectController.text.isEmpty ||
         _obtainedMarksController.text.isEmpty) {
-      if (mounted) CustomPopup.show(context, "Please fill all required fields");
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.pleaseFillRequiredFields,
+        );
       return;
     }
 
@@ -1329,7 +1407,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         if (mounted)
           CustomPopup.show(
             context,
-            "Student SUC ID not found. Cannot update marks.",
+            AppLocalizations.of(context)!.sucIdNotFoundUpdate,
           );
         return;
       }
@@ -1389,7 +1467,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         if (mounted)
           CustomPopup.show(
             context,
-            "❌ Obtained marks cannot exceed Max Marks ($maxMarks)",
+            "❌ ${AppLocalizations.of(context)!.marksExceedMax} ($maxMarks)",
           );
         return;
       }
@@ -1460,7 +1538,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       await _calculateAndSaveResultSummary(sucId, examType);
 
       if (mounted) Navigator.pop(context);
-      if (mounted) CustomPopup.show(context, 'Marks updated successfully');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.marksUpdatedSuccess,
+        );
     } catch (e) {
       if (mounted) Navigator.pop(context);
       if (mounted) CustomPopup.show(context, 'Error: ${e.toString()}');
@@ -1473,7 +1555,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       if (mounted)
         CustomPopup.show(
           context,
-          "Admin has not set Max Marks and Passing Marks for this exam. Please contact admin.",
+          AppLocalizations.of(context)!.adminNotSetMarks,
         );
       return;
     }
@@ -1508,7 +1590,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         if (mounted)
           CustomPopup.show(
             context,
-            "Student SUC ID not found. Cannot save marks.",
+            AppLocalizations.of(context)!.sucIdNotFoundSave,
           );
         return;
       }
@@ -1518,7 +1600,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         if (mounted)
           CustomPopup.show(
             context,
-            "❌ Obtained marks cannot exceed Max Marks ($maxMarks)",
+            "❌ ${AppLocalizations.of(context)!.marksExceedMax} ($maxMarks)",
           );
         return;
       }
@@ -1597,7 +1679,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
         });
       }
       if (mounted) Navigator.pop(context);
-      if (mounted) CustomPopup.show(context, 'Marks updated successfully');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.marksUpdatedSuccess,
+        );
     } catch (e) {
       if (mounted) Navigator.pop(context);
       if (mounted) CustomPopup.show(context, 'Error: ${e.toString()}');
@@ -1659,7 +1745,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
       if (mounted)
         CustomPopup.show(
           context,
-          "❌ Obtained marks cannot exceed Max Marks ($max)",
+          "❌ ${AppLocalizations.of(context)!.marksExceedMax} ($max)",
         );
       _obtainedMarksController.text = max.toString();
       _passingMarksController.text = _getGradeFromPercentage(
@@ -1843,22 +1929,22 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
     if (_selectedTab == 0) {
       switch (_step) {
         case 0:
-          return 'Marks Management';
+          return AppLocalizations.of(context)!.marksManagement;
         case 1:
-          return 'Select Student';
+          return AppLocalizations.of(context)!.selectStudent;
         case 2:
-          return 'Enter Marks';
+          return AppLocalizations.of(context)!.enterMarks;
         default:
-          return 'Marks Management';
+          return AppLocalizations.of(context)!.marksManagement;
       }
     } else {
       switch (_manageTabStep) {
         case 0:
-          return 'Manage Records';
+          return AppLocalizations.of(context)!.manageRecords;
         case 1:
-          return 'Update Marks';
+          return AppLocalizations.of(context)!.updateMarks;
         default:
-          return 'Manage Records';
+          return AppLocalizations.of(context)!.manageRecords;
       }
     }
   }
@@ -1912,7 +1998,7 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
           _getAppBarTitle(),
           style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -1926,8 +2012,11 @@ class _MarksManagementScreenState extends State<MarksManagementScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 17),
               child: Row(
                 children: [
-                  _buildTabBox("Edit / Update Marks", 0),
-                  _buildTabBox("Records Manage", 1),
+                  _buildTabBox(
+                    AppLocalizations.of(context)!.editUpdateMarks,
+                    0,
+                  ),
+                  _buildTabBox(AppLocalizations.of(context)!.recordsManage, 1),
                 ],
               ),
             ),

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class ManageNotificationsScreen extends StatefulWidget {
   const ManageNotificationsScreen({super.key});
@@ -77,13 +78,27 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
         }
       }
 
-      CustomPopup.show(
-        context,
-        '${type.toUpperCase()} Notifications ${value ? 'Enabled' : 'Disabled'}',
-      );
-    } catch (e) {
-      CustomPopup.show(context, 'Failed to update settings. Please try again.');
       if (mounted) {
+        String message = '';
+        if (type == 'push') {
+          message =
+              value
+                  ? AppLocalizations.of(context)!.pushNotificationsEnabled
+                  : AppLocalizations.of(context)!.pushNotificationsDisabled;
+        } else {
+          message =
+              value
+                  ? AppLocalizations.of(context)!.inAppNotificationsEnabled
+                  : AppLocalizations.of(context)!.inAppNotificationsDisabled;
+        }
+        CustomPopup.show(context, message);
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToUpdateSettings,
+        );
         setState(() {
           if (type == 'push') {
             _isPushEnabled = !value;
@@ -131,11 +146,11 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Manage Notification',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.manageNotification,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -155,19 +170,25 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       _buildCardSection(
-                        title: 'Notifications',
+                        title: AppLocalizations.of(context)!.notifications,
                         description:
-                            'Receive real-time alerts on your device for attendance, homework, and other key updates to stay informed instantly.',
+                            AppLocalizations.of(
+                              context,
+                            )!.notificationDescription,
                         children: [
                           _buildToggleTile(
-                            label: 'Push Notifications',
+                            label:
+                                AppLocalizations.of(context)!.pushNotifications,
                             icon: Icons.notifications_outlined,
                             value: _isPushEnabled,
                             onChanged:
                                 (val) => _toggleNotification('push', val),
                           ),
                           _buildToggleTile(
-                            label: 'In-App Notifications',
+                            label:
+                                AppLocalizations.of(
+                                  context,
+                                )!.inAppNotifications,
                             icon: Icons.notifications_active_outlined,
                             value: _isInAppEnabled,
                             onChanged:

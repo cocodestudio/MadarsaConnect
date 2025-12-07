@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Head%20Screen/upload_banner_screen.dart';
-import 'package:madarsaConnect/Main%20Screen/Head_manage.dart';
-import 'package:madarsaConnect/Main%20Screen/admin_notification.dart';
-import 'package:madarsaConnect/Main%20Screen/qr_upload_byadmin.dart';
-import 'package:madarsaConnect/Main%20Screen/subscription_request.dart';
+import 'package:madarsaconnect/Main%20Screen/qr_upload_byadmin.dart';
+import 'package:madarsaconnect/Main%20Screen/subscription_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../Head Screen/upload_banner_screen.dart';
 import '../Login & Signup Screen/loginpage.dart';
+import 'Head_manage.dart';
+import 'admin_notification.dart';
+import 'manual_notification.dart';
 
 class AdminSupportScreen extends StatelessWidget {
   const AdminSupportScreen({super.key});
@@ -156,12 +157,11 @@ class AdminSupportScreen extends StatelessWidget {
                         ),
                         onTap:
                             () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => const ManageHeadsScreen(),
-                          ),
-                        ),
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ManageHeadsScreen(),
+                              ),
+                            ),
                       ),
                       _ManagementCard(
                         title: 'Notifications',
@@ -172,12 +172,11 @@ class AdminSupportScreen extends StatelessWidget {
                         ),
                         onTap:
                             () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => const AdminNotificationScreen(),
-                          ),
-                        ),
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminNotificationScreen(),
+                              ),
+                            ),
                       ),
                       _ManagementCard(
                         title: 'App Settings',
@@ -268,9 +267,16 @@ class AdminSupportScreen extends StatelessWidget {
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _VerticalActionItem(
-                          label: 'Contact Dev',
-                          icon: Icons.developer_mode_rounded,
-                          onTap: () {},
+                          label: 'Send Notifications',
+                          icon: Icons.notification_add,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BroadcastNotificationScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -6,14 +6,15 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Data/main_page.dart';
-import 'package:madarsaConnect/Home%20Screen/upload_provider.dart';
+import 'package:madarsaconnect/Home%20Screen/upload_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../Data/main_page.dart';
+import '../l10n/app_localizations.dart';
 
 class UserCache {
   static final UserCache _instance = UserCache._internal();
@@ -129,17 +130,17 @@ class _FeedScreenState extends State<FeedScreen>
                       SliverAppBar(
                         backgroundColor: Colors.white,
                         surfaceTintColor: Colors.transparent,
+                        automaticallyImplyLeading: false,
                         elevation: 0,
                         floating: true,
                         snap: true,
                         centerTitle: false,
-                        title: const Text(
-                          'Feed',
-                          style: TextStyle(
+                        title: Text(
+                          AppLocalizations.of(context)!.feedTitle,
+                          style: const TextStyle(
                             color: Colors.black87,
                             fontWeight: FontWeight.bold,
                             fontSize: 24,
-                            fontFamily: 'Gilroy-Bold',
                           ),
                         ),
                         actions: [
@@ -248,7 +249,9 @@ class _FeedScreenState extends State<FeedScreen>
                           if (snapshot.hasError) {
                             return SliverFillRemaining(
                               child: Center(
-                                child: Text('Error: ${snapshot.error}'),
+                                child: Text(
+                                  '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                                ),
                               ),
                             );
                           }
@@ -385,8 +388,6 @@ class _FeedPostState extends State<_FeedPost>
   late DateTime? _pollCreationTime;
   Timer? _pollExpiryTimer;
 
-  // --- FIX: Fetching data only once per widget lifecycle ---
-  // The Future is initialized in initState and reused by FutureBuilder, preventing re-fetching on every rebuild.
   late Future<Map<String, dynamic>> _authorDataFuture;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -400,7 +401,6 @@ class _FeedPostState extends State<_FeedPost>
     super.initState();
     _updateStateFromWidget();
 
-    // --- FIX: Fetch author data only ONCE when the widget is created ---
     _authorDataFuture = fetchUserData(widget.postData['userId'] ?? '');
 
     if (widget.postData['isPoll'] ?? false) {
@@ -409,7 +409,6 @@ class _FeedPostState extends State<_FeedPost>
     }
   }
 
-  // Helper to update state from widget.postData
   void _updateStateFromWidget() {
     final postData = widget.postData;
     _likesCount = postData['likesCount'] ?? 0;
@@ -435,7 +434,6 @@ class _FeedPostState extends State<_FeedPost>
   @override
   void didUpdateWidget(covariant _FeedPost oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If post data changes from the stream, update the local state.
     if (widget.postData != oldWidget.postData) {
       if (mounted) {
         setState(() {
@@ -509,14 +507,13 @@ class _FeedPostState extends State<_FeedPost>
 
   void _toggleLike() async {
     if (widget.currentUserId == null) {
-      CustomPopup.show(context, "Please log in to like posts.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.loginToLike);
       return;
     }
 
     final postRef = _firestore.collection('posts').doc(widget.postId);
     final bool hasLiked = _likedBy.contains(widget.currentUserId);
 
-    // Optimistic UI update
     if (mounted) {
       setState(() {
         if (hasLiked) {
@@ -543,7 +540,6 @@ class _FeedPostState extends State<_FeedPost>
       }
     } catch (e) {
       debugPrint("Failed to update like status: $e");
-      // Revert UI on failure
       if (mounted) {
         setState(() {
           if (hasLiked) {
@@ -561,7 +557,7 @@ class _FeedPostState extends State<_FeedPost>
 
   void _toggleSave() async {
     if (widget.currentUserId == null) {
-      CustomPopup.show(context, "Please log in to save posts.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.loginToSave);
       return;
     }
 
@@ -587,8 +583,14 @@ class _FeedPostState extends State<_FeedPost>
           'savedBy': FieldValue.arrayUnion([widget.currentUserId]),
         });
       }
-      if (mounted)
-        CustomPopup.show(context, hasSaved ? "Post unsaved!" : "Post saved!");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          hasSaved
+              ? AppLocalizations.of(context)!.postUnsaved
+              : AppLocalizations.of(context)!.postSaved,
+        );
+      }
     } catch (e) {
       debugPrint("Failed to update save status: $e");
       if (mounted) {
@@ -636,8 +638,8 @@ class _FeedPostState extends State<_FeedPost>
                   alignment: Alignment.center,
                   child: Text(
                     (widget.postData['isQuestion'] ?? false)
-                        ? 'Answers'
-                        : 'Comments',
+                        ? AppLocalizations.of(context)!.answers
+                        : AppLocalizations.of(context)!.comments,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -695,19 +697,22 @@ class _FeedPostState extends State<_FeedPost>
                       size: 42,
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      "Delete Post",
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.deletePost,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      "Are you sure you want to delete this post? This action cannot be undone.",
+                    Text(
+                      AppLocalizations.of(context)!.deletePostConfirmation,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 15, color: Colors.black54),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -725,9 +730,9 @@ class _FeedPostState extends State<_FeedPost>
                             ),
                           ),
                           onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text(
-                            "Cancel",
-                            style: TextStyle(color: Colors.black87),
+                          child: Text(
+                            AppLocalizations.of(context)!.cancel,
+                            style: const TextStyle(color: Colors.black87),
                           ),
                         ),
                         TextButton(
@@ -742,9 +747,9 @@ class _FeedPostState extends State<_FeedPost>
                             ),
                           ),
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text(
-                            "Delete",
-                            style: TextStyle(color: Colors.white),
+                          child: Text(
+                            AppLocalizations.of(context)!.delete,
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
@@ -760,7 +765,6 @@ class _FeedPostState extends State<_FeedPost>
     if (!confirmDelete) return;
 
     try {
-      // Delete associated media from Firebase Storage
       if (!(widget.postData['isQuestion'] ?? false) &&
           !(widget.postData['isPoll'] ?? false)) {
         for (String url in List<String>.from(
@@ -774,7 +778,6 @@ class _FeedPostState extends State<_FeedPost>
         }
       }
 
-      // Delete all comments and replies (batched write for efficiency)
       final commentsSnapshot =
           await _firestore
               .collection('posts')
@@ -791,7 +794,6 @@ class _FeedPostState extends State<_FeedPost>
       }
       await batch.commit();
 
-      // Finally, delete the post itself
       await _firestore.collection('posts').doc(widget.postId).delete();
       if (mounted) CustomPopup.show(context, "Post deleted successfully!");
     } catch (e) {
@@ -841,7 +843,12 @@ class _FeedPostState extends State<_FeedPost>
           if (mounted) CustomPopup.show(context, "Failed to update post: $e");
         }
       } else if (updatedCaption != null && updatedCaption.trim().isEmpty) {
-        if (mounted) CustomPopup.show(context, "Post text cannot be empty.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.postTextCannotBeEmpty,
+          );
+        }
       }
     }
   }
@@ -877,9 +884,12 @@ class _FeedPostState extends State<_FeedPost>
               const SizedBox(height: 5),
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.black87),
-                title: const Text(
-                  'Update Post',
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 16),
+                title: Text(
+                  AppLocalizations.of(context)!.updatePost,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -894,11 +904,11 @@ class _FeedPostState extends State<_FeedPost>
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Delete Post',
-                  style: TextStyle(
+                title: Text(
+                  AppLocalizations.of(context)!.deletePost,
+                  style: const TextStyle(
                     color: Colors.red,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
@@ -926,7 +936,7 @@ class _FeedPostState extends State<_FeedPost>
 
   void _voteOnPoll(int selectedOptionIndex) async {
     if (widget.currentUserId == null) {
-      CustomPopup.show(context, "Please log in to vote on polls.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.loginToVote);
       return;
     }
 
@@ -955,12 +965,10 @@ class _FeedPostState extends State<_FeedPost>
         final bool hasVoted = currentVotedBy.containsKey(userId);
         final int? oldVotedOptionIndex = currentVotedBy[userId];
 
-        // If user has already voted for this option, do nothing.
         if (hasVoted && oldVotedOptionIndex == selectedOptionIndex) {
           return;
         }
 
-        // If user changes their vote, decrement the old option's count.
         if (hasVoted && oldVotedOptionIndex != null) {
           if (oldVotedOptionIndex >= 0 &&
               oldVotedOptionIndex < currentPollOptions.length) {
@@ -971,7 +979,6 @@ class _FeedPostState extends State<_FeedPost>
           }
         }
 
-        // Increment the new option's count.
         if (selectedOptionIndex >= 0 &&
             selectedOptionIndex < currentPollOptions.length) {
           currentPollOptions[selectedOptionIndex]['votes'] =
@@ -979,7 +986,6 @@ class _FeedPostState extends State<_FeedPost>
               1;
         }
 
-        // Update the user's vote.
         currentVotedBy[userId] = selectedOptionIndex;
 
         transaction.update(postRef, {
@@ -1049,11 +1055,15 @@ class _FeedPostState extends State<_FeedPost>
               .toList();
 
       if (winners.length == 1) {
-        pollWinnerText = 'Winner: ${winners.first}!';
+        pollWinnerText = AppLocalizations.of(
+          context,
+        )!.pollWinner(winners.first);
       } else if (winners.length > 1) {
-        pollWinnerText = 'It\'s a tie between ${winners.join(' and ')}!';
+        pollWinnerText = AppLocalizations.of(
+          context,
+        )!.pollTie(winners.join(' and '));
       } else {
-        pollWinnerText = 'No votes cast.';
+        pollWinnerText = AppLocalizations.of(context)!.noVotesCast;
       }
     }
 
@@ -1077,10 +1087,9 @@ class _FeedPostState extends State<_FeedPost>
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: FutureBuilder<Map<String, dynamic>>(
-              // --- FIX: Use the pre-initialized future ---
               future: _authorDataFuture,
               builder: (context, snapshot) {
-                String displayName = 'Loading...';
+                String displayName = AppLocalizations.of(context)!.loading;
                 String displayAvatarUrl = '';
 
                 if (snapshot.connectionState == ConnectionState.done &&
@@ -1088,7 +1097,7 @@ class _FeedPostState extends State<_FeedPost>
                   displayName = snapshot.data?['fullName'] ?? 'Unknown User';
                   displayAvatarUrl = snapshot.data?['profilePictureUrl'] ?? '';
                 } else if (snapshot.hasError) {
-                  displayName = 'Error';
+                  displayName = AppLocalizations.of(context)!.error;
                 }
 
                 return Row(
@@ -1151,7 +1160,6 @@ class _FeedPostState extends State<_FeedPost>
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
                                 color: Colors.black87,
-                                fontFamily: 'Inter',
                               ),
                             ),
                             Row(
@@ -1202,7 +1210,6 @@ class _FeedPostState extends State<_FeedPost>
                     style: const TextStyle(
                       fontSize: 15.5,
                       color: Colors.black87,
-                      fontFamily: 'Inter',
                     ),
                     maxLines: _showFullText ? null : _maxLines,
                     overflow:
@@ -1215,13 +1222,13 @@ class _FeedPostState extends State<_FeedPost>
                       onTap: () {
                         if (mounted) setState(() => _showFullText = true);
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.only(top: 4.0),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
                         child: Text(
-                          'See More',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.seeMore,
+                          style: const TextStyle(
                             color: Colors.black,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -1484,7 +1491,7 @@ class _PostActionIcon extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey[700],
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -1534,12 +1541,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
     super.dispose();
   }
 
-  /// IMPROVEMENT: More efficient and robust comment/reply sending logic.
   void _sendCommentOrReply() async {
     final text = _commentController.text.trim();
     if (text.isEmpty || widget.currentUserId == null) return;
 
-    // Give instant feedback by clearing the text field and unfocusing
     _commentController.clear();
     _commentFocusNode.unfocus();
 
@@ -1547,7 +1552,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
     final originalReplyingToReplyId = _replyingToReplyId;
     final originalReplyingToUserName = _replyingToUserName;
 
-    // Clear reply state immediately
     setState(() {
       _replyingToCommentId = null;
       _replyingToReplyId = null;
@@ -1555,7 +1559,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
     });
 
     try {
-      // Use the centralized fetchUserData function for caching
       final userDetails = await fetchUserData(widget.currentUserId!);
       final userName =
           userDetails['fullName'] ?? widget.currentUserName ?? "Unknown";
@@ -1574,7 +1577,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
       };
 
       if (originalReplyingToCommentId != null) {
-        // Handle reply logic
         String replyText = text;
         if (originalReplyingToUserName != null &&
             text.startsWith('@$originalReplyingToUserName')) {
@@ -1595,7 +1597,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
             .collection('replies')
             .add(data);
       } else {
-        // Handle new comment logic
         data['commentText'] = text;
         await _firestore
             .collection('posts')
@@ -1603,7 +1604,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
             .collection('comments')
             .add(data);
 
-        // Use atomic server-side increment
         final fieldToIncrement =
             widget.isQuestionOrPoll ? 'answersCount' : 'commentsCount';
         await _firestore.collection('posts').doc(widget.postId).update({
@@ -1612,14 +1612,21 @@ class _CommentsScreenState extends State<CommentsScreen> {
       }
     } catch (e) {
       debugPrint("Error sending comment/reply: $e");
-      if (mounted) CustomPopup.show(context, "Failed to send message.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToSendMessage,
+        );
+      }
     }
   }
 
-  /// IMPROVEMENT: Uses atomic server-side operations for likes, which is more efficient and safer.
   void _toggleCommentLike(String commentId, List<String> currentLikedBy) {
     if (widget.currentUserId == null) {
-      CustomPopup.show(context, "Please log in to like comments.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.loginToLikeComment,
+      );
       return;
     }
     final commentRef = _firestore
@@ -1641,14 +1648,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
     }
   }
 
-  /// IMPROVEMENT: Also uses atomic operations for reply likes.
   void _toggleReplyLike(
     String commentId,
     String replyId,
     List<String> currentLikedBy,
   ) {
     if (widget.currentUserId == null) {
-      CustomPopup.show(context, "Please log in to like replies.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.loginToLikeReply);
       return;
     }
     final replyRef = _firestore
@@ -1695,7 +1701,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
     });
   }
 
-  /// IMPROVEMENT: Uses a WriteBatch to delete a comment and its replies atomically.
   Future<void> _deleteComment(String commentId, String commentUserId) async {
     if (widget.currentUserId != commentUserId) return;
 
@@ -1767,14 +1772,18 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 );
               }
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(
+                  child: Text(
+                    '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                  ),
+                );
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Center(
                   child: Text(
                     widget.isQuestionOrPoll
-                        ? 'Be the first to answer!'
-                        : 'Be the first to comment!',
+                        ? AppLocalizations.of(context)!.beFirstToAnswer
+                        : AppLocalizations.of(context)!.beFirstToComment,
                   ),
                 );
               }
@@ -1816,7 +1825,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
             },
           ),
         ),
-        // Input field area
         Padding(
           padding: EdgeInsets.only(
             left: 16.0,
@@ -1842,7 +1850,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Replying to @${_replyingToUserName ?? 'User'}',
+                          AppLocalizations.of(
+                            context,
+                          )!.replyingTo(_replyingToUserName ?? 'User'),
                           style: TextStyle(
                             color: Colors.blue[700],
                             fontSize: 13,
@@ -1870,10 +1880,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       decoration: InputDecoration(
                         hintText:
                             _replyingToCommentId != null
-                                ? 'Add a reply...'
+                                ? AppLocalizations.of(context)!.addReplyHint
                                 : (widget.isQuestionOrPoll
-                                    ? 'Add an answer...'
-                                    : 'Add a comment...'),
+                                    ? AppLocalizations.of(
+                                      context,
+                                    )!.addAnswerHint
+                                    : AppLocalizations.of(
+                                      context,
+                                    )!.addCommentHint),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25.0),
                           borderSide: BorderSide.none,
@@ -1984,7 +1998,7 @@ class _CommentActionIcon extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey[700],
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -1994,7 +2008,6 @@ class _CommentActionIcon extends StatelessWidget {
   }
 }
 
-/// IMPROVEMENT: Simplified widget by passing the whole data map.
 class _CommentItem extends StatelessWidget {
   final String postId;
   final String commentId;
@@ -2052,9 +2065,9 @@ class _CommentItem extends StatelessWidget {
                   ),
                   margin: const EdgeInsets.only(bottom: 10),
                 ),
-                const Text(
-                  'Comment Options',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.commentOptions,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -2072,9 +2085,9 @@ class _CommentItem extends StatelessWidget {
                       Icons.delete_forever,
                       color: Colors.redAccent,
                     ),
-                    label: const Text(
-                      'Delete Comment',
-                      style: TextStyle(
+                    label: Text(
+                      AppLocalizations.of(context)!.deleteComment,
+                      style: const TextStyle(
                         color: Colors.redAccent,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2103,9 +2116,9 @@ class _CommentItem extends StatelessWidget {
                         side: BorderSide(color: Colors.grey[300]!, width: 1),
                       ),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context)!.cancel,
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2232,7 +2245,7 @@ class _CommentItem extends StatelessWidget {
                       GestureDetector(
                         onTap: () => onStartReply(commentUserName),
                         child: Text(
-                          'Reply',
+                          AppLocalizations.of(context)!.replyBtn,
                           style: TextStyle(
                             color: Colors.blue[700],
                             fontWeight: FontWeight.bold,
@@ -2251,7 +2264,6 @@ class _CommentItem extends StatelessWidget {
                 ),
               ],
             ),
-            // Reply Section
             StreamBuilder<QuerySnapshot>(
               stream:
                   firestore
@@ -2283,8 +2295,14 @@ class _CommentItem extends StatelessWidget {
                         onTap: () => onToggleExpandReplies(commentId),
                         child: Text(
                           isCommentExpanded
-                              ? 'Hide replies'
-                              : 'View $replyCount ${replyCount > 1 ? "replies" : "reply"}',
+                              ? AppLocalizations.of(context)!.hideReplies
+                              : (replyCount > 1
+                                  ? AppLocalizations.of(
+                                    context,
+                                  )!.viewReplies(replyCount.toString())
+                                  : AppLocalizations.of(
+                                    context,
+                                  )!.viewReply(replyCount.toString())),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.bold,
@@ -2437,7 +2455,7 @@ class _ReplyItem extends StatelessWidget {
                   GestureDetector(
                     onTap: () => onReply(commentId, replyId, replyUserName),
                     child: Text(
-                      'Reply',
+                      AppLocalizations.of(context)!.replyBtn,
                       style: TextStyle(
                         color: Colors.blue[700],
                         fontWeight: FontWeight.bold,
@@ -2526,13 +2544,12 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Update Post',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.updatePost,
+          style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
           ),
         ),
         centerTitle: true,
@@ -2562,7 +2579,7 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                   if (updatedPollOptions.length < 2) {
                     CustomPopup.show(
                       context,
-                      "Poll must have at least 2 options.",
+                      AppLocalizations.of(context)!.pollMustHaveOptions,
                     );
                     return;
                   }
@@ -2585,9 +2602,9 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                 ),
                 minimumSize: const Size(0, 0),
               ),
-              child: const Text(
-                "Update",
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.updateBtn,
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -2621,13 +2638,10 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                   maxLines: null,
                   minLines: 5,
                   textAlignVertical: TextAlignVertical.top,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                    fontFamily: 'Inter',
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
                   decoration: InputDecoration(
-                    hintText: 'Enter updated text...',
+                    hintText:
+                        AppLocalizations.of(context)!.enterUpdatedTextHint,
                     hintStyle: TextStyle(color: Colors.grey[500]),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -2656,13 +2670,12 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Poll Options',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.pollOptions,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
-                            fontFamily: 'Gilroy-Bold',
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -2681,7 +2694,9 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                                     child: TextField(
                                       controller: _pollOptionControllers[index],
                                       decoration: InputDecoration(
-                                        hintText: 'Option ${index + 1}',
+                                        hintText: AppLocalizations.of(
+                                          context,
+                                        )!.optionHint((index + 1).toString()),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             8.0,
@@ -2735,9 +2750,9 @@ class _UpdatePostTextScreenState extends State<_UpdatePostTextScreen> {
                                 Icons.add,
                                 color: Colors.blueAccent,
                               ),
-                              label: const Text(
-                                'Add Option',
-                                style: TextStyle(
+                              label: Text(
+                                AppLocalizations.of(context)!.addOption,
+                                style: const TextStyle(
                                   color: Colors.blueAccent,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -2858,7 +2873,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   int postCount = 0;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final Map<String, Map<String, dynamic>> _userCache = {}; // User cache
 
   @override
   void initState() {
@@ -2898,7 +2912,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     DocumentSnapshot? userDoc;
     String? fetchedRole;
     String? matchedUserIdForPosts;
-    String collectionName = '';
 
     List<String> collectionNames = ['Heads', 'Faculties', 'Students'];
 
@@ -2907,7 +2920,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (userDoc.exists) {
         fetchedRole =
             (userDoc.data() as Map<String, dynamic>?)?['role'] ?? 'User';
-        collectionName = name;
         break;
       }
     }
@@ -2941,7 +2953,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         matchedUserIdForPosts = headQuery.docs.first['hucId'];
       }
 
-      // If not found, check for Faculty
       if (userDoc == null) {
         QuerySnapshot facultyQuery =
             await _firestore
@@ -2956,7 +2967,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         }
       }
 
-      // If not found, check for Student
       if (userDoc == null) {
         QuerySnapshot studentQuery =
             await _firestore
@@ -2990,10 +3000,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           "User data not found for ID: $idToLookup. Please check Firestore.",
         );
         setState(() {
-          userName = 'User Not Found';
+          userName = AppLocalizations.of(context)!.userNotFound;
           userRole = 'N/A';
           userEmail = 'N/A';
-          userBio = 'Profile not available.';
+          userBio = AppLocalizations.of(context)!.profileNotAvailable;
           displayedUserId = null;
         });
       }
@@ -3064,13 +3074,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               Navigator.pop(context);
             },
           ),
-          title: const Text(
-            'Profile',
-            style: TextStyle(
+          title: Text(
+            AppLocalizations.of(context)!.profile,
+            style: const TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
             ),
           ),
           centerTitle: true,
@@ -3114,7 +3123,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             style: const TextStyle(
                               fontSize: 22,
                               color: Colors.black87,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -3124,7 +3133,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey[600],
-                                fontFamily: 'Inter',
                               ),
                             ),
                           if (userBio != null && userBio!.isNotEmpty)
@@ -3137,7 +3145,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   fontSize: 15,
                                   color: Colors.grey[700],
                                   fontStyle: FontStyle.italic,
-                                  fontFamily: 'Inter',
                                 ),
                               ),
                             ),
@@ -3149,17 +3156,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       indicatorColor: Colors.redAccent,
                       labelColor: Colors.redAccent,
                       unselectedLabelColor: Colors.grey,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Inter',
-                      ),
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                       tabs:
                           isCurrentUserProfile
-                              ? const [
-                                Tab(text: 'My Posts'),
-                                Tab(text: 'Saved Posts'),
+                              ? [
+                                Tab(
+                                  text: AppLocalizations.of(context)!.myPosts,
+                                ),
+                                Tab(
+                                  text:
+                                      AppLocalizations.of(context)!.savedPosts,
+                                ),
                               ]
-                              : const [Tab(text: 'My Posts')],
+                              : [
+                                Tab(
+                                  text: AppLocalizations.of(context)!.myPosts,
+                                ),
+                              ],
                     ),
                     Expanded(
                       child: TabBarView(
@@ -3178,7 +3191,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               }
                               if (snapshot.hasError) {
                                 return Center(
-                                  child: Text('Error: ${snapshot.error}'),
+                                  child: Text(
+                                    '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                                  ),
                                 );
                               }
                               final userPosts =
@@ -3195,8 +3210,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 return Center(
                                   child: Text(
                                     displayedUserId == currentUserId
-                                        ? 'You have not posted anything yet.'
-                                        : 'This user has not posted anything yet.',
+                                        ? AppLocalizations.of(
+                                          context,
+                                        )!.noPostsYetUser
+                                        : AppLocalizations.of(
+                                          context,
+                                        )!.noPostsYetOther,
                                   ),
                                 );
                               }
@@ -3210,85 +3229,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       userPosts[index].data()
                                           as Map<String, dynamic>;
                                   final postId = userPosts[index].id;
-                                  final String userName =
-                                      postData['userName'] ?? 'Unknown User';
-                                  final String userTitle =
-                                      postData['userRole'] ?? 'User';
-                                  final String postText =
-                                      postData['caption'] ?? '';
-                                  final String userAvatarUrl =
-                                      postData['userProfileUrl'] ?? '';
-                                  final List<dynamic> mediaUrlsDynamic =
-                                      postData['mediaUrls'] ?? [];
-                                  final List<String> mediaUrls =
-                                      mediaUrlsDynamic
-                                          .map((e) => e.toString())
-                                          .toList();
-                                  final List<dynamic> mediaTypesDynamic =
-                                      postData['mediaTypes'] ?? [];
-                                  final List<String> mediaTypes =
-                                      mediaTypesDynamic
-                                          .map((e) => e.toString())
-                                          .toList();
                                   final Timestamp? timestamp =
                                       postData['timestamp'] as Timestamp?;
-                                  final int likesCount =
-                                      postData['likesCount'] ?? 0;
-                                  final int commentsCount =
-                                      postData['commentsCount'] ?? 0;
-                                  final List<dynamic> likedByDynamic =
-                                      postData['likedBy'] ?? [];
-                                  final List<String> likedBy =
-                                      likedByDynamic
-                                          .map((e) => e.toString())
-                                          .toList();
-                                  final List<dynamic> savedByDynamic =
-                                      postData['savedBy'] ?? [];
-                                  final List<String> savedBy =
-                                      savedByDynamic
-                                          .map((e) => e.toString())
-                                          .toList();
-                                  final String postUserId =
-                                      postData['userId'] ?? '';
-                                  final String privacySetting =
-                                      postData['privacySetting'] ?? 'Private';
-                                  final bool isQuestion =
-                                      postData['isQuestion'] ?? false;
-                                  final bool isPoll =
-                                      postData['isPoll'] ?? false;
-                                  final List<dynamic> pollOptionsDynamic =
-                                      postData['pollOptions'] ?? [];
-                                  final List<Map<String, dynamic>> pollOptions =
-                                      pollOptionsDynamic
-                                          .map(
-                                            (e) => Map<String, dynamic>.from(e),
-                                          )
-                                          .toList();
-                                  final Map<String, dynamic> votedByMapDynamic =
-                                      postData['votedBy'] ?? {};
-                                  final Map<String, int> votedBy =
-                                      votedByMapDynamic.map(
-                                        (key, value) =>
-                                            MapEntry(key, value as int),
-                                      );
-                                  final int answersCount =
-                                      postData['answersCount'] ?? 0;
-
-                                  String timeAgoString = '';
-                                  if (timestamp != null) {
-                                    final DateTime postDateTime =
-                                        timestamp.toDate();
-                                    timeAgoString = timeago.format(
-                                      postDateTime,
-                                    );
-                                    if (DateTime.now()
-                                            .difference(postDateTime)
-                                            .inDays >
-                                        0) {
-                                      timeAgoString =
-                                          '${postDateTime.day} ${getMonthAbbreviation(postDateTime.month)}';
-                                    }
-                                  }
 
                                   return _FeedPost(
                                     key: ValueKey(postId),
@@ -3324,7 +3266,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 }
                                 if (snapshot.hasError) {
                                   return Center(
-                                    child: Text('Error: ${snapshot.error}'),
+                                    child: Text(
+                                      '${AppLocalizations.of(context)!.error}: ${snapshot.error}',
+                                    ),
                                   );
                                 }
                                 final savedPosts =
@@ -3342,8 +3286,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   return Center(
                                     child: Text(
                                       displayedUserId == currentUserId
-                                          ? 'You have not saved any posts yet.'
-                                          : 'This user has not saved any posts.',
+                                          ? AppLocalizations.of(
+                                            context,
+                                          )!.noSavedPostsUser
+                                          : AppLocalizations.of(
+                                            context,
+                                          )!.noSavedPostsOther,
                                     ),
                                   );
                                 }
@@ -3357,88 +3305,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                         savedPosts[index].data()
                                             as Map<String, dynamic>;
                                     final postId = savedPosts[index].id;
-                                    final String userName =
-                                        postData['userName'] ?? 'Unknown User';
-                                    final String userTitle =
-                                        postData['userRole'] ?? 'User';
-                                    final String postText =
-                                        postData['caption'] ?? '';
-                                    final String userAvatarUrl =
-                                        postData['userProfileUrl'] ?? '';
-                                    final List<dynamic> mediaUrlsDynamic =
-                                        postData['mediaUrls'] ?? [];
-                                    final List<String> mediaUrls =
-                                        mediaUrlsDynamic
-                                            .map((e) => e.toString())
-                                            .toList();
-                                    final List<dynamic> mediaTypesDynamic =
-                                        postData['mediaTypes'] ?? [];
-                                    final List<String> mediaTypes =
-                                        mediaTypesDynamic
-                                            .map((e) => e.toString())
-                                            .toList();
-                                    final Timestamp? timestamp =
-                                        postData['timestamp'] as Timestamp?;
-                                    final int likesCount =
-                                        postData['likesCount'] ?? 0;
-                                    final int commentsCount =
-                                        postData['commentsCount'] ?? 0;
-                                    final List<dynamic> likedByDynamic =
-                                        postData['likedBy'] ?? [];
-                                    final List<String> likedBy =
-                                        likedByDynamic
-                                            .map((e) => e.toString())
-                                            .toList();
-                                    final List<dynamic> savedByDynamic =
-                                        postData['savedBy'] ?? [];
-                                    final List<String> savedBy =
-                                        savedByDynamic
-                                            .map((e) => e.toString())
-                                            .toList();
-                                    final String postUserId =
-                                        postData['userId'] ?? '';
-                                    final String privacySetting =
-                                        postData['privacySetting'] ?? 'Private';
-                                    final bool isQuestion =
-                                        postData['isQuestion'] ?? false;
-                                    final bool isPoll =
-                                        postData['isPoll'] ?? false;
-                                    final List<dynamic> pollOptionsDynamic =
-                                        postData['pollOptions'] ?? [];
-                                    final List<Map<String, dynamic>>
-                                    pollOptions =
-                                        pollOptionsDynamic
-                                            .map(
-                                              (e) =>
-                                                  Map<String, dynamic>.from(e),
-                                            )
-                                            .toList();
-                                    final Map<String, dynamic>
-                                    votedByMapDynamic =
-                                        postData['votedBy'] ?? {};
-                                    final Map<String, int> votedBy =
-                                        votedByMapDynamic.map(
-                                          (key, value) =>
-                                              MapEntry(key, value as int),
-                                        );
-                                    final int answersCount =
-                                        postData['answersCount'] ?? 0;
-
-                                    String timeAgoString = '';
-                                    if (timestamp != null) {
-                                      final DateTime postDateTime =
-                                          timestamp.toDate();
-                                      timeAgoString = timeago.format(
-                                        postDateTime,
-                                      );
-                                      if (DateTime.now()
-                                              .difference(postDateTime)
-                                              .inDays >
-                                          0) {
-                                        timeAgoString =
-                                            '${postDateTime.day} ${getMonthAbbreviation(postDateTime.month)}';
-                                      }
-                                    }
 
                                     return _FeedPost(
                                       key: ValueKey(postId),

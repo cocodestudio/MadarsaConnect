@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 enum _SearchStep { search, form }
 
@@ -62,7 +63,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
   Future<void> fetchCoursesFromHead() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
-      if (mounted) CustomPopup.show(context, "You are not logged in.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.userNotLoggedIn,
+        );
+      }
       return;
     }
 
@@ -84,7 +90,10 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
 
       if (finalHeadUid == null) {
         if (mounted) {
-          CustomPopup.show(context, "Could not determine the Head account.");
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.couldNotDetermineHead,
+          );
         }
         return;
       }
@@ -109,7 +118,10 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Error fetching courses: ${e.toString()}");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingCourses}: ${e.toString()}",
+        );
       }
     }
   }
@@ -132,7 +144,10 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
 
   Future<void> _searchStudent() async {
     if (_searchController.text.trim().isEmpty) {
-      CustomPopup.show(context, "Please enter a SUC ID to search.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.enterSucIdToSearch,
+      );
       return;
     }
     setState(() => _isLoading = true);
@@ -149,7 +164,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
               .get();
 
       if (query.docs.isEmpty) {
-        CustomPopup.show(context, "No student found with this SUC ID.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noStudentFoundSuc,
+          );
+        }
       } else {
         final studentDoc = query.docs.first;
         setState(() {
@@ -159,7 +179,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
         });
       }
     } catch (e) {
-      CustomPopup.show(context, "An error occurred: ${e.toString()}");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.anErrorOccurred}: ${e.toString()}",
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -173,7 +198,7 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
         _yearController.text.isEmpty) {
       CustomPopup.show(
         context,
-        "Please select new course, duration, and academic year.",
+        AppLocalizations.of(context)!.selectCourseDurationYear,
       );
       return;
     }
@@ -221,7 +246,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
 
       _showSuccessDialog();
     } catch (e) {
-      CustomPopup.show(context, "Failed to re-enroll: ${e.toString()}");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.failedToReEnroll}: ${e.toString()}",
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -248,9 +278,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
           child: Column(
             children: [
               const SizedBox(height: 16),
-              const Text(
-                "Select Academic Year",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                AppLocalizations.of(context)!.selectAcademicYear,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               Expanded(
                 child: CupertinoPicker(
@@ -278,11 +311,11 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Text(
-                    "Done",
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.done,
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.bold,
                       fontSize: 17,
                     ),
                   ),
@@ -298,7 +331,10 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
 
   void showCourseBottomSheet() {
     if (courseList.isEmpty) {
-      CustomPopup.show(context, "No courses available to select.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.noCoursesAvailable,
+      );
       return;
     }
     showModalBottomSheet(
@@ -324,9 +360,13 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    "Select New Course",
-                    style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                  Text(
+                    AppLocalizations.of(context)!.selectNewCourse,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Flexible(
@@ -367,24 +407,18 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
 
   void showCourseDurationSheet() {
     if (_courseController.text.isEmpty) {
-      CustomPopup.show(context, "Please select a course first.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.pleaseSelectCourseFirst,
+      );
       return;
     }
     if (_selectedCourseDuration == 0) return;
 
     List<String> yearList = List.generate(_selectedCourseDuration, (i) {
       final year = i + 1;
-      if (year >= 11 && year <= 13) return '${year}th Year';
-      switch (year % 10) {
-        case 1:
-          return '${year}st Year';
-        case 2:
-          return '${year}nd Year';
-        case 3:
-          return '${year}rd Year';
-        default:
-          return '${year}th Year';
-      }
+      final yearSuffix = ['st', 'nd', 'rd', 'th'];
+      return '$year${yearSuffix[year > 3 ? 3 : year - 1]} ${AppLocalizations.of(context)!.year}';
     });
 
     showModalBottomSheet(
@@ -410,9 +444,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    "Select New Duration",
-                    style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+                  Text(
+                    AppLocalizations.of(context)!.selectNewDuration,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Flexible(
@@ -451,6 +488,7 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
+      barrierLabel: 'Success',
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder:
           (_, animation, __) => ScaleTransition(
@@ -478,12 +516,14 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                           height: 150,
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          "Student Re-enrolled Successfully!",
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.studentReEnrolledSuccess,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 20,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const Spacer(),
@@ -503,11 +543,11 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                                 color: Colors.redAccent,
                                 borderRadius: BorderRadius.circular(15),
                               ),
-                              child: const Text(
-                                "Done",
-                                style: TextStyle(
+                              child: Text(
+                                AppLocalizations.of(context)!.done,
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                   fontSize: 17,
                                 ),
                               ),
@@ -538,10 +578,12 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
           onPressed: _handleBackButton,
         ),
         title: Text(
-          _step == _SearchStep.search ? 'Find Student' : 'Re-enroll Student',
+          _step == _SearchStep.search
+              ? AppLocalizations.of(context)!.findStudent
+              : AppLocalizations.of(context)!.reEnrollStudent,
           style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -567,25 +609,29 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
             color: Colors.redAccent.shade100,
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Re-enroll Student',
-            style: TextStyle(fontSize: 28, fontFamily: 'Gilroy-Bold'),
+          Text(
+            AppLocalizations.of(context)!.reEnrollStudent,
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Enter student\'s current SUC ID to find their profile.',
+          Text(
+            AppLocalizations.of(context)!.reEnrollDescription,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: Colors.grey),
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
           ),
           const SizedBox(height: 30),
           TextField(
             controller: _searchController,
             textCapitalization: TextCapitalization.characters,
             decoration: InputDecoration(
-              hintText: "Enter SUC ID",
+              hintText: AppLocalizations.of(context)!.enterSucId,
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(color: Colors.black, width: 1),
               ),
             ),
           ),
@@ -601,9 +647,9 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                 color: Colors.redAccent,
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: const Text(
-                "Search Student",
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.searchStudent,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
@@ -622,66 +668,66 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
       children: [
         Center(
           child: Text(
-            "Profile found for: ${_searchedStudentData?['fullName']}",
-            style: const TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+            "${AppLocalizations.of(context)!.profileFoundFor}: ${_searchedStudentData?['fullName']}",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          "PERSONAL DETAILS (Read-only)",
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.personalDetailsReadOnly,
+          style: const TextStyle(
             fontSize: 17,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black54,
           ),
         ),
         const SizedBox(height: 12),
         _buildReadOnlyTextField(
-          "Full Name",
+          AppLocalizations.of(context)!.fullName,
           _searchedStudentData?['fullName'],
           nameIcon,
         ),
         _buildReadOnlyTextField(
-          "Date of Birth",
+          AppLocalizations.of(context)!.dateOfBirth,
           _searchedStudentData?['dateOfBirth'],
           "assets/icons/calender.svg",
         ),
         _buildReadOnlyTextField(
-          "Phone Number",
+          AppLocalizations.of(context)!.phoneNumber,
           _searchedStudentData?['phoneNumber'],
           phoneIcon,
         ),
         _buildReadOnlyTextField(
-          "Email",
+          AppLocalizations.of(context)!.email,
           _searchedStudentData?['email'],
           emailIcon,
         ),
         const SizedBox(height: 30),
-        const Text(
-          "NEW ACADEMIC DETAILS",
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.newAcademicDetails,
+          style: const TextStyle(
             fontSize: 17,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
         const SizedBox(height: 12),
         _buildEditableTextField(
-          "Select New Course",
+          AppLocalizations.of(context)!.selectNewCourse,
           _courseController,
           Icons.work_outline,
           showCourseBottomSheet,
         ),
         const SizedBox(height: 12),
         _buildEditableTextField(
-          "Select New Duration",
+          AppLocalizations.of(context)!.selectNewDuration,
           _coursedurationController,
           Icons.access_time,
           showCourseDurationSheet,
         ),
         const SizedBox(height: 12),
         _buildEditableTextField(
-          "Select Academic Year",
+          AppLocalizations.of(context)!.selectAcademicYear,
           _yearController,
           Icons.calendar_today,
           _showYearPickerDialog,
@@ -708,9 +754,9 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
                         strokeWidth: 3,
                       ),
                     )
-                    : const Text(
-                      "Re-enroll Student",
-                      style: TextStyle(
+                    : Text(
+                      AppLocalizations.of(context)!.reEnrollStudent,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 17,
@@ -728,10 +774,7 @@ class _ReEnrollStudentScreenState extends State<ReEnrollStudentScreen> {
       child: TextField(
         controller: TextEditingController(text: value ?? 'N/A'),
         readOnly: true,
-        style: const TextStyle(
-          color: Colors.black54,
-          fontFamily: 'Gilroy-Regular',
-        ),
+        style: const TextStyle(color: Colors.black54),
         decoration: InputDecoration(
           hintText: hint,
           fillColor: Colors.grey.shade100,

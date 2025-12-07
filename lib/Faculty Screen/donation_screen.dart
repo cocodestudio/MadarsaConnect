@@ -3,12 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// MAIN SCREEN WIDGET
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
 
@@ -25,16 +25,25 @@ class _DonationScreenState extends State<DonationScreen>
 
   String? _donationQrUrl;
   bool _isQrLoading = true;
-  // --- LOADER STATE (isVerifying) YAHAN SE HATA DIYA GAYA HAI ---
 
-  final List<Map<String, dynamic>> donationCategories = [
-    {'name': 'Sadaqah', 'icon': Icons.favorite_border},
-    {'name': 'Zakat', 'icon': Icons.account_balance_wallet_outlined},
-    {'name': 'Fitra', 'icon': Icons.local_dining_outlined},
-    {'name': 'Imdad', 'icon': Icons.volunteer_activism_outlined},
-    {'name': 'Hadiya', 'icon': Icons.card_giftcard_outlined},
-    {'name': 'Others', 'icon': Icons.more_horiz},
+  // Categories will be localized in build method or helper
+  final List<String> _categoryKeys = [
+    'Sadaqah',
+    'Zakat',
+    'Fitra',
+    'Imdad',
+    'Hadiya',
+    'Others',
   ];
+
+  final Map<String, IconData> _categoryIcons = {
+    'Sadaqah': Icons.favorite_border,
+    'Zakat': Icons.account_balance_wallet_outlined,
+    'Fitra': Icons.local_dining_outlined,
+    'Imdad': Icons.volunteer_activism_outlined,
+    'Hadiya': Icons.card_giftcard_outlined,
+    'Others': Icons.more_horiz,
+  };
 
   @override
   void initState() {
@@ -85,7 +94,7 @@ class _DonationScreenState extends State<DonationScreen>
   void _onDonationTap() async {
     final double? amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) {
-      CustomPopup.show(context, 'Please enter a valid amount.');
+      CustomPopup.show(context, AppLocalizations.of(context)!.enterValidAmount);
       return;
     }
 
@@ -96,12 +105,31 @@ class _DonationScreenState extends State<DonationScreen>
       builder:
           (context) => _PaymentSheetContent(
             amount: amount,
-            selectedCategory: _selectedCategory,
+            selectedCategory: _selectedCategory, // Passing internal key
             donationQrUrl: _donationQrUrl,
             amountController: _amountController,
           ),
     );
     if (result == true && mounted) {}
+  }
+
+  String _getLocalizedCategory(String key) {
+    switch (key) {
+      case 'Sadaqah':
+        return AppLocalizations.of(context)!.sadaqah;
+      case 'Zakat':
+        return AppLocalizations.of(context)!.zakat;
+      case 'Fitra':
+        return AppLocalizations.of(context)!.fitra;
+      case 'Imdad':
+        return AppLocalizations.of(context)!.imdad;
+      case 'Hadiya':
+        return AppLocalizations.of(context)!.hadiya;
+      case 'Others':
+        return AppLocalizations.of(context)!.others;
+      default:
+        return key;
+    }
   }
 
   @override
@@ -117,11 +145,11 @@ class _DonationScreenState extends State<DonationScreen>
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Donation',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.donationTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -135,10 +163,10 @@ class _DonationScreenState extends State<DonationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Select a Donation Category',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                    Text(
+                      AppLocalizations.of(context)!.selectDonationCategory,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Color(0xFF1A237E),
                       ),
@@ -148,20 +176,23 @@ class _DonationScreenState extends State<DonationScreen>
                       spacing: 12,
                       runSpacing: 12,
                       children:
-                          donationCategories
+                          _categoryKeys
                               .map(
-                                (category) => _buildCategoryChip(
-                                  category['name'],
-                                  category['icon'],
+                                (key) => _buildCategoryChip(
+                                  key, // Pass internal key
+                                  _getLocalizedCategory(
+                                    key,
+                                  ), // Pass localized label
+                                  _categoryIcons[key]!,
                                 ),
                               )
                               .toList(),
                     ),
                     const SizedBox(height: 32),
-                    const Text(
-                      'Enter Amount',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                    Text(
+                      AppLocalizations.of(context)!.enterAmount,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Color(0xFF1A237E),
                       ),
@@ -172,20 +203,20 @@ class _DonationScreenState extends State<DonationScreen>
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       style: const TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         fontSize: 24,
                         color: Colors.black87,
                       ),
                       decoration: const InputDecoration(
                         prefixText: '₹',
                         prefixStyle: TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 24,
                           color: Colors.black87,
                         ),
                         hintText: '0',
                         hintStyle: TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 24,
                           color: Colors.black38,
                         ),
@@ -239,10 +270,10 @@ class _DonationScreenState extends State<DonationScreen>
                                 ),
                               ],
                             ),
-                            child: const Text(
-                              'Donate',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy-Bold',
+                            child: Text(
+                              AppLocalizations.of(context)!.donateBtn,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                                 fontSize: 20,
                                 color: Colors.white,
                               ),
@@ -276,21 +307,20 @@ class _DonationScreenState extends State<DonationScreen>
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                         ),
-                        child: const Text(
-                          'Show History',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                        child: Text(
+                          AppLocalizations.of(context)!.showHistory,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Center(
+                    Center(
                       child: Text(
-                        'Your donation goes directly to the Madarsa account.',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy-Regular',
+                        AppLocalizations.of(context)!.donationNote,
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                         ),
@@ -303,12 +333,16 @@ class _DonationScreenState extends State<DonationScreen>
     );
   }
 
-  Widget _buildCategoryChip(String name, IconData icon) {
-    final bool isSelected = _selectedCategory == name;
+  Widget _buildCategoryChip(
+    String internalKey,
+    String localizedLabel,
+    IconData icon,
+  ) {
+    final bool isSelected = _selectedCategory == internalKey;
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedCategory = name;
+          _selectedCategory = internalKey;
         });
       },
       child: AnimatedContainer(
@@ -343,9 +377,9 @@ class _DonationScreenState extends State<DonationScreen>
             ),
             const SizedBox(width: 8),
             Text(
-              name,
+              localizedLabel,
               style: TextStyle(
-                fontFamily: isSelected ? 'Gilroy-Bold' : 'Gilroy-Regular',
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 16,
                 color: isSelected ? Colors.redAccent.shade700 : Colors.black87,
               ),
@@ -393,7 +427,6 @@ class _DonationScreenState extends State<DonationScreen>
                     child: Text(
                       '₹$amount',
                       style: const TextStyle(
-                        fontFamily: 'Gilroy-Regular',
                         fontSize: 16,
                         color: Colors.black87,
                       ),
@@ -406,7 +439,6 @@ class _DonationScreenState extends State<DonationScreen>
   }
 }
 
-// --- NAYA STATEFUL WIDGET JO BOTTOM SHEET KE LIYE BANAYA GAYA HAI ---
 class _PaymentSheetContent extends StatefulWidget {
   final double amount;
   final String selectedCategory;
@@ -426,7 +458,7 @@ class _PaymentSheetContent extends StatefulWidget {
 
 class _PaymentSheetContentState extends State<_PaymentSheetContent> {
   final TextEditingController _utrController = TextEditingController();
-  bool _isVerifying = false; // Iski state ab is widget ke andar hai
+  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -434,12 +466,12 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
     super.dispose();
   }
 
-  // Submit function ab is widget ke andar hai
   Future<void> _submitDonationRequest() async {
     final utr = _utrController.text.trim();
 
     if (utr.isEmpty) {
-      if (mounted) CustomPopup.show(context, 'Please enter the UTR Number.');
+      if (mounted)
+        CustomPopup.show(context, AppLocalizations.of(context)!.pleaseEnterUtr);
       return;
     }
 
@@ -447,7 +479,8 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not logged in.');
+      if (user == null)
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
 
       String? headUid;
       String userName = "Anonymous";
@@ -459,7 +492,7 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
               .collection('Heads')
               .doc(userId)
               .get();
-      //... (baaki logic same hai)
+
       if (userDoc.exists) {
         final data = userDoc.data() as Map<String, dynamic>?;
         headUid = userId;
@@ -502,7 +535,7 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
         'timestamp': FieldValue.serverTimestamp(),
         'createdAt': Timestamp.fromDate(DateTime.now()),
       });
-      // ... (notification logic)
+
       final headDoc =
           await FirebaseFirestore.instance
               .collection('Heads')
@@ -528,10 +561,32 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
     } catch (e) {
       debugPrint("Error submitting donation request: $e");
       if (mounted) {
-        CustomPopup.show(context, 'Failed to submit request: ${e.toString()}');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToSubmitRequest}: ${e.toString()}',
+        );
       }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
+    }
+  }
+
+  String _getLocalizedCategory(String key) {
+    switch (key) {
+      case 'Sadaqah':
+        return AppLocalizations.of(context)!.sadaqah;
+      case 'Zakat':
+        return AppLocalizations.of(context)!.zakat;
+      case 'Fitra':
+        return AppLocalizations.of(context)!.fitra;
+      case 'Imdad':
+        return AppLocalizations.of(context)!.imdad;
+      case 'Hadiya':
+        return AppLocalizations.of(context)!.hadiya;
+      case 'Others':
+        return AppLocalizations.of(context)!.others;
+      default:
+        return key;
     }
   }
 
@@ -562,19 +617,17 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
                   Text(
                     '₹${widget.amount.toStringAsFixed(2)}',
                     style: const TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       fontSize: 48,
                       color: Color(0xFF1A237E),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'You are donating for: ${widget.selectedCategory}',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy-Regular',
-                      fontSize: 18,
-                      color: Colors.black54,
+                    AppLocalizations.of(context)!.donatingFor(
+                      _getLocalizedCategory(widget.selectedCategory),
                     ),
+                    style: const TextStyle(fontSize: 18, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -584,18 +637,18 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
                     controller: _utrController,
                     keyboardType: TextInputType.text,
                     style: const TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: Colors.black87,
                     ),
                     decoration: InputDecoration(
-                      labelText: 'Enter UTR Number / Transaction ID',
+                      labelText:
+                          AppLocalizations.of(context)!.enterUtrTransactionId,
                       labelStyle: const TextStyle(
-                        fontFamily: 'Gilroy-Regular',
                         fontSize: 16,
                         color: Colors.black54,
                       ),
-                      hintText: 'e.g., 123456789012',
+                      hintText: AppLocalizations.of(context)!.utrExample,
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -641,10 +694,10 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
                                   strokeWidth: 2.0,
                                 ),
                               )
-                              : const Text(
-                                'Verify Payment',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy-Bold',
+                              : Text(
+                                AppLocalizations.of(context)!.verifyPayment,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
                                   fontSize: 18,
                                   color: Colors.white,
                                 ),
@@ -652,13 +705,9 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Your donation goes directly to the Madarsa account.',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy-Regular',
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
+                  Text(
+                    AppLocalizations.of(context)!.donationNote,
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -688,9 +737,9 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Scan to Pay',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.scanToPay,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -725,19 +774,19 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
                           );
                         },
                         errorBuilder:
-                            (context, error, stackTrace) => const Center(
+                            (context, error, stackTrace) => Center(
                               child: Text(
-                                'QR Code failed to load',
+                                AppLocalizations.of(context)!.qrCodeFailedLoad,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.black87),
+                                style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                       )
-                      : const Center(
+                      : Center(
                         child: Text(
-                          'QR Code not available',
+                          AppLocalizations.of(context)!.qrCodeNotAvailable,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black87),
+                          style: const TextStyle(color: Colors.black87),
                         ),
                       ),
             ),
@@ -748,7 +797,6 @@ class _PaymentSheetContentState extends State<_PaymentSheetContent> {
   }
 }
 
-// --- HISTORY SCREEN (NO CHANGES) ---
 class DonationHistoryScreen extends StatelessWidget {
   const DonationHistoryScreen({super.key});
   @override
@@ -756,8 +804,12 @@ class DonationHistoryScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Donation History')),
-        body: const Center(child: Text('User not logged in.')),
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context)!.donationHistory),
+        ),
+        body: Center(
+          child: Text(AppLocalizations.of(context)!.userNotLoggedIn),
+        ),
       );
     }
     return Scaffold(
@@ -771,11 +823,11 @@ class DonationHistoryScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Donation History',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.donationHistory,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -803,13 +855,9 @@ class DonationHistoryScreen extends StatelessWidget {
                     color: Colors.grey.withOpacity(0.5),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'No donations made yet.',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy-Regular',
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
+                  Text(
+                    AppLocalizations.of(context)!.noDonationsYet,
+                    style: const TextStyle(fontSize: 18, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -823,7 +871,31 @@ class DonationHistoryScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final transaction =
                   transactions[index].data() as Map<String, dynamic>;
-              final category = transaction['category'] ?? 'N/A';
+              // Map category to localized string if possible
+              String categoryKey = transaction['category'] ?? 'N/A';
+              String categoryLabel = categoryKey;
+              // Simple mapping
+              switch (categoryKey) {
+                case 'Sadaqah':
+                  categoryLabel = AppLocalizations.of(context)!.sadaqah;
+                  break;
+                case 'Zakat':
+                  categoryLabel = AppLocalizations.of(context)!.zakat;
+                  break;
+                case 'Fitra':
+                  categoryLabel = AppLocalizations.of(context)!.fitra;
+                  break;
+                case 'Imdad':
+                  categoryLabel = AppLocalizations.of(context)!.imdad;
+                  break;
+                case 'Hadiya':
+                  categoryLabel = AppLocalizations.of(context)!.hadiya;
+                  break;
+                case 'Others':
+                  categoryLabel = AppLocalizations.of(context)!.others;
+                  break;
+              }
+
               final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
               final utrNumber = transaction['utrNumber'] ?? 'N/A';
               final status = transaction['status'] ?? 'pending';
@@ -843,6 +915,16 @@ class DonationHistoryScreen extends StatelessWidget {
                 default:
                   statusColor = Colors.orange;
               }
+
+              // Localize status
+              String localizedStatus = status.toUpperCase();
+              if (status == 'pending')
+                localizedStatus = AppLocalizations.of(context)!.pending;
+              else if (status == 'approved')
+                localizedStatus = AppLocalizations.of(context)!.approved;
+              else if (status == 'rejected')
+                localizedStatus = AppLocalizations.of(context)!.rejected;
+
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 padding: const EdgeInsets.all(16),
@@ -865,9 +947,9 @@ class DonationHistoryScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          category,
+                          categoryLabel,
                           style: const TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: Colors.black87,
                           ),
@@ -875,7 +957,7 @@ class DonationHistoryScreen extends StatelessWidget {
                         Text(
                           '₹${amount.toStringAsFixed(2)}',
                           style: const TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: Colors.green,
                           ),
@@ -889,7 +971,6 @@ class DonationHistoryScreen extends StatelessWidget {
                         Text(
                           'UTR: $utrNumber',
                           style: const TextStyle(
-                            fontFamily: 'Gilroy-Regular',
                             fontSize: 14,
                             color: Colors.grey,
                           ),
@@ -904,9 +985,9 @@ class DonationHistoryScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            status.toUpperCase(),
+                            localizedStatus,
                             style: TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               fontSize: 12,
                               color: statusColor,
                             ),
@@ -920,7 +1001,6 @@ class DonationHistoryScreen extends StatelessWidget {
                       child: Text(
                         formattedDate,
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Regular',
                           fontSize: 12,
                           color: Colors.grey,
                         ),

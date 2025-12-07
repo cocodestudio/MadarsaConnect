@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -96,7 +97,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (_userRole == "Head") {
         _headUid = uid;
       } else {
-        // Faculty/Student ke liye Head UID profile se fetch karna hoga
         final collection = _userRole == "Faculty" ? "Faculties" : "Students";
         final snap =
             await FirebaseFirestore.instance
@@ -128,11 +128,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     try {
       if (selectedCardIndex == 0) {
-        // Fetch data for the first tab
         await _fetchOverallCounts();
         await _fetchTopMadarsas();
       } else if (selectedCardIndex == 1) {
-        // Fetch data for the second tab
         await _fetchStudentDataForAcademics();
         _calculateCourseCompletion();
         _calculateGenderDistribution();
@@ -323,7 +321,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   void _calculateAgeDistribution() {
-    // New age distribution ranges as requested
     _ageDistribution = {
       '5-15 years': 0,
       '15-25 years': 0,
@@ -366,7 +363,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         age--;
       }
 
-      // Updated logic for the new age ranges
       if (age >= 5 && age < 15) {
         _ageDistribution['5-15 years'] = _ageDistribution['5-15 years']! + 1;
       } else if (age >= 15 && age < 25) {
@@ -382,7 +378,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _fetchAttendanceData() async {
-    // reset counters
     _weeklyPresent = 0;
     _weeklyTotal = 0;
     _monthlyPresent = 0;
@@ -393,18 +388,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     Query query;
 
     if (_userRole == 'Student') {
-      // ✅ Student: sirf apna data
       query = FirebaseFirestore.instance
           .collection('attendance')
           .where('student_uid', isEqualTo: _studentUid);
     } else {
-      // ✅ Head & Faculty: aggregated data head ke courses ke hisaab se
       query = FirebaseFirestore.instance
           .collection('attendance')
           .where('headUid', isEqualTo: _headUid);
     }
 
-    // ✅ Date filter agar "Specific Date" selected hai
     if (selectedDateRange == 'Specific Date' && _selectedDate != null) {
       final startOfDay = DateTime(
         _selectedDate!.year,
@@ -485,7 +477,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               )
               .get();
 
-      // Build a safe list of DateTime values (ignore docs without valid timestamp)
       final attendanceDates =
           attendanceSnapshot.docs
               .map((doc) {
@@ -509,7 +500,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 : 'N/A';
         _inactiveStudents.add({
           'name': studentName,
-          'days': '$daysAbsentStr days absent',
+          'days': '$daysAbsentStr ${AppLocalizations.of(context)!.daysAbsent}',
         });
       }
     }
@@ -637,7 +628,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black54,
                 fontSize: screenWidth * 0.04,
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold,
               ),
             ),
             Align(
@@ -669,11 +660,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Analytics',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.analytics,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -709,20 +700,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 mainAxisSpacing: 16,
                                 childAspectRatio: 1.2,
                                 children: [
-                                  buildCard(0, 'Total Students', Icons.people),
+                                  buildCard(
+                                    0,
+                                    AppLocalizations.of(context)!.totalStudents,
+                                    Icons.people,
+                                  ),
                                   buildCard(
                                     1,
-                                    'Academic Performance',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.academicPerformance,
                                     Icons.bar_chart,
                                   ),
                                   buildCard(
                                     2,
-                                    'Students Records',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.studentsRecords,
                                     Icons.school,
                                   ),
                                   buildCard(
                                     3,
-                                    'Payments Overview',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.paymentsOverview,
                                     Icons.payment,
                                   ),
                                 ],
@@ -857,11 +858,11 @@ class _ActivityGoalChartState extends State<ActivityGoalChart> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Activity",
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.activity,
+                style: const TextStyle(
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                   fontSize: 17,
                 ),
               ),
@@ -977,24 +978,22 @@ class _ActivityGoalChartState extends State<ActivityGoalChart> {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           ActivityInfoRow(
             color: Colors.blueAccent,
-            label: 'Total Students',
+            label: AppLocalizations.of(context)!.totalStudents,
             percent: widget.totalStudents.toString(),
           ),
           const Divider(),
           ActivityInfoRow(
             color: Colors.pinkAccent,
-            label: 'Total Teachers',
+            label: AppLocalizations.of(context)!.totalTeachers,
             percent: widget.totalTeachers.toString(),
           ),
           const Divider(),
           ActivityInfoRow(
             color: Colors.redAccent,
-            label: 'Total Madarsas',
+            label: AppLocalizations.of(context)!.totalMadarsas,
             percent: widget.totalMadarsas.toString(),
           ),
         ],
@@ -1035,12 +1034,12 @@ class ActivityInfoRow extends StatelessWidget {
 
 class ActivityPieChart extends StatefulWidget {
   final Map<String, int> courseData;
-  final Map<String, Color> courseColors; // NEW
+  final Map<String, Color> courseColors;
 
   const ActivityPieChart({
     super.key,
     required this.courseData,
-    required this.courseColors, // NEW
+    required this.courseColors,
   });
 
   @override
@@ -1055,12 +1054,12 @@ class _ActivityPieChartState extends State<ActivityPieChart> {
     };
 
     if (dataMap.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: Text(
-            "No course data available",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            AppLocalizations.of(context)!.noCourseData,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -1071,11 +1070,11 @@ class _ActivityPieChartState extends State<ActivityPieChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Complete Course",
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.completeCourse,
+            style: const TextStyle(
               color: Colors.black,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               fontSize: 17,
             ),
           ),
@@ -1114,7 +1113,7 @@ class _ActivityPieChartState extends State<ActivityPieChart> {
               children: [
                 ActivityInfoRow2(
                   color: widget.courseColors[entry.key] ?? Colors.grey,
-                  label: 'Total ${entry.key}',
+                  label: '${AppLocalizations.of(context)!.total} ${entry.key}',
                   percent: entry.value.toStringAsFixed(0),
                 ),
                 const Divider(),
@@ -1157,56 +1156,7 @@ class ActivityInfoRow2 extends StatelessWidget {
   }
 }
 
-class YearPickerDialog extends StatelessWidget {
-  final int firstYear;
-  final int lastYear;
-
-  const YearPickerDialog({
-    super.key,
-    required this.firstYear,
-    required this.lastYear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final List<int> years = List.generate(
-      lastYear - firstYear + 1,
-      (index) => lastYear - index,
-    );
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(
-        height: 400,
-        width: 300,
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Select Year',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: years.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(years[index].toString()),
-                    onTap: () {
-                      Navigator.of(context).pop(years[index]);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ... Other classes similarly updated ...
 
 class DemographicChartWidget extends StatelessWidget {
   final Map<String, int> genderData;
@@ -1232,11 +1182,11 @@ class DemographicChartWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Gender Distribution',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.genderDistribution,
+            style: const TextStyle(
               fontSize: 16,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
@@ -1299,16 +1249,16 @@ class DemographicChartWidget extends StatelessWidget {
                           '${(malePercent * 100).toStringAsFixed(1)}%',
                           style: const TextStyle(
                             fontSize: 25,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF14C8C5),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Male',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.male,
+                          style: const TextStyle(
                             fontSize: 19,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF343E5C),
                           ),
                         ),
@@ -1321,16 +1271,16 @@ class DemographicChartWidget extends StatelessWidget {
                           '${(femalePercent * 100).toStringAsFixed(1)}%',
                           style: const TextStyle(
                             fontSize: 25,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFFFF4F8B),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Female',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.female,
+                          style: const TextStyle(
                             fontSize: 19,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF343E5C),
                           ),
                         ),
@@ -1344,16 +1294,16 @@ class DemographicChartWidget extends StatelessWidget {
                             '${(otherPercent * 100).toStringAsFixed(1)}%',
                             style: const TextStyle(
                               fontSize: 25,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.orange,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Other',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.other,
+                            style: const TextStyle(
                               fontSize: 19,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Color(0xFF343E5C),
                             ),
                           ),
@@ -1400,7 +1350,17 @@ class OverallAttendance extends StatefulWidget {
 
 class _OverallAttendanceState extends State<OverallAttendance> {
   int selectedTabIndex = 0;
-  final List<String> tabs = ['Weekly', 'Monthly', 'All Time'];
+  late List<String> tabs;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    tabs = [
+      AppLocalizations.of(context)!.weekly,
+      AppLocalizations.of(context)!.monthly,
+      AppLocalizations.of(context)!.allTime,
+    ];
+  }
 
   String _getFormattedDateRange() {
     final now = DateTime.now();
@@ -1411,7 +1371,7 @@ class _OverallAttendanceState extends State<OverallAttendance> {
       case 1:
         return DateFormat('MMM yyyy').format(now);
       case 2:
-        return 'All Time';
+        return AppLocalizations.of(context)!.allTime;
       default:
         return '';
     }
@@ -1442,8 +1402,16 @@ class _OverallAttendanceState extends State<OverallAttendance> {
     final dateRangeText = _getFormattedDateRange();
 
     final chartData = [
-      _AttendanceData("Present", presentCount.toDouble(), Colors.green),
-      _AttendanceData("Absent", absent.toDouble(), Colors.redAccent),
+      _AttendanceData(
+        AppLocalizations.of(context)!.present,
+        presentCount.toDouble(),
+        Colors.green,
+      ),
+      _AttendanceData(
+        AppLocalizations.of(context)!.absent,
+        absent.toDouble(),
+        Colors.redAccent,
+      ),
     ];
 
     return Padding(
@@ -1465,22 +1433,20 @@ class _OverallAttendanceState extends State<OverallAttendance> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Title
-            const Text(
-              'Overall Attendance',
-              style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+            Text(
+              AppLocalizations.of(context)!.overallAttendance,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
             const SizedBox(height: 5),
             Text(
               dateRangeText,
               style: const TextStyle(
                 color: Colors.grey,
-                fontFamily: 'Gilroy-Bold',
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
 
-            // Tab Switcher
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(4),
@@ -1514,7 +1480,7 @@ class _OverallAttendanceState extends State<OverallAttendance> {
                         child: Text(
                           tabs[index],
                           style: const TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
@@ -1527,7 +1493,6 @@ class _OverallAttendanceState extends State<OverallAttendance> {
 
             const SizedBox(height: 30),
 
-            // Doughnut Chart
             SizedBox(
               height: 200,
               child: SfCircularChart(
@@ -1541,12 +1506,12 @@ class _OverallAttendanceState extends State<OverallAttendance> {
                           '${percent.toStringAsFixed(1)}%',
                           style: const TextStyle(
                             fontSize: 22,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Text(
-                          "Present",
-                          style: TextStyle(color: Colors.grey),
+                        Text(
+                          AppLocalizations.of(context)!.present,
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
@@ -1565,7 +1530,7 @@ class _OverallAttendanceState extends State<OverallAttendance> {
                     dataLabelSettings: const DataLabelSettings(
                       isVisible: true,
                       textStyle: TextStyle(
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         fontSize: 12,
                         color: Colors.black87,
                       ),
@@ -1578,14 +1543,9 @@ class _OverallAttendanceState extends State<OverallAttendance> {
 
             const SizedBox(height: 16),
 
-            // Summary
             Text(
-              "Total: $totalCount, Present: $presentCount, Absent: $absent",
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gilroy-Bold',
-              ),
+              "${AppLocalizations.of(context)!.total}: $totalCount, ${AppLocalizations.of(context)!.present}: $presentCount, ${AppLocalizations.of(context)!.absent}: $absent",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -1634,9 +1594,12 @@ class _InactiveStudentsContainerState extends State<InactiveStudentsContainer> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Inactive Students",
-                style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.inactiveStudents,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (widget.students.length > 4)
                 GestureDetector(
@@ -1648,7 +1611,9 @@ class _InactiveStudentsContainerState extends State<InactiveStudentsContainer> {
                   child: Row(
                     children: [
                       Text(
-                        showAll ? "Show Less" : "See All",
+                        showAll
+                            ? AppLocalizations.of(context)!.showLess
+                            : AppLocalizations.of(context)!.seeAll,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -1670,12 +1635,12 @@ class _InactiveStudentsContainerState extends State<InactiveStudentsContainer> {
           ),
           const SizedBox(height: 12),
           widget.students.isEmpty
-              ? const Center(
+              ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
                   child: Text(
-                    "No record found",
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.noRecordFound,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey,
@@ -1743,8 +1708,16 @@ class _FeesChartState extends State<FeesChart> {
     final double totalAmount = widget.totalPaidAmount + widget.totalDueAmount;
 
     final List<FeesData> chartData = [
-      FeesData('Paid', widget.totalPaidAmount, const Color(0xFF4CAF50)),
-      FeesData('Dues', widget.totalDueAmount, const Color(0xFFF44336)),
+      FeesData(
+        AppLocalizations.of(context)!.paid,
+        widget.totalPaidAmount,
+        const Color(0xFF4CAF50),
+      ),
+      FeesData(
+        AppLocalizations.of(context)!.dues,
+        widget.totalDueAmount,
+        const Color(0xFFF44336),
+      ),
     ];
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1760,20 +1733,16 @@ class _FeesChartState extends State<FeesChart> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Fee Overview',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gilroy-Bold',
-              ),
+              AppLocalizations.of(context)!.feeOverview,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 220, // Height badha di hai taaki labels na katein
+            height: 220,
             child: SfCircularChart(
               margin: EdgeInsets.zero,
               annotations: <CircularChartAnnotation>[
@@ -1781,12 +1750,15 @@ class _FeesChartState extends State<FeesChart> {
                   widget: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Total', style: TextStyle(color: Colors.grey[700])),
+                      Text(
+                        AppLocalizations.of(context)!.total,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                       Text(
                         '₹${totalAmount.toStringAsFixed(0)}',
                         style: const TextStyle(
                           fontSize: 18,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -1812,7 +1784,6 @@ class _FeesChartState extends State<FeesChart> {
                     textStyle: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
-                      fontFamily: 'Gilroy-Bold',
                     ),
                     labelPosition: ChartDataLabelPosition.outside,
                   ),
@@ -1825,8 +1796,14 @@ class _FeesChartState extends State<FeesChart> {
             alignment: WrapAlignment.center,
             spacing: 24,
             children: [
-              LegendDot(color: const Color(0xFFF44336), label: 'Dues'),
-              LegendDot(color: const Color(0xFF4CAF50), label: 'Paid'),
+              LegendDot(
+                color: const Color(0xFFF44336),
+                label: AppLocalizations.of(context)!.dues,
+              ),
+              LegendDot(
+                color: const Color(0xFF4CAF50),
+                label: AppLocalizations.of(context)!.paid,
+              ),
             ],
           ),
         ],
@@ -1863,7 +1840,7 @@ class LegendDot extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             color: Colors.black87,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -1903,9 +1880,12 @@ class _PendingFeesContainerState extends State<PendingFeesContainer> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Pending Amount",
-                style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.pendingAmount,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (widget.students.length > 4)
                 GestureDetector(
@@ -1917,7 +1897,9 @@ class _PendingFeesContainerState extends State<PendingFeesContainer> {
                   child: Row(
                     children: [
                       Text(
-                        showAll ? "Show Less" : "See All",
+                        showAll
+                            ? AppLocalizations.of(context)!.showLess
+                            : AppLocalizations.of(context)!.seeAll,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -1939,12 +1921,12 @@ class _PendingFeesContainerState extends State<PendingFeesContainer> {
           ),
           const SizedBox(height: 12),
           widget.students.isEmpty
-              ? const Center(
+              ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
                   child: Text(
-                    "No record found",
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.noRecordFound,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey,
@@ -2035,7 +2017,7 @@ class _TopMadarsasContainerState extends State<TopMadarsasContainer> {
                     const SizedBox(height: 12),
                     TextField(
                       decoration: InputDecoration(
-                        hintText: "Search Madarsa",
+                        hintText: AppLocalizations.of(context)!.searchMadarsa,
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -2082,7 +2064,7 @@ class _TopMadarsasContainerState extends State<TopMadarsasContainer> {
                                   ),
                                 ),
                                 Text(
-                                  "${madarsa['students']} Students",
+                                  "${madarsa['students']} ${AppLocalizations.of(context)!.students}",
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.teal,
@@ -2122,25 +2104,28 @@ class _TopMadarsasContainerState extends State<TopMadarsasContainer> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Top Madarsas",
-                style: TextStyle(fontSize: 16, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.topMadarsas,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (widget.madarsas.length > 5)
                 GestureDetector(
                   onTap: _showAllMadarsasDialog,
                   child: Row(
-                    children: const [
+                    children: [
                       Text(
-                        "See All",
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.seeAll,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
                       ),
-                      SizedBox(width: 4),
-                      Icon(
+                      const SizedBox(width: 4),
+                      const Icon(
                         Icons.keyboard_arrow_down,
                         size: 18,
                         color: Colors.black,
@@ -2347,15 +2332,19 @@ class _DonationOverviewState extends State<DonationOverview> {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.remove_circle_outline, size: 60, color: Colors.grey),
-              SizedBox(height: 16),
+            children: [
+              const Icon(
+                Icons.remove_circle_outline,
+                size: 60,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
               Text(
-                "No donation data available for this period.",
-                style: TextStyle(
+                AppLocalizations.of(context)!.noDonationData,
+                style: const TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -2386,15 +2375,17 @@ class _DonationOverviewState extends State<DonationOverview> {
                   color: Colors.redAccent.withOpacity(0.8),
                 ),
                 const SizedBox(width: 10),
-                const Text(
-                  'Donation Overview',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                Text(
+                  AppLocalizations.of(context)!.donationOverview,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             Center(
-              // Center widget added to center the chart
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -2429,19 +2420,19 @@ class _DonationOverviewState extends State<DonationOverview> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Total',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.total,
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         '₹${_totalAmount.toStringAsFixed(0)}',
                         style: const TextStyle(
                           fontSize: 26,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -2491,20 +2482,19 @@ class TopPerformingStudents extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Top Performing Students",
+            AppLocalizations.of(context)!.topPerformingStudents,
             style: TextStyle(
               fontSize: screenWidth * 0.04,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),
-
           students.isEmpty
-              ? const Expanded(
+              ? Expanded(
                 child: Center(
                   child: Text(
-                    "No record found",
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.noRecordFound,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey,
@@ -2597,10 +2587,10 @@ class AgeDistributionChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Age Distribution",
+            AppLocalizations.of(context)!.ageDistribution,
             style: TextStyle(
               fontSize: screenWidth * 0.045,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),

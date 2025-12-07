@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import '../Home Screen/kitchen.dart';
 
 class DonationAnalyticsScreen extends StatefulWidget {
@@ -38,6 +40,25 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
     );
   }
 
+  String _getLocalizedCategory(String key) {
+    switch (key) {
+      case 'Sadaqah':
+        return AppLocalizations.of(context)!.sadaqah;
+      case 'Zakat':
+        return AppLocalizations.of(context)!.zakat;
+      case 'Fitra':
+        return AppLocalizations.of(context)!.fitra;
+      case 'Imdad':
+        return AppLocalizations.of(context)!.imdad;
+      case 'Hadiya':
+        return AppLocalizations.of(context)!.hadiya;
+      case 'Others':
+        return AppLocalizations.of(context)!.others;
+      default:
+        return key;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -62,10 +83,12 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
             onPressed: _handleBackButton,
           ),
           title: Text(
-            _selectedCategory == null ? 'Donation Board' : _selectedCategory!,
+            _selectedCategory == null
+                ? AppLocalizations.of(context)!.donationBoard
+                : _getLocalizedCategory(_selectedCategory!),
             style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
@@ -81,11 +104,12 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
 
   Widget _buildMainDashboard() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('donationRequests')
-          .where('headUid', isEqualTo: widget.headUid)
-          .where('status', isEqualTo: 'approved')
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('donationRequests')
+              .where('headUid', isEqualTo: widget.headUid)
+              .where('status', isEqualTo: 'approved')
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: GradientSpinner());
@@ -177,21 +201,21 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1.5),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.money_rounded, color: Colors.green, size: 32),
-            SizedBox(width: 16),
+            const Icon(Icons.money_rounded, color: Colors.green, size: 32),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(
-                'Pay by Cash',
-                style: TextStyle(
-                  fontFamily: 'Gilroy-Bold',
+                AppLocalizations.of(context)!.payByCash,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
                   fontSize: 18,
                   color: Colors.black87,
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+            const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
           ],
         ),
       ),
@@ -210,10 +234,10 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Donations',
-            style: TextStyle(
-              fontFamily: 'Gilroy-Bold',
+          Text(
+            AppLocalizations.of(context)!.totalDonations,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
               fontSize: 20,
               color: Colors.black87,
             ),
@@ -222,7 +246,7 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
           Text(
             '₹${totalAmount.toStringAsFixed(2)}',
             style: const TextStyle(
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               fontSize: 32,
               color: Colors.redAccent,
             ),
@@ -249,16 +273,15 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                   isVisible: true,
                   position: LegendPosition.right,
                   itemPadding: 8,
-                  textStyle: const TextStyle(
-                    fontFamily: 'Gilroy-Regular',
-                    fontSize: 12,
-                  ),
+                  textStyle: const TextStyle(fontSize: 12),
                   legendItemBuilder: (
                     String name,
                     dynamic series,
                     dynamic point,
                     int index,
                   ) {
+                    // Localize category name in legend
+                    String localizedName = _getLocalizedCategory(name);
                     return SizedBox(
                       width: 110,
                       child: Row(
@@ -275,11 +298,8 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy-Regular',
-                                fontSize: 12,
-                              ),
+                              localizedName,
+                              style: const TextStyle(fontSize: 12),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -310,10 +330,10 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Category Totals',
-            style: TextStyle(
-              fontFamily: 'Gilroy-Bold',
+          Text(
+            AppLocalizations.of(context)!.categoryTotals,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
               fontSize: 20,
               color: Colors.black87,
             ),
@@ -325,14 +345,15 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
             itemCount: categoryTotals.length,
             separatorBuilder: (context, index) => const Divider(),
             itemBuilder: (context, index) {
-              final category = categoryTotals.keys.elementAt(index);
-              final amount = categoryTotals[category]!;
+              final categoryKey = categoryTotals.keys.elementAt(index);
+              final categoryLabel = _getLocalizedCategory(categoryKey);
+              final amount = categoryTotals[categoryKey]!;
               final color = palette[index % palette.length];
 
               return InkWell(
                 onTap: () {
                   setState(() {
-                    _selectedCategory = category;
+                    _selectedCategory = categoryKey;
                   });
                 },
                 child: Padding(
@@ -350,9 +371,8 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          category,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy-Regular',
+                          categoryLabel,
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
@@ -361,7 +381,7 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                       Text(
                         '₹${amount.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
@@ -397,7 +417,7 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildNoDataScreen(
-            message: 'No transactions for this category yet.',
+            message: AppLocalizations.of(context)!.noTransactionsCategory,
             icon: Icons.history,
           );
         }
@@ -409,7 +429,9 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
           itemBuilder: (context, index) {
             final transaction =
                 transactions[index].data() as Map<String, dynamic>;
-            final userName = transaction['userName'] ?? 'Unknown User';
+            final userName =
+                transaction['userName'] ??
+                AppLocalizations.of(context)!.unknownUser;
             final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
             final utrNumber = transaction['utrNumber'] ?? 'N/A';
             final timestamp = transaction['timestamp'] as Timestamp?;
@@ -442,7 +464,7 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                       Text(
                         userName,
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: Colors.black87,
                         ),
@@ -450,7 +472,7 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                       Text(
                         '₹${amount.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: Colors.green,
                         ),
@@ -462,17 +484,15 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'UTR: $utrNumber',
+                        '${AppLocalizations.of(context)!.utr}: $utrNumber',
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Regular',
                           fontSize: 14,
                           color: Colors.grey,
                         ),
                       ),
                       Text(
-                        '$formattedDate at $formattedTime',
+                        '$formattedDate ${formattedTime}',
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Regular',
                           fontSize: 12,
                           color: Colors.grey,
                         ),
@@ -485,6 +505,26 @@ class _DonationAnalyticsScreenState extends State<DonationAnalyticsScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildNoDataScreen({
+    String? message,
+    IconData icon = Icons.pie_chart_outline,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey.withOpacity(0.5)),
+          const SizedBox(height: 24),
+          Text(
+            message ?? AppLocalizations.of(context)!.noDonationsReceived,
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -525,9 +565,9 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not logged in.');
+      if (user == null)
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
 
-      // Since this is for the head, the head is the user.
       final headDoc =
           await FirebaseFirestore.instance
               .collection('Heads')
@@ -551,7 +591,11 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to record donation: $e')),
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedRecordDonation}: $e',
+            ),
+          ),
         );
       }
     } finally {
@@ -568,10 +612,10 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20.0),
             ),
-            title: const Text(
-              'Select a Category',
+            title: Text(
+              AppLocalizations.of(context)!.selectACategory,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
             content: SizedBox(
@@ -581,17 +625,41 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final category = _categories[index];
-                  final bool isSelected = _selectedCategory == category;
+                  // Localize category
+                  String localizedLabel = category;
+                  switch (category) {
+                    case 'Sadaqah':
+                      localizedLabel = AppLocalizations.of(context)!.sadaqah;
+                      break;
+                    case 'Zakat':
+                      localizedLabel = AppLocalizations.of(context)!.zakat;
+                      break;
+                    case 'Fitra':
+                      localizedLabel = AppLocalizations.of(context)!.fitra;
+                      break;
+                    case 'Imdad':
+                      localizedLabel = AppLocalizations.of(context)!.imdad;
+                      break;
+                    case 'Hadiya':
+                      localizedLabel = AppLocalizations.of(context)!.hadiya;
+                      break;
+                    case 'Others':
+                      localizedLabel = AppLocalizations.of(context)!.others;
+                      break;
+                  }
+
                   return ListTile(
                     title: Text(
-                      category,
+                      localizedLabel,
                       style: TextStyle(
                         fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                            _selectedCategory == category
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                       ),
                     ),
                     trailing:
-                        isSelected
+                        _selectedCategory == category
                             ? const Icon(
                               Icons.check_circle,
                               color: Colors.redAccent,
@@ -608,7 +676,35 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
     if (result != null) {
       setState(() {
         _selectedCategory = result;
-        _categoryDisplayController.text = result;
+        // Display localized, store internal
+        switch (result) {
+          case 'Sadaqah':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.sadaqah;
+            break;
+          case 'Zakat':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.zakat;
+            break;
+          case 'Fitra':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.fitra;
+            break;
+          case 'Imdad':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.imdad;
+            break;
+          case 'Hadiya':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.hadiya;
+            break;
+          case 'Others':
+            _categoryDisplayController.text =
+                AppLocalizations.of(context)!.others;
+            break;
+          default:
+            _categoryDisplayController.text = result;
+        }
       });
     }
   }
@@ -632,29 +728,34 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Record Cash Donation',
+                Text(
+                  AppLocalizations.of(context)!.recordCashDonation,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _amountController,
-                  decoration: premiumInputDecoration('Amount (in ₹)'),
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.amountInRupees,
+                  ),
                   keyboardType: TextInputType.number,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Amount is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.amountIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _categoryDisplayController,
                   readOnly: true,
                   decoration: premiumInputDecoration(
-                    'Select Category',
+                    AppLocalizations.of(context)!.selectCategory,
                   ).copyWith(
                     suffixIcon: const Icon(
                       Icons.arrow_drop_down,
@@ -663,7 +764,10 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
                   ),
                   onTap: _showCategorySelectionDialog,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Category is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.categoryIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 32),
                 _isLoading
@@ -679,9 +783,9 @@ class _CashDonationSheetState extends State<_CashDonationSheet> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Record Donation',
-                        style: TextStyle(fontFamily: 'Gilroy-Bold'),
+                      child: Text(
+                        AppLocalizations.of(context)!.recordDonationBtn,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
               ],

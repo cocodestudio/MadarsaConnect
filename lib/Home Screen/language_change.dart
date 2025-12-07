@@ -1,79 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../Data/main_page.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart';
 
 class ChooseLanguageScreen extends StatefulWidget {
   const ChooseLanguageScreen({super.key});
+  static final List<Map<String, String>> languages = [
+    {'name': 'English', 'label': 'English', 'code': 'en'},
+    {'name': 'Hindi', 'label': 'हिंदी', 'code': 'hi'},
+    {'name': 'Urdu', 'label': 'اردو', 'code': 'ur'},
+  ];
 
   @override
   State<ChooseLanguageScreen> createState() => _ChooseLanguageScreenState();
 }
 
 class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
-  String selectedLanguage = 'English';
-
-  final List<Map<String, String>> languages = [
-    {'name': 'English'},
-    {'name': 'Hindi', 'label': 'हिंदी'},
-    {'name': 'Urdu', 'label': 'اردو'},
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final currentLocaleCode = languageProvider.currentLocale.languageCode;
+
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.grey.withOpacity(0.2),
+        surfaceTintColor: Colors.white,
+        title: Text(
+          AppLocalizations.of(context)!.chooseLanguage,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.04,
-                vertical: MediaQuery.of(context).size.height * 0.013,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 26),
-                  ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.26),
-                  Text(
-                    'Add Student',
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.048,
-                      fontFamily: 'Gilroy-Bold',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 15),
-
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Choose Language',
-                  style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // Language Grid
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -83,13 +52,14 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 12,
                   children:
-                      languages.map((lang) {
-                        final isSelected = selectedLanguage == lang['name'];
+                      ChooseLanguageScreen.languages.map((lang) {
+                        final isSelected = currentLocaleCode == lang['code'];
                         return GestureDetector(
                           onTap: () {
-                            setState(() {
-                              selectedLanguage = lang['name']!;
-                            });
+                            Provider.of<LanguageProvider>(
+                              context,
+                              listen: false,
+                            ).changeLocale(lang['code']!);
                           },
                           child: Container(
                             decoration: BoxDecoration(
@@ -165,31 +135,33 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                 ),
               ),
             ),
-
             // Continue Button
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
               child: SizedBox(
                 width: double.infinity,
-                height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
                   onPressed: () {
-                    // continue action
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MainPage()),
+                    );
                   },
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.continueText,
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
-                      fontFamily: 'Gilroy-Bold',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
                     ),
                   ),
                 ),

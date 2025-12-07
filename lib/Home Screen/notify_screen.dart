@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import 'feed_screen.dart';
 
 enum NotificationType {
@@ -227,10 +228,24 @@ class _NotifyScreenState extends State<NotifyScreen> {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    if (difference.inMinutes < 1) return 'Just now';
-    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    if (difference.inMinutes < 1) {
+      return AppLocalizations.of(context)!.justNow;
+    }
+    if (difference.inHours < 1) {
+      return AppLocalizations.of(
+        context,
+      )!.minutesAgo(difference.inMinutes.toString());
+    }
+    if (difference.inHours < 24) {
+      return AppLocalizations.of(
+        context,
+      )!.hoursAgo(difference.inHours.toString());
+    }
+    if (difference.inDays < 7) {
+      return AppLocalizations.of(
+        context,
+      )!.daysAgo(difference.inDays.toString());
+    }
     return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
   }
 
@@ -245,7 +260,10 @@ class _NotifyScreenState extends State<NotifyScreen> {
         if (index != -1) _notifications[index].isRead = true;
       });
     } catch (e) {
-      CustomPopup.show(context,'Failed to mark as read: $e');
+      CustomPopup.show(
+        context,
+        '${AppLocalizations.of(context)!.failedToMarkRead}: $e',
+      );
     }
   }
 
@@ -284,20 +302,20 @@ class _NotifyScreenState extends State<NotifyScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         elevation: 0,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.notificationsTitle,
+          style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
             fontSize: 24,
-            fontFamily: 'Gilroy-Bold',
           ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.done_all, color: Colors.black54),
-            tooltip: 'Mark all as read',
+            tooltip: AppLocalizations.of(context)!.markAllRead,
             onPressed: () async {
               final batch = FirebaseFirestore.instance.batch();
               for (var n in _notifications.where((n) => !n.isRead)) {
@@ -318,7 +336,7 @@ class _NotifyScreenState extends State<NotifyScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep, color: Colors.black54),
-            tooltip: 'Clear all notifications',
+            tooltip: AppLocalizations.of(context)!.clearAllNotifications,
             onPressed: () async {
               final batch = FirebaseFirestore.instance.batch();
               for (var n in _notifications) {
@@ -350,11 +368,11 @@ class _NotifyScreenState extends State<NotifyScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'In-app notifications are turned off.',
+                      AppLocalizations.of(context)!.inAppNotificationsOff,
                       style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                     ),
                     Text(
-                      'You can enable them from settings.',
+                      AppLocalizations.of(context)!.enableFromSettings,
                       style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     ),
                   ],
@@ -372,11 +390,11 @@ class _NotifyScreenState extends State<NotifyScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No new notifications',
+                      AppLocalizations.of(context)!.noNewNotifications,
                       style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                     ),
                     Text(
-                      'Check back later for updates!',
+                      AppLocalizations.of(context)!.checkBackLater,
                       style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     ),
                   ],
@@ -472,7 +490,6 @@ class _NotifyScreenState extends State<NotifyScreen> {
                                                         : Colors
                                                             .indigo
                                                             .shade900,
-                                                fontFamily: 'Gilroy-Bold',
                                               ),
                                             ),
                                             const SizedBox(height: 4),

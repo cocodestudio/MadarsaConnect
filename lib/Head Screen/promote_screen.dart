@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class PromoteStudentScreen extends StatefulWidget {
@@ -66,7 +66,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Error fetching courses: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingCourses}: $e",
+        );
       }
     }
   }
@@ -78,7 +81,8 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
 
     try {
       final courseName = selectedCourse!['name'];
-      final duration = '${selectedYear}${_getSuffix(selectedYear!)} Year';
+      final duration =
+          '${selectedYear}${_getSuffix(selectedYear!)} ${AppLocalizations.of(context)!.year}';
 
       final studentSnapshot =
           await _firestore
@@ -109,7 +113,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Error fetching students: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorFetchingStudents}: $e",
+        );
       }
     }
     if (mounted) setState(() => isLoading = false);
@@ -129,17 +136,21 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
       final int currentCourseYear = student['courseDurationNumber'] ?? 0;
       final int nextCourseYear = currentCourseYear + 1;
       final int courseDurationMax = selectedCourse?['duration'] ?? 1;
-      final studentName = student['fullName'] ?? 'Student';
+      final studentName =
+          student['fullName'] ?? AppLocalizations.of(context)!.student;
 
       if (currentCourseYear < courseDurationMax) {
         final String nextCourseDuration =
-            '${nextCourseYear}${_getSuffix(nextCourseYear)} Year';
+            '${nextCourseYear}${_getSuffix(nextCourseYear)} ${AppLocalizations.of(context)!.year}';
         await _firestore.collection('Students').doc(studentId).update({
           'courseDurationNumber': nextCourseYear,
           'courseDuration': nextCourseDuration,
         });
         if (mounted) {
-          CustomPopup.show(context, "$studentName promoted successfully.");
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.studentPromoted(studentName),
+          );
         }
       } else {
         await _firestore.collection('Students').doc(studentId).update({
@@ -156,7 +167,7 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
         if (mounted) {
           CustomPopup.show(
             context,
-            "$studentName has completed the course and is archived.",
+            AppLocalizations.of(context)!.studentCompletedCourse(studentName),
           );
         }
       }
@@ -169,7 +180,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Error promoting student: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorPromotingStudent}: $e",
+        );
       }
     } finally {
       if (mounted) {
@@ -180,7 +194,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
 
   Future<void> _promoteSelectedStudents() async {
     if (selectedStudents.isEmpty) {
-      CustomPopup.show(context, "Please select students.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.pleaseSelectStudents,
+      );
       return;
     }
 
@@ -214,14 +231,15 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
 
         if (currentCourseYear < courseDurationMax) {
           final String nextCourseDuration =
-              '${currentCourseYear + 1}${_getSuffix(currentCourseYear + 1)} Year';
+              '${currentCourseYear + 1}${_getSuffix(currentCourseYear + 1)} ${AppLocalizations.of(context)!.year}';
           batch.update(_firestore.collection('Students').doc(studentId), {
             'courseDurationNumber': currentCourseYear + 1,
             'courseDuration': nextCourseDuration,
           });
-          notificationTitle = 'Congratulations!';
-          notificationBody =
-              'You have been promoted to the $nextCourseDuration.';
+          notificationTitle = AppLocalizations.of(context)!.congratulations;
+          notificationBody = AppLocalizations.of(
+            context,
+          )!.promotedTo(nextCourseDuration);
         } else {
           final newArchiveDoc =
               _firestore.collection('ArchivedEnrollments').doc();
@@ -233,9 +251,9 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
             'academicYear': selectedYear,
             'status': 'Completed',
           });
-          notificationTitle = 'Course Completed!';
-          notificationBody =
-              'Congratulations! You have successfully completed your course.';
+          notificationTitle =
+              AppLocalizations.of(context)!.courseCompletedTitle;
+          notificationBody = AppLocalizations.of(context)!.courseCompletedBody;
         }
 
         if (isPushEnabled && fcmToken != null && fcmToken.isNotEmpty) {
@@ -275,13 +293,16 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
         Navigator.pop(context);
         CustomPopup.show(
           context,
-          "All selected students processed successfully.",
+          AppLocalizations.of(context)!.studentsProcessedSuccess,
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        CustomPopup.show(context, "Error promoting students: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorPromotingStudents}: $e",
+        );
       }
     }
   }
@@ -328,10 +349,12 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
           },
         ),
         title: Text(
-          selectedCourse == null ? 'Promote Students' : 'Select Students',
+          selectedCourse == null
+              ? AppLocalizations.of(context)!.promoteStudents
+              : AppLocalizations.of(context)!.selectStudents,
           style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -361,7 +384,11 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                   ),
                   elevation: 0,
                 ),
-                child: Text('Promote ${selectedStudents.length} Students'),
+                child: Text(
+                  AppLocalizations.of(
+                    context,
+                  )!.promoteNStudents(selectedStudents.length.toString()),
+                ),
               ),
             ),
         ],
@@ -375,10 +402,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const PromoteStudentCard(
-              title: 'Promote Student',
-              subtitle: 'Select students to promote to the next academic year.',
-              gradientColors: [Color(0xFFE6F7F1), Color(0xFFC2F0DF)],
+            PromoteStudentCard(
+              title: AppLocalizations.of(context)!.promoteStudentTitle,
+              subtitle: AppLocalizations.of(context)!.promoteStudentSubtitle,
+              gradientColors: const [Color(0xFFE6F7F1), Color(0xFFC2F0DF)],
             ),
             const SizedBox(height: 26),
             ...courses.map((course) {
@@ -411,12 +438,12 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                                 course['name'] ?? '',
                                 style: TextStyle(
                                   fontSize: baseFontSize.clamp(14, 22),
-                                  fontFamily: 'Gilroy-Bold',
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Code: ${course['code'] ?? ''}',
+                                '${AppLocalizations.of(context)!.code}: ${course['code'] ?? ''}',
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 13,
@@ -424,7 +451,7 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Duration: ${course['duration']} Years',
+                                '${AppLocalizations.of(context)!.duration}: ${course['duration']} ${AppLocalizations.of(context)!.years}',
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 13,
@@ -478,10 +505,13 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Center(
+              Center(
                 child: Text(
-                  'Select Course Year',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                  AppLocalizations.of(context)!.selectCourseYear,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -524,10 +554,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            '${year}${_getSuffix(year)} Year',
+                            '${year}${_getSuffix(year)} ${AppLocalizations.of(context)!.year}',
                             style: const TextStyle(
                               fontSize: 16,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             ),
                           ),
@@ -551,8 +581,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
         child: Column(
           children: [
             PromoteStudentCard(
-              title: 'Promote ${selectedCourse!['name']}',
-              subtitle: '${selectedYear}${_getSuffix(selectedYear!)} Year',
+              title:
+                  '${AppLocalizations.of(context)!.promote} ${selectedCourse!['name']}',
+              subtitle:
+                  '${selectedYear}${_getSuffix(selectedYear!)} ${AppLocalizations.of(context)!.year}',
               gradientColors: [Colors.blue.shade100, Colors.blue.shade300],
             ),
             const SizedBox(height: 16),
@@ -572,7 +604,10 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${selectedStudents.length} of ${students.length} selected',
+                      AppLocalizations.of(context)!.selectedStudentsCount(
+                        selectedStudents.length.toString(),
+                        students.length.toString(),
+                      ),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -592,8 +627,8 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                       },
                       child: Text(
                         selectedStudents.length == students.length
-                            ? 'Deselect All'
-                            : 'Select All',
+                            ? AppLocalizations.of(context)!.deselectAll
+                            : AppLocalizations.of(context)!.selectAll,
                         style: const TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
@@ -604,7 +639,9 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                 ),
               ),
             if (students.isEmpty)
-              const Center(child: Text('No students found in this year.'))
+              Center(
+                child: Text(AppLocalizations.of(context)!.noStudentsFoundYear),
+              )
             else
               ...students.map((student) {
                 bool isSelected = selectedStudents.contains(student['uid']);
@@ -644,7 +681,9 @@ class _PromoteStudentScreenState extends State<PromoteStudentScreen> {
                       student['fullName'] ?? 'N/A',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text('Roll No: ${student['rollNo'] ?? 'N/A'}'),
+                    subtitle: Text(
+                      '${AppLocalizations.of(context)!.rollNo}: ${student['rollNo'] ?? 'N/A'}',
+                    ),
                     trailing: Checkbox(
                       value: isSelected,
                       activeColor: Colors.redAccent,
@@ -727,7 +766,7 @@ class _PromoteStudentCardState extends State<PromoteStudentCard> {
                 style: const TextStyle(
                   fontSize: 22,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
@@ -736,7 +775,7 @@ class _PromoteStudentCardState extends State<PromoteStudentCard> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
+                  // Removed Gilroy-Regular
                 ),
               ),
             ],

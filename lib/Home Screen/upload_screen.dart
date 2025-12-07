@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:madarsaConnect/Home%20Screen/ask_question.dart';
-import 'package:madarsaConnect/Home%20Screen/post_upload_screen.dart';
+import 'package:madarsaconnect/Home%20Screen/post_upload_screen.dart';
+import '../l10n/app_localizations.dart';
+import 'ask_question.dart';
 
 class UploadScreen extends StatelessWidget {
   const UploadScreen({super.key});
@@ -41,14 +42,14 @@ class UploadScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 15),
-          const Text(
-            'Create a Post',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)!.createAPost,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 18),
           _UploadOption(
             icon: Icons.post_add_rounded,
-            label: 'Post Upload',
+            label: AppLocalizations.of(context)!.postUpload,
             color: Colors.deepPurpleAccent,
             onTap: () {
               Navigator.pop(context);
@@ -61,7 +62,7 @@ class UploadScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _UploadOption(
             icon: Icons.help_outline_rounded,
-            label: 'Ask Question',
+            label: AppLocalizations.of(context)!.askQuestion,
             color: Colors.blueAccent,
             onTap: () {
               Navigator.pop(context);

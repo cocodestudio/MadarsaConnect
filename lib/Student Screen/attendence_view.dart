@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:intl/intl.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class StudentViewAttendanceScreen extends StatefulWidget {
   const StudentViewAttendanceScreen({super.key});
@@ -318,11 +319,11 @@ class _StudentViewAttendanceScreenState
             icon: const Icon(Icons.arrow_back, size: 26),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            'View Attendance',
-            style: TextStyle(
+          title: Text(
+            AppLocalizations.of(context)!.viewAttendanceTitle,
+            style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
@@ -336,11 +337,11 @@ class _StudentViewAttendanceScreenState
                     isLoading
                         ? const Center(child: GradientSpinner())
                         : allEnrollments.isEmpty
-                        ? const Center(
+                        ? Center(
                           child: Text(
-                            "No attendance sessions found.",
+                            AppLocalizations.of(context)!.noAttendanceSessions,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               color: Colors.black54,
                             ),
@@ -371,7 +372,6 @@ class _StudentViewAttendanceScreenState
                                           style: const TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,
-                                            fontFamily: 'Gilroy-Bold',
                                           ),
                                         ),
                                         circularStrokeCap:
@@ -386,33 +386,35 @@ class _StudentViewAttendanceScreenState
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            "Present",
-                                            style: TextStyle(
+                                          Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.present,
+                                            style: const TextStyle(
                                               fontSize: 14,
-                                              fontFamily: 'Gilroy-Medium',
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           Text(
                                             "$presentLectures",
                                             style: const TextStyle(
                                               fontSize: 20,
-                                              fontFamily: 'Gilroy-Bold',
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           const SizedBox(height: 12),
-                                          const Text(
-                                            "Total",
-                                            style: TextStyle(
+                                          Text(
+                                            AppLocalizations.of(context)!.total,
+                                            style: const TextStyle(
                                               fontSize: 14,
-                                              fontFamily: 'Gilroy-Medium',
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           Text(
                                             "$totalLectures",
                                             style: const TextStyle(
                                               fontSize: 20,
-                                              fontFamily: 'Gilroy-Bold',
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ],
@@ -440,7 +442,9 @@ class _StudentViewAttendanceScreenState
                                             child: Text(
                                               selectedEnrollment != null
                                                   ? "${selectedEnrollment!['term']} (${_academicYearFromStart(selectedEnrollment!['startDate'])})"
-                                                  : "Select a Session",
+                                                  : AppLocalizations.of(
+                                                    context,
+                                                  )!.selectSession,
                                               style: const TextStyle(
                                                 fontSize: 16,
                                               ),
@@ -478,12 +482,16 @@ class _StudentViewAttendanceScreenState
                                   children: [
                                     Text(
                                       showSubjects
-                                          ? 'Subjects'
+                                          ? AppLocalizations.of(
+                                            context,
+                                          )!.subjects
                                           : (selectedSubjectName ??
-                                              'Attendance History'),
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.attendanceHistory),
                                       style: const TextStyle(
                                         fontSize: 18,
-                                        fontFamily: 'Gilroy-Bold',
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 14),
@@ -529,9 +537,9 @@ class _StudentViewAttendanceScreenState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Select Session',
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+          title: Text(
+            AppLocalizations.of(context)!.selectSessionTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -560,7 +568,6 @@ class _StudentViewAttendanceScreenState
                       (session) => _buildSessionTile(session),
                     ),
                   ],
-
                   ...groupedArchived.entries.map((entry) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,7 +581,7 @@ class _StudentViewAttendanceScreenState
                           child: Text(
                             entry.key,
                             style: const TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black,
                               fontSize: 15,
                             ),
@@ -641,7 +648,7 @@ class _StudentViewAttendanceScreenState
 
   Widget _buildSubjectListView() {
     if (subjects.isEmpty) {
-      return const Center(child: Text("No subjects found for this session."));
+      return Center(child: Text(AppLocalizations.of(context)!.noSubjectsFound));
     }
     return ListView.builder(
       itemCount: subjects.length,
@@ -712,8 +719,8 @@ class _StudentViewAttendanceScreenState
 
   Widget _buildAttendanceListView() {
     if (_allDatesInSession.isEmpty) {
-      return const Center(
-        child: Text("No attendance records found for this period."),
+      return Center(
+        child: Text(AppLocalizations.of(context)!.noAttendanceRecords),
       );
     }
     Map<String, dynamic> attendanceMap = {
@@ -735,16 +742,16 @@ class _StudentViewAttendanceScreenState
 
         if (isMarked) {
           if (isPresent) {
-            statusText = 'Present';
+            statusText = AppLocalizations.of(context)!.present;
             statusColor = const Color(0xFF4CAF50);
             statusBgColor = const Color(0xFF4CAF50).withOpacity(0.1);
           } else {
-            statusText = 'Absent';
+            statusText = AppLocalizations.of(context)!.absent;
             statusColor = const Color(0xFFF44336);
             statusBgColor = const Color(0xFFF44336).withOpacity(0.1);
           }
         } else {
-          statusText = 'Not Marked';
+          statusText = AppLocalizations.of(context)!.notMarked;
           statusColor = Colors.grey;
           statusBgColor = Colors.grey.withOpacity(0.1);
         }

@@ -1,15 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 
 class AddStudent extends StatefulWidget {
   const AddStudent({super.key});
@@ -56,32 +63,28 @@ class _AddStudentState extends State<AddStudent> {
   BannerAd? _bannerAd;
   bool _isBannerAdReady = false;
 
+  // Image Upload Variables
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+  bool _isImageUploading = false;
+  final ImagePicker _picker = ImagePicker();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  // ... (Fetch Courses, Load State Data, Select Date, Year Picker, SUC Generator - SAME AS BEFORE) ...
   Future<void> fetchCoursesFromHead() async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      print('No user is currently logged in.');
-      return;
-    }
+    if (currentUser == null) return;
     final facultyUid = currentUser.uid;
-    print('Current Faculty UID: $facultyUid');
-
     try {
       final facultyDoc =
           await _firestore.collection('Faculties').doc(facultyUid).get();
-      if (!facultyDoc.exists) {
-        print('Faculty document does not exist.');
-        return;
-      }
+      if (!facultyDoc.exists) return;
 
       final headUid = facultyDoc.data()?['headUid'];
-      if (headUid == null) {
-        print('Head UID not found for this faculty.');
-        return;
-      }
-      print('Found Head UID: $headUid');
+      if (headUid == null) return;
+
       final snapshot =
           await _firestore
               .collection('courses')
@@ -97,10 +100,9 @@ class _AddStudentState extends State<AddStudent> {
                 'duration': data['duration'] ?? 1,
               });
             }).toList();
-        print('Fetched courses: $courseList');
       });
     } catch (e) {
-      print('Error fetching courses: $e');
+      debugPrint('Error fetching courses: $e');
     }
   }
 
@@ -161,7 +163,7 @@ class _AddStudentState extends State<AddStudent> {
             children: [
               SizedBox(height: 16),
               Text(
-                "Select Academic Year",
+                AppLocalizations.of(context)!.selectAcademicYear,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Expanded(
@@ -192,8 +194,8 @@ class _AddStudentState extends State<AddStudent> {
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Text(
-                    "Done",
+                  child: Text(
+                    AppLocalizations.of(context)!.done,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -230,11 +232,9 @@ class _AddStudentState extends State<AddStudent> {
     });
   }
 
+  // ... (Course Bottom Sheets - Same as before) ...
   void showCourseBottomSheet() {
-    if (courseList.isEmpty) {
-      return;
-    }
-
+    if (courseList.isEmpty) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -264,10 +264,10 @@ class _AddStudentState extends State<AddStudent> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    "Select Course",
+                    AppLocalizations.of(context)!.selectCourse,
                     style: TextStyle(
                       fontSize: 20,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
@@ -280,23 +280,18 @@ class _AddStudentState extends State<AddStudent> {
                       itemBuilder: (context, index) {
                         final course = courseList[index];
                         final parsedCourse = jsonDecode(course);
-
                         return RadioListTile<String>(
                           value: course,
                           groupValue: tempSelected,
                           activeColor: Colors.redAccent,
                           title: Text(
                             parsedCourse['name'],
-                            style: TextStyle(
-                              fontFamily: 'Gilroy-Regular',
-                              fontSize: 15,
-                            ),
+                            style: TextStyle(fontSize: 15),
                           ),
                           onChanged: (value) {
                             setState(() {
                               tempSelected = value;
                             });
-
                             final selected = jsonDecode(value!);
                             _courseController.text = selected['name'];
                             selectedCourseId = selected['name'];
@@ -326,7 +321,6 @@ class _AddStudentState extends State<AddStudent> {
       ),
       builder: (context) {
         String? tempSelected = _coursedurationController.text;
-
         List<String> yearSuffix = [
           'st',
           'nd',
@@ -341,7 +335,6 @@ class _AddStudentState extends State<AddStudent> {
           _selectedCourseDuration,
           (index) => '${index + 1}${yearSuffix[index]} Year',
         );
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
@@ -359,10 +352,10 @@ class _AddStudentState extends State<AddStudent> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    "Select Course",
+                    AppLocalizations.of(context)!.selectCourse,
                     style: TextStyle(
                       fontSize: 20,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
@@ -378,13 +371,7 @@ class _AddStudentState extends State<AddStudent> {
                           value: course,
                           groupValue: tempSelected,
                           activeColor: Colors.redAccent,
-                          title: Text(
-                            course,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy-Regular',
-                              fontSize: 15,
-                            ),
-                          ),
+                          title: Text(course, style: TextStyle(fontSize: 15)),
                           onChanged: (value) {
                             setState(() {
                               tempSelected = value!;
@@ -405,7 +392,64 @@ class _AddStudentState extends State<AddStudent> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
+      setState(() {
+        _selectedImage = File(image.path);
+        _isImageUploading = true;
+      });
+
+      final dir = await getTemporaryDirectory();
+      final targetPath =
+          "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg";
+      var result = await FlutterImageCompress.compressAndGetFile(
+        image.path,
+        targetPath,
+        quality: 70,
+        rotate: 0,
+      );
+
+      File fileToUpload = result != null ? File(result.path) : File(image.path);
+      String fileName =
+          'student_profiles/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      Reference ref = _storage.ref().child(fileName);
+      UploadTask uploadTask = ref.putFile(fileToUpload);
+      final snapshot = await uploadTask.whenComplete(() {});
+      final url = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _uploadedImageUrl = url;
+        _isImageUploading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.imageUploaded)),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isImageUploading = false;
+        _selectedImage = null;
+      });
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.imageUploadFailed}: $e",
+        );
+      }
+    }
+  }
+
+  // ... (Add Student Function - Same as before) ...
   Future<void> _addStudent() async {
+    if (_isImageUploading) {
+      CustomPopup.show(context, AppLocalizations.of(context)!.waitImageUpload);
+      return;
+    }
     setState(() {
       isLoading = true;
     });
@@ -415,7 +459,7 @@ class _AddStudentState extends State<AddStudent> {
     try {
       final facultyUser = _auth.currentUser;
       if (facultyUser == null) {
-        throw Exception("Faculty not logged in.");
+        throw Exception(AppLocalizations.of(context)!.facultyNotLoggedIn);
       }
       final facultyEmail = facultyUser.email;
       final facultyUid = facultyUser.uid;
@@ -424,7 +468,7 @@ class _AddStudentState extends State<AddStudent> {
           (await _firestore.collection('Faculties').doc(facultyUid).get())
               .data()?['headUid'];
       if (headUid == null) {
-        throw Exception("Could not find Head reference for this faculty.");
+        throw Exception(AppLocalizations.of(context)!.headReferenceNotFound);
       }
 
       const String defaultPassword = 'mc@12345';
@@ -438,9 +482,7 @@ class _AddStudentState extends State<AddStudent> {
 
       if (email == null || email.isEmpty) {
         if (rawPhone.isEmpty) {
-          throw Exception(
-            "Either Email or Phone Number is required for student registration.",
-          );
+          throw Exception(AppLocalizations.of(context)!.emailOrPhoneRequired);
         }
         String cleanPhone = rawPhone.replaceAll(RegExp(r'^\+?91'), '');
         email = "$cleanPhone@mc.com";
@@ -504,6 +546,7 @@ class _AddStudentState extends State<AddStudent> {
         'createdAt': FieldValue.serverTimestamp(),
         'rollNo': newRollNo,
         'sucId': sucId,
+        'profilePictureUrl': _uploadedImageUrl,
       };
 
       Map<String, dynamic> userDataForUsersCollection = {
@@ -512,6 +555,7 @@ class _AddStudentState extends State<AddStudent> {
         'role': 'Student',
         'createdAt': FieldValue.serverTimestamp(),
         'uid': studentUid,
+        'profilePictureUrl': _uploadedImageUrl,
       };
 
       await _firestore
@@ -547,21 +591,11 @@ class _AddStudentState extends State<AddStudent> {
           });
 
       _showSuccessDialog();
-    } on FirebaseAuthException catch (e) {
-      String message = 'An error occurred. Please try again.';
-      if (e.code == 'email-already-in-use') {
-        message = 'The email/phone is already in use by another account.';
-      } else {
-        message = e.message ?? message;
-      }
-      if (mounted) {
-        CustomPopup.show(context, message);
-      }
     } catch (e) {
       if (mounted) {
         CustomPopup.show(
           context,
-          'An unexpected error occurred: ${e.toString()}',
+          '${AppLocalizations.of(context)!.errorOccurred}: $e',
         );
       }
     } finally {
@@ -611,7 +645,6 @@ class _AddStudentState extends State<AddStudent> {
     _panController.dispose();
     _motherNameController.dispose();
     _fatherNameController.dispose();
-    loadStateDistrictData();
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -650,7 +683,6 @@ class _AddStudentState extends State<AddStudent> {
         },
       ),
     );
-
     _bannerAd?.load();
   }
 
@@ -666,7 +698,6 @@ class _AddStudentState extends State<AddStudent> {
           parent: animation,
           curve: Curves.easeOutBack,
         );
-
         return FadeTransition(
           opacity: curved,
           child: ScaleTransition(
@@ -691,12 +722,12 @@ class _AddStudentState extends State<AddStudent> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            "Student Added Successfully!",
+                            AppLocalizations.of(context)!.studentAddedSuccess,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 20,
                               color: Colors.black,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -727,9 +758,9 @@ class _AddStudentState extends State<AddStudent> {
                                   color: Colors.redAccent,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: const Text(
-                                  "Done",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.done,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -766,11 +797,11 @@ class _AddStudentState extends State<AddStudent> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Add Student',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.addStudent,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -790,6 +821,7 @@ class _AddStudentState extends State<AddStudent> {
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
                       children: [
+                        // --------------------------------------------------
                         Align(
                           alignment: Alignment.centerLeft,
                           child: SizedBox(
@@ -803,28 +835,101 @@ class _AddStudentState extends State<AddStudent> {
                         ),
                         SizedBox(height: size.height * 0.03),
                         Text(
-                          'Add Student',
+                          AppLocalizations.of(context)!.addStudent,
                           style: TextStyle(
                             fontSize: 28,
                             color: Colors.black.withAlpha(230),
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: size.height * 0.004),
                         Text(
-                          'Please fill in the details below to add student information.',
+                          AppLocalizations.of(context)!.fillStudentDetails,
                           style: TextStyle(
                             fontSize: 13,
-                            fontFamily: 'Gilroy-Regular',
                             color: Colors.black.withAlpha(128),
                           ),
                         ),
-                        SizedBox(height: size.height * 0.04),
+
+                        // --- UPDATED IMAGE UPLOAD UI (Moved Here) ---
+                        SizedBox(height: size.height * 0.03),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _pickAndUploadImage,
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                      width: 3,
+                                    ),
+                                    image:
+                                        _selectedImage != null
+                                            ? DecorationImage(
+                                              image: FileImage(_selectedImage!),
+                                              fit: BoxFit.cover,
+                                            )
+                                            : null,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.15),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child:
+                                      _isImageUploading
+                                          ? const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 3,
+                                            ),
+                                          )
+                                          : _selectedImage == null
+                                          ? Icon(
+                                            Icons.person_outline_rounded,
+                                            size: 55,
+                                            color: Colors.grey.shade400,
+                                          )
+                                          : null,
+                                ),
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2.5,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.03),
+
+                        // --------------------------------------------------
                         Text(
-                          "PERSONAL DETAILS",
+                          AppLocalizations.of(context)!.personalDetailsHeader,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -840,7 +945,7 @@ class _AddStudentState extends State<AddStudent> {
                           inputFormatters: [UpperCaseTextFormatter()],
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Full Name",
+                            hintText: AppLocalizations.of(context)!.fullName,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -876,6 +981,7 @@ class _AddStudentState extends State<AddStudent> {
                           },
                         ),
 
+                        // ... (Rest of the form fields remain the same) ...
                         SizedBox(height: size.height * 0.02),
 
                         // Gender Dropdown
@@ -909,7 +1015,7 @@ class _AddStudentState extends State<AddStudent> {
                             dropdownColor: Colors.white,
                             borderRadius: BorderRadius.circular(15),
                             hint: Text(
-                              "Select Gender",
+                              AppLocalizations.of(context)!.selectGender,
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14,
@@ -917,9 +1023,18 @@ class _AddStudentState extends State<AddStudent> {
                             ),
                             items:
                                 ["MALE", "FEMALE", "OTHER"].map((String value) {
+                                  String label = value;
+                                  if (value == 'MALE')
+                                    label = AppLocalizations.of(context)!.male;
+                                  if (value == 'FEMALE')
+                                    label =
+                                        AppLocalizations.of(context)!.female;
+                                  if (value == 'OTHER')
+                                    label = AppLocalizations.of(context)!.other;
+
                                   return DropdownMenuItem<String>(
                                     value: value,
-                                    child: Text(value),
+                                    child: Text(label),
                                   );
                                 }).toList(),
                             onChanged: (String? newValue) {
@@ -938,13 +1053,9 @@ class _AddStudentState extends State<AddStudent> {
                           controller: _dobController,
                           readOnly: true,
                           onTap: _selectDate,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 14,
-                            fontFamily: 'Gilroy-Regular',
-                          ),
+                          style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Date of Birth",
+                            hintText: AppLocalizations.of(context)!.dateOfBirth,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -986,7 +1097,7 @@ class _AddStudentState extends State<AddStudent> {
                           ],
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Phone Number",
+                            hintText: AppLocalizations.of(context)!.phoneNumber,
                             counterText: "",
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
@@ -1045,7 +1156,8 @@ class _AddStudentState extends State<AddStudent> {
                           keyboardType: TextInputType.emailAddress,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Email (Optional)",
+                            hintText:
+                                AppLocalizations.of(context)!.emailOptional,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1084,10 +1196,10 @@ class _AddStudentState extends State<AddStudent> {
                         SizedBox(height: size.height * 0.03),
 
                         Text(
-                          "PARENTS DETAILS ",
+                          AppLocalizations.of(context)!.parentsDetails,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -1103,7 +1215,7 @@ class _AddStudentState extends State<AddStudent> {
                           inputFormatters: [UpperCaseTextFormatter()],
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Father's Name",
+                            hintText: AppLocalizations.of(context)!.fatherName,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1141,7 +1253,7 @@ class _AddStudentState extends State<AddStudent> {
                           inputFormatters: [UpperCaseTextFormatter()],
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Mother's Name",
+                            hintText: AppLocalizations.of(context)!.motherName,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1172,10 +1284,10 @@ class _AddStudentState extends State<AddStudent> {
                         SizedBox(height: size.height * 0.03),
 
                         Text(
-                          "ACADEMIC DETAILS",
+                          AppLocalizations.of(context)!.academicDetails,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -1201,7 +1313,8 @@ class _AddStudentState extends State<AddStudent> {
                               ),
                               readOnly: true,
                               decoration: InputDecoration(
-                                hintText: "Select Courses",
+                                hintText:
+                                    AppLocalizations.of(context)!.selectCourses,
                                 hintStyle: TextStyle(color: Colors.grey),
                                 prefixIcon: Icon(
                                   Icons.work_outline,
@@ -1246,7 +1359,10 @@ class _AddStudentState extends State<AddStudent> {
                               ),
                               readOnly: true,
                               decoration: InputDecoration(
-                                hintText: "Select Duration",
+                                hintText:
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.selectDuration,
                                 hintStyle: TextStyle(color: Colors.grey),
                                 prefixIcon: Icon(
                                   Icons.work_outline,
@@ -1281,7 +1397,8 @@ class _AddStudentState extends State<AddStudent> {
                           textInputAction: TextInputAction.next,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Academic Year",
+                            hintText:
+                                AppLocalizations.of(context)!.academicYear,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1321,10 +1438,10 @@ class _AddStudentState extends State<AddStudent> {
                         SizedBox(height: size.height * 0.03),
 
                         Text(
-                          "ADDRESS",
+                          AppLocalizations.of(context)!.addressHeader,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -1339,7 +1456,10 @@ class _AddStudentState extends State<AddStudent> {
                           textCapitalization: TextCapitalization.words,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Flat, Building/Apartment",
+                            hintText:
+                                AppLocalizations.of(
+                                  context,
+                                )!.flatBuildingApartment,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1366,6 +1486,7 @@ class _AddStudentState extends State<AddStudent> {
                             updateButtonState();
                           },
                         ),
+
                         SizedBox(height: size.height * 0.02),
 
                         // Town/City
@@ -1375,7 +1496,7 @@ class _AddStudentState extends State<AddStudent> {
                           keyboardType: TextInputType.text,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Town/City",
+                            hintText: AppLocalizations.of(context)!.townCity,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1402,6 +1523,7 @@ class _AddStudentState extends State<AddStudent> {
                             updateButtonState();
                           },
                         ),
+
                         SizedBox(height: size.height * 0.02),
 
                         // State
@@ -1410,9 +1532,7 @@ class _AddStudentState extends State<AddStudent> {
                           readOnly: true,
                           onTap: () async {
                             await loadStateDistrictData();
-
                             if (!context.mounted) return;
-
                             showModalBottomSheet(
                               context: context,
                               backgroundColor: Colors.white,
@@ -1442,7 +1562,7 @@ class _AddStudentState extends State<AddStudent> {
                           },
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "State",
+                            hintText: AppLocalizations.of(context)!.state,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1472,7 +1592,7 @@ class _AddStudentState extends State<AddStudent> {
 
                         SizedBox(height: size.height * 0.02),
 
-                        // DISTRICT
+                        // District
                         TextField(
                           controller: _districtController,
                           readOnly: true,
@@ -1510,14 +1630,18 @@ class _AddStudentState extends State<AddStudent> {
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text("Please select a state first"),
+                                  content: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.pleaseSelectStateFirst,
+                                  ),
                                 ),
                               );
                             }
                           },
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "District",
+                            hintText: AppLocalizations.of(context)!.district,
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1550,10 +1674,12 @@ class _AddStudentState extends State<AddStudent> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "IDENTIFICATION DETAILS",
+                            AppLocalizations.of(
+                              context,
+                            )!.identificationDetailsHeader,
                             style: TextStyle(
                               fontSize: 17,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -1561,14 +1687,15 @@ class _AddStudentState extends State<AddStudent> {
 
                         SizedBox(height: size.height * 0.02),
 
-                        // Aadhaar Number Field
+                        // Aadhaar Number
                         TextField(
                           controller: _aadhaarController,
                           keyboardType: TextInputType.number,
                           maxLength: 12,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "Aadhaar Number (optional)",
+                            hintText:
+                                AppLocalizations.of(context)!.aadhaarNumber,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card,
@@ -1598,7 +1725,7 @@ class _AddStudentState extends State<AddStudent> {
 
                         SizedBox(height: size.height * 0.02),
 
-                        // PAN Card (Optional)
+                        // PAN Card
                         TextField(
                           controller: _panController,
                           keyboardType: TextInputType.text,
@@ -1607,7 +1734,8 @@ class _AddStudentState extends State<AddStudent> {
                           maxLength: 10,
                           style: TextStyle(color: Colors.black, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "PAN Card (optional)",
+                            hintText:
+                                AppLocalizations.of(context)!.panCardOptional,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card_outlined,
@@ -1666,7 +1794,7 @@ class _AddStudentState extends State<AddStudent> {
                                       ),
                                     )
                                     : Text(
-                                      "Add",
+                                      AppLocalizations.of(context)!.add,
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w700,

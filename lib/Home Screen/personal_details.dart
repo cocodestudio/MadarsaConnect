@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -73,7 +74,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "Could not load address data.");
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.couldNotLoadAddressData,
+        );
       }
     }
   }
@@ -81,7 +85,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Future<void> _loadUserData() async {
     final user = _auth.currentUser;
     if (user == null) {
-      if (mounted) CustomPopup.show(context, "User not logged in.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.userNotLoggedIn,
+        );
+      }
       setState(() => _isLoading = false);
       return;
     }
@@ -124,12 +133,20 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
         setState(() => _isLoading = false);
       } else {
-        if (mounted) CustomPopup.show(context, "Could not load user details.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.couldNotLoadUserDetails,
+          );
+        }
         setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, "An error occurred: $e");
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.anErrorOccurred}: $e",
+        );
         setState(() => _isLoading = false);
       }
     }
@@ -141,7 +158,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
     try {
       final user = _auth.currentUser;
-      if (user == null) throw Exception("User not logged in");
+      if (user == null) {
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
+      }
 
       Map<String, dynamic> updatedData;
       String collectionName;
@@ -182,14 +201,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           .update(updatedData);
 
       if (mounted) {
-        CustomPopup.show(context, "Details updated successfully!");
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.detailsUpdatedSuccessfully,
+        );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         CustomPopup.show(
           context,
-          "Failed to update details. Please try again.",
+          AppLocalizations.of(context)!.failedToUpdateDetails,
         );
       }
     } finally {
@@ -255,7 +277,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   void _showDistrictPicker() {
     if (selectedState == null || stateDistrictMap[selectedState!] == null) {
-      CustomPopup.show(context, "Please select a state first");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.pleaseSelectStateFirst,
+      );
       return;
     }
     final List<String> districtList = List<String>.from(
@@ -299,11 +324,11 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Personal Details',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.personalDetails,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -322,16 +347,18 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                     else
                       ..._buildFacultyStudentUI(),
                     const SizedBox(height: 30),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: _isSaving ? null : _updateUserDetails,
-                      child: Container(
-                        alignment: Alignment.center,
-                        width: double.infinity,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          borderRadius: BorderRadius.circular(15),
+                    // Naya ElevatedButton wala code
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : _updateUserDetails,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 0,
                         ),
                         child:
                             _isSaving
@@ -343,9 +370,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     strokeWidth: 2.5,
                                   ),
                                 )
-                                : const Text(
-                                  "Save Changes",
-                                  style: TextStyle(
+                                : Text(
+                                  AppLocalizations.of(context)!.saveChanges,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -361,71 +388,71 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   List<Widget> _buildHeadUI() {
     return [
-      _buildSectionHeader("Editable Details"),
+      _buildSectionHeader(AppLocalizations.of(context)!.editableDetails),
       _buildTextField(
         controller: _fullNameController,
-        label: "Full Name",
+        label: AppLocalizations.of(context)!.fullName,
         icon: Icons.person_outline,
         textCapitalization: TextCapitalization.words,
         formatter: [UpperCaseTextFormatter()],
       ),
       _buildTextField(
         controller: _madarsaNameController,
-        label: "Madarsa Name",
+        label: AppLocalizations.of(context)!.madarsaName,
         icon: Icons.school_outlined,
         textCapitalization: TextCapitalization.words,
         formatter: [UpperCaseTextFormatter()],
       ),
-      _buildSectionHeader("Personal Information"),
+      _buildSectionHeader(AppLocalizations.of(context)!.personalInformation),
       _buildTextField(
         controller: _dobController,
-        label: "Date of Birth",
+        label: AppLocalizations.of(context)!.dateOfBirth,
         icon: Icons.calendar_today_outlined,
         onTap: _selectDate,
         readOnly: true,
       ),
       _buildTextField(
         controller: _phoneController,
-        label: "Phone Number",
+        label: AppLocalizations.of(context)!.phoneNumber,
         icon: Icons.phone_outlined,
         readOnly: true,
       ),
-      _buildSectionHeader("Address Details"),
+      _buildSectionHeader(AppLocalizations.of(context)!.addressDetails),
       _buildTextField(
         controller: _addressLine1Controller,
-        label: "Flat, Building/Apartment",
+        label: AppLocalizations.of(context)!.flatBuildingApartment,
         icon: Icons.location_on_outlined,
       ),
       _buildTextField(
         controller: _townCityController,
-        label: "Town/City",
+        label: AppLocalizations.of(context)!.townCity,
         icon: Icons.location_city_outlined,
       ),
       _buildTextField(
         controller: _stateController,
-        label: "State",
+        label: AppLocalizations.of(context)!.state,
         icon: Icons.flag_outlined,
         readOnly: true,
         onTap: _showStatePicker,
       ),
       _buildTextField(
         controller: _districtController,
-        label: "District",
+        label: AppLocalizations.of(context)!.district,
         icon: Icons.map_outlined,
         readOnly: true,
         onTap: _showDistrictPicker,
       ),
-      _buildSectionHeader("Identification Details"),
+      _buildSectionHeader(AppLocalizations.of(context)!.identificationDetails),
       _buildTextField(
         controller: _aadhaarController,
-        label: "Aadhaar Number",
+        label: AppLocalizations.of(context)!.aadhaarNumber,
         icon: Icons.credit_card_outlined,
         keyboardType: TextInputType.number,
         maxLength: 12,
       ),
       _buildTextField(
         controller: _panController,
-        label: "PAN Card",
+        label: AppLocalizations.of(context)!.panCard,
         icon: Icons.credit_card,
         textCapitalization: TextCapitalization.characters,
         formatter: [UpperCaseTextFormatter()],
@@ -436,50 +463,54 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   List<Widget> _buildFacultyStudentUI() {
     return [
-      _buildSectionHeader("Editable Personal Information"),
+      _buildSectionHeader(
+        AppLocalizations.of(context)!.editablePersonalInformation,
+      ),
       _buildTextField(
         controller: _dobController,
-        label: "Date of Birth",
+        label: AppLocalizations.of(context)!.dateOfBirth,
         icon: Icons.calendar_today_outlined,
         onTap: _selectDate,
         readOnly: true,
       ),
-      _buildSectionHeader("Editable Address Details"),
+      _buildSectionHeader(AppLocalizations.of(context)!.editableAddressDetails),
       _buildTextField(
         controller: _addressLine1Controller,
-        label: "Flat, Building/Apartment",
+        label: AppLocalizations.of(context)!.flatBuildingApartment,
         icon: Icons.location_on_outlined,
       ),
       _buildTextField(
         controller: _townCityController,
-        label: "Town/City",
+        label: AppLocalizations.of(context)!.townCity,
         icon: Icons.location_city_outlined,
       ),
       _buildTextField(
         controller: _stateController,
-        label: "State",
+        label: AppLocalizations.of(context)!.state,
         icon: Icons.flag_outlined,
         readOnly: true,
         onTap: _showStatePicker,
       ),
       _buildTextField(
         controller: _districtController,
-        label: "District",
+        label: AppLocalizations.of(context)!.district,
         icon: Icons.map_outlined,
         readOnly: true,
         onTap: _showDistrictPicker,
       ),
-      _buildSectionHeader("Editable Identification Details"),
+      _buildSectionHeader(
+        AppLocalizations.of(context)!.editableIdentificationDetails,
+      ),
       _buildTextField(
         controller: _aadhaarController,
-        label: "Aadhaar Number",
+        label: AppLocalizations.of(context)!.aadhaarNumber,
         icon: Icons.credit_card_outlined,
         keyboardType: TextInputType.number,
         maxLength: 12,
       ),
       _buildTextField(
         controller: _panController,
-        label: "PAN Card",
+        label: AppLocalizations.of(context)!.panCard,
         icon: Icons.credit_card,
         textCapitalization: TextCapitalization.characters,
         formatter: [UpperCaseTextFormatter()],
@@ -495,7 +526,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         title.toUpperCase(),
         style: TextStyle(
           fontSize: 14,
-          fontFamily: 'Gilroy-Bold',
+          fontWeight: FontWeight.bold,
           color: Colors.black.withOpacity(0.7),
         ),
       ),

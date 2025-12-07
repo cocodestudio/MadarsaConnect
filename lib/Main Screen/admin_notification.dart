@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Main%20Screen/subscription_request.dart';
-
+import 'package:madarsaconnect/Main%20Screen/subscription_request.dart';
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
 import 'admin_screen.dart';
 
 enum AdminNotificationType { newTicket, subscriptionRequest, generic }

@@ -2,9 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Data/uppercase.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
+
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../Data/uppercase.dart';
 
 class ManageHeadsScreen extends StatefulWidget {
   const ManageHeadsScreen({super.key});

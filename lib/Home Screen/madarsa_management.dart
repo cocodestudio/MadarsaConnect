@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 InputDecoration premiumInputDecoration(String labelText) {
   return InputDecoration(
@@ -57,11 +57,11 @@ class _AdminManagementScreenState extends State<AdminManagementScreen>
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Madarsa Management',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.madarsaManagement,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -71,7 +71,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen>
           indicatorColor: Colors.redAccent,
           labelColor: const Color(0xFF1B263B),
           unselectedLabelColor: Colors.grey,
-          tabs: const [Tab(text: 'EXPENSES'), Tab(text: 'INVENTORY')],
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.expenses),
+            Tab(text: AppLocalizations.of(context)!.inventory),
+          ],
         ),
       ),
       body: TabBarView(
@@ -94,6 +97,8 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
 
+  // Moved inside build or a method to access context for localization if needed,
+  // but usually month names are standard. For full localization, consider using DateFormat.
   final List<String> _monthNames = [
     'January',
     'February',
@@ -127,14 +132,12 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Text(
-              'Expense Options',
+            title: Text(
+              AppLocalizations.of(context)!.expenseOptions,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            content: const Text(
-              'What would you like to do with this expense record?',
-            ),
+            content: Text(AppLocalizations.of(context)!.whatToDoWithExpense),
             actionsAlignment: MainAxisAlignment.center,
             actionsPadding: const EdgeInsets.only(
               bottom: 20,
@@ -147,7 +150,7 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
                 children: [
                   ElevatedButton.icon(
                     icon: const Icon(Icons.edit_note_rounded, size: 18),
-                    label: const Text('Edit Expense'),
+                    label: Text(AppLocalizations.of(context)!.editExpense),
                     onPressed: () {
                       Navigator.pop(context);
                       _showExpenseBottomSheet(expenseDoc: expenseDoc);
@@ -165,7 +168,7 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Delete Expense'),
+                    label: Text(AppLocalizations.of(context)!.deleteExpense),
                     onPressed: () {
                       Navigator.pop(context);
                       _showDeleteConfirmation(expenseDoc);
@@ -195,16 +198,16 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Text('Delete Expense?'),
-            content: const Text(
-              'Are you sure you want to delete this expense record? This action cannot be undone.',
+            title: Text(AppLocalizations.of(context)!.deleteExpenseQ),
+            content: Text(
+              AppLocalizations.of(context)!.deleteExpenseConfirmation,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.black),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel,
+                  style: const TextStyle(color: Colors.black),
                 ),
               ),
               ElevatedButton(
@@ -215,9 +218,9 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                 ),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.white),
+                child: Text(
+                  AppLocalizations.of(context)!.delete,
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -237,7 +240,10 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Text('Select Year', textAlign: TextAlign.center),
+            title: Text(
+              AppLocalizations.of(context)!.selectYear,
+              textAlign: TextAlign.center,
+            ),
             content: SizedBox(
               width: double.minPositive,
               height: 300,
@@ -261,7 +267,6 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
     if (pickedYear != null && pickedYear != _selectedYear) {
       setState(() {
         _selectedYear = pickedYear;
-        // Reset month to current if year is changed to current, and month is in future
         if (_selectedYear == DateTime.now().year &&
             _selectedMonth > DateTime.now().month) {
           _selectedMonth = DateTime.now().month;
@@ -283,7 +288,10 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Text('Select Month', textAlign: TextAlign.center),
+            title: Text(
+              AppLocalizations.of(context)!.selectMonth,
+              textAlign: TextAlign.center,
+            ),
             content: SizedBox(
               width: double.minPositive,
               height: 400,
@@ -393,11 +401,15 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return const Center(child: Text("Something went wrong."));
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.somethingWentWrong,
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text("No expenses found for this period."),
+                  return Center(
+                    child: Text(AppLocalizations.of(context)!.noExpensesFound),
                   );
                 }
                 final expenses = snapshot.data!.docs;
@@ -418,9 +430,9 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Total Expenses',
-                                style: TextStyle(
+                              Text(
+                                AppLocalizations.of(context)!.totalExpenses,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -495,7 +507,10 @@ class _ExpensesManagementTabState extends State<ExpensesManagementTab> {
         onPressed: () => _showExpenseBottomSheet(),
         backgroundColor: Colors.redAccent,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Expense', style: TextStyle(color: Colors.white)),
+        label: Text(
+          AppLocalizations.of(context)!.addExpense,
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -567,9 +582,11 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save expense: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.failedToSaveExpense),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -585,10 +602,10 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20.0),
             ),
-            title: const Text(
-              'Select a Category',
+            title: Text(
+              AppLocalizations.of(context)!.selectCategory,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
             content: SizedBox(
@@ -650,38 +667,49 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  _isEditing ? 'Edit Expense' : 'Add New Expense',
+                  _isEditing
+                      ? AppLocalizations.of(context)!.editExpense
+                      : AppLocalizations.of(context)!.addNewExpense,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _amountController,
-                  decoration: premiumInputDecoration('Amount (in ₹)'),
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.amountInRupees,
+                  ),
                   keyboardType: TextInputType.number,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Amount is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.amountIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
                   decoration: premiumInputDecoration(
-                    'Description (e.g., Electricity Bill)',
+                    AppLocalizations.of(context)!.descriptionExample,
                   ),
                   validator:
                       (v) =>
-                          v!.trim().isEmpty ? 'Description is required' : null,
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(
+                                context,
+                              )!.descriptionIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _categoryDisplayController,
                   readOnly: true,
                   decoration: premiumInputDecoration(
-                    'Select Category',
+                    AppLocalizations.of(context)!.selectCategory,
                   ).copyWith(
                     suffixIcon: const Icon(
                       Icons.arrow_drop_down,
@@ -690,11 +718,14 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
                   ),
                   onTap: _showCategorySelectionDialog,
                   validator:
-                      (v) => v!.trim().isEmpty ? 'Category is required' : null,
+                      (v) =>
+                          v!.trim().isEmpty
+                              ? AppLocalizations.of(context)!.categoryIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 32),
                 _isLoading
-                    ? const Center(child: GradientSpinner())
+                    ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                       onPressed: _saveExpense,
                       style: ElevatedButton.styleFrom(
@@ -707,8 +738,10 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
                         elevation: 0,
                       ),
                       child: Text(
-                        _isEditing ? 'Update Expense' : 'Save Expense',
-                        style: const TextStyle(fontFamily: 'Gilroy-Bold'),
+                        _isEditing
+                            ? AppLocalizations.of(context)!.updateExpense
+                            : AppLocalizations.of(context)!.saveExpense,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
               ],
@@ -739,7 +772,9 @@ class InventoryManagementTab extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No items in inventory yet."));
+            return Center(
+              child: Text(AppLocalizations.of(context)!.noItemsInInventory),
+            );
           }
           final items = snapshot.data!.docs;
           return ListView.builder(
@@ -769,7 +804,7 @@ class InventoryManagementTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "In Stock: ${data['currentStock']} ${data['unit']}",
+                        "${AppLocalizations.of(context)!.inStock}: ${data['currentStock']} ${data['unit']}",
                         style: TextStyle(color: Colors.grey[700]),
                       ),
                       const Divider(height: 20),
@@ -777,7 +812,7 @@ class InventoryManagementTab extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           _StockActionButton(
-                            label: 'Use (-)',
+                            label: AppLocalizations.of(context)!.useMinus,
                             icon: Icons.remove,
                             color: Colors.orange,
                             onPressed:
@@ -789,7 +824,7 @@ class InventoryManagementTab extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _StockActionButton(
-                            label: 'Add (+)',
+                            label: AppLocalizations.of(context)!.addPlus,
                             icon: Icons.add,
                             color: Colors.green,
                             onPressed:
@@ -815,9 +850,9 @@ class InventoryManagementTab extends StatelessWidget {
         onPressed: () => _showNewItemBottomSheet(context),
         backgroundColor: Colors.redAccent,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Add New Item',
-          style: TextStyle(color: Colors.white),
+        label: Text(
+          AppLocalizations.of(context)!.addNewItem,
+          style: const TextStyle(color: Colors.white),
         ),
       ),
     );
@@ -849,24 +884,32 @@ class InventoryManagementTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             title: Text(
-              type == 'Stock In' ? 'Add Stock' : 'Use Stock',
-              style: const TextStyle(fontFamily: 'Gilroy-Bold'),
+              type == 'Stock In'
+                  ? AppLocalizations.of(context)!.addStock
+                  : AppLocalizations.of(context)!.useStock,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Form(
               key: formKey,
               child: TextFormField(
                 controller: quantityController,
                 keyboardType: TextInputType.number,
-                decoration: premiumInputDecoration('Quantity'),
-                validator: (v) => v!.isEmpty ? 'Enter a quantity' : null,
+                decoration: premiumInputDecoration(
+                  AppLocalizations.of(context)!.quantity,
+                ),
+                validator:
+                    (v) =>
+                        v!.isEmpty
+                            ? AppLocalizations.of(context)!.enterQuantity
+                            : null,
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.black),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel,
+                  style: const TextStyle(color: Colors.black),
                 ),
               ),
               ElevatedButton(
@@ -888,10 +931,12 @@ class InventoryManagementTab extends StatelessWidget {
 
                     if (type == 'Stock Out' && quantity > currentStock) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           backgroundColor: Colors.redAccent,
                           content: Text(
-                            "Error: Quantity to use is more than available stock.",
+                            AppLocalizations.of(
+                              context,
+                            )!.errorStockNotAvailable,
                           ),
                         ),
                       );
@@ -926,9 +971,9 @@ class InventoryManagementTab extends StatelessWidget {
                     Navigator.pop(context);
                   }
                 },
-                child: const Text(
-                  'Confirm',
-                  style: TextStyle(fontFamily: 'Gilroy-Bold'),
+                child: Text(
+                  AppLocalizations.of(context)!.confirm,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -976,9 +1021,13 @@ class _NewItemFormSheetState extends State<_NewItemFormSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save item: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToSaveItem}: $e',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -994,10 +1043,10 @@ class _NewItemFormSheetState extends State<_NewItemFormSheet> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          title: const Text(
-            'Select a Unit',
+          title: Text(
+            AppLocalizations.of(context)!.selectUnit,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 20.0),
           content: SizedBox(
@@ -1060,12 +1109,12 @@ class _NewItemFormSheetState extends State<_NewItemFormSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Add New Item to Inventory',
+                Text(
+                  AppLocalizations.of(context)!.addNewItemToInventory,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1B263B),
                   ),
                 ),
@@ -1073,37 +1122,57 @@ class _NewItemFormSheetState extends State<_NewItemFormSheet> {
                 TextFormField(
                   controller: _nameController,
                   decoration: premiumInputDecoration(
-                    'Item Name (e.g., Whiteboard Marker)',
+                    AppLocalizations.of(context)!.itemNameExample,
                   ),
-                  validator: (v) => v!.isEmpty ? 'Name is required' : null,
+                  validator:
+                      (v) =>
+                          v!.isEmpty
+                              ? AppLocalizations.of(context)!.nameIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _categoryController,
                   decoration: premiumInputDecoration(
-                    'Category (e.g., Stationery)',
+                    AppLocalizations.of(context)!.categoryExample,
                   ),
-                  validator: (v) => v!.isEmpty ? 'Category is required' : null,
+                  validator:
+                      (v) =>
+                          v!.isEmpty
+                              ? AppLocalizations.of(context)!.categoryIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _unitDisplayController,
                   readOnly: true,
-                  decoration: premiumInputDecoration('Select Unit').copyWith(
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.selectUnit,
+                  ).copyWith(
                     suffixIcon: const Icon(
                       Icons.arrow_drop_down,
                       color: Colors.grey,
                     ),
                   ),
                   onTap: _showUnitSelectionDialog,
-                  validator: (v) => v!.isEmpty ? 'Unit is required' : null,
+                  validator:
+                      (v) =>
+                          v!.isEmpty
+                              ? AppLocalizations.of(context)!.unitIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _initialStockController,
-                  decoration: premiumInputDecoration('Initial Stock Quantity'),
+                  decoration: premiumInputDecoration(
+                    AppLocalizations.of(context)!.initialStockQuantity,
+                  ),
                   keyboardType: TextInputType.number,
-                  validator: (v) => v!.isEmpty ? 'Stock is required' : null,
+                  validator:
+                      (v) =>
+                          v!.isEmpty
+                              ? AppLocalizations.of(context)!.stockIsRequired
+                              : null,
                 ),
                 const SizedBox(height: 32),
                 _isLoading
@@ -1119,9 +1188,9 @@ class _NewItemFormSheetState extends State<_NewItemFormSheet> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Save New Item',
-                        style: TextStyle(fontFamily: 'Gilroy-Bold'),
+                      child: Text(
+                        AppLocalizations.of(context)!.saveNewItem,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
               ],

@@ -8,6 +8,7 @@ import '../Data/check_internet.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 
 class StudentFindScreen extends StatefulWidget {
   const StudentFindScreen({super.key});
@@ -60,7 +61,7 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
 
   Future<void> fetchStudentBySUC(String input) async {
     if (headUid == null) {
-      CustomPopup.show(context, "Head not logged in.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.headNotLoggedIn);
       return;
     }
 
@@ -96,7 +97,10 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
         });
       }
     } catch (e) {
-      CustomPopup.show(context, "Error fetching student: $e");
+      CustomPopup.show(
+        context,
+        "${AppLocalizations.of(context)!.errorFetchingStudent}: $e",
+      );
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -119,11 +123,11 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Student Management',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.studentManagementTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -157,16 +161,16 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
-                          'Total Students',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.totalStudents,
+                          style: const TextStyle(
                             fontSize: 20,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
-                        Icon(
+                        const Icon(
                           Icons.verified_user,
                           color: Colors.black54,
                           size: 20,
@@ -178,13 +182,16 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
                       '$totalStudents',
                       style: const TextStyle(
                         fontSize: 30,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
-                    const Text(
-                      'Active Students',
-                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    Text(
+                      AppLocalizations.of(context)!.activeStudents,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
@@ -195,7 +202,7 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
                   controller: controller,
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'Enter Student Unique Code (SUC)',
+                    hintText: AppLocalizations.of(context)!.enterSucId,
                     suffixIcon: Padding(
                       padding: const EdgeInsets.only(right: 9.0),
                       child: GestureDetector(
@@ -273,9 +280,9 @@ class _StudentFindScreenState extends State<StudentFindScreen> {
                   docId: studentData!['id'],
                 )
               else if (controller.text.isNotEmpty && !isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text("No student found."),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(AppLocalizations.of(context)!.noStudentFound),
                 ),
             ],
           ),
@@ -337,10 +344,8 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
             .delete();
       }
 
-      Navigator.pop(context); // Close the dialog
-      Navigator.pop(context, {
-        'deleted': true,
-      }); // Go back to the previous screen with a result
+      Navigator.pop(context);
+      Navigator.pop(context, {'deleted': true});
     } catch (e) {
       debugPrint("Delete error: $e");
     }
@@ -381,9 +386,12 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                 ),
               ),
               ListTile(
-                title: const Text(
-                  'Update',
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 15),
+                title: Text(
+                  AppLocalizations.of(context)!.update,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 onTap: () {
                   InternetUtils.checkAndRun(
@@ -420,9 +428,12 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                 },
               ),
               ListTile(
-                title: const Text(
-                  'Delete',
-                  style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 15),
+                title: Text(
+                  AppLocalizations.of(context)!.delete,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -461,20 +472,19 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      "Warning",
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy-Bold',
+                                    Text(
+                                      AppLocalizations.of(context)!.warning,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
                                         fontSize: 20,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    const Text(
-                                      "Are you sure you want to delete this student?",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontFamily: 'Gilroy-Regular',
-                                      ),
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.deleteStudentConfirmation,
+                                      style: const TextStyle(fontSize: 14),
                                     ),
                                     const SizedBox(height: 20),
                                     Row(
@@ -483,9 +493,11 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                                         TextButton(
                                           onPressed:
                                               () => Navigator.pop(context),
-                                          child: const Text(
-                                            "Cancel",
-                                            style: TextStyle(
+                                          child: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.cancel,
+                                            style: const TextStyle(
                                               color: Colors.black,
                                             ),
                                           ),
@@ -499,9 +511,9 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                                               },
                                             );
                                           },
-                                          child: const Text(
-                                            "OK",
-                                            style: TextStyle(
+                                          child: Text(
+                                            AppLocalizations.of(context)!.ok,
+                                            style: const TextStyle(
                                               color: Colors.redAccent,
                                             ),
                                           ),
@@ -571,17 +583,17 @@ class _StudentDetailsCardState extends State<StudentDetailsCard> {
                   Text(
                     widget.student['fullName'] ?? '',
                     style: const TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Roll No: ${widget.student['rollNo'] ?? ''}",
+                    "${AppLocalizations.of(context)!.rollNo}: ${widget.student['rollNo'] ?? ''}",
                     style: const TextStyle(color: Colors.black54),
                   ),
                   Text(
-                    "SUC ID: ${widget.student['sucId'] ?? ''}",
+                    "${AppLocalizations.of(context)!.sucId}: ${widget.student['sucId'] ?? ''}",
                     style: const TextStyle(color: Colors.black54),
                   ),
                 ],
@@ -659,11 +671,11 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Student Details',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.studentDetailsTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -716,7 +728,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                           student['fullName'] ?? '',
                           style: const TextStyle(
                             fontSize: 18,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
@@ -728,7 +740,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                           style: const TextStyle(color: Colors.black54),
                         ),
                         Text(
-                          student['phone'] ?? '',
+                          student['phoneNumber'] ?? '',
                           style: const TextStyle(color: Colors.black54),
                         ),
                       ],
@@ -747,63 +759,101 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 3, top: 2, bottom: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 3, top: 2, bottom: 12),
                     child: Text(
-                      "PERSONAL DETAILS",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Regular',
+                      AppLocalizations.of(context)!.personalDetailsHeader,
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
                       ),
                     ),
                   ),
-                  _buildField("Date of Birth", "dateOfBirth"),
-                  _buildField("Father Name", "fatherName"),
-                  _buildField("Mother Name", "motherName"),
-                  _buildField("Student Unique Code", "sucId"),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 3, top: 12, bottom: 12),
+                  _buildField(
+                    AppLocalizations.of(context)!.dateOfBirth,
+                    "dateOfBirth",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.fatherName,
+                    "fatherName",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.motherName,
+                    "motherName",
+                  ),
+                  _buildField(AppLocalizations.of(context)!.sucId, "sucId"),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 3,
+                      top: 12,
+                      bottom: 12,
+                    ),
                     child: Text(
-                      "ACADEMIC DETAILS",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Regular',
+                      AppLocalizations.of(context)!.academicDetails,
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
                       ),
                     ),
                   ),
-                  _buildField("Course", "course"),
-                  _buildField("Duration", "courseDuration"),
-                  _buildField("Academic Year", "academicYear"),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 3, top: 12, bottom: 12),
+                  _buildField(AppLocalizations.of(context)!.course, "course"),
+                  _buildField(
+                    AppLocalizations.of(context)!.duration,
+                    "courseDuration",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.academicYear,
+                    "academicYear",
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 3,
+                      top: 12,
+                      bottom: 12,
+                    ),
                     child: Text(
-                      "ADDRESS DETAILS",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Regular',
+                      AppLocalizations.of(context)!.addressHeader,
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
                       ),
                     ),
                   ),
-                  _buildField("Apartment", "address.line1"),
-                  _buildField("Town/City", "address.townCity"),
-                  _buildField("State", "address.state"),
-                  _buildField("District", "address.district"),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 3, top: 12, bottom: 12),
+                  _buildField(
+                    AppLocalizations.of(context)!.flatBuildingApartment,
+                    "address.line1",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.townCity,
+                    "address.townCity",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.state,
+                    "address.state",
+                  ),
+                  _buildField(
+                    AppLocalizations.of(context)!.district,
+                    "address.district",
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 3,
+                      top: 12,
+                      bottom: 12,
+                    ),
                     child: Text(
-                      "IDENTIFICATION DETAILS",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy-Regular',
+                      AppLocalizations.of(context)!.identificationDetailsHeader,
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
                       ),
                     ),
                   ),
-                  _buildField("Aadhaar Number", "aadhaarNumber"),
-                  _buildField("PAN Number", "panCard"),
+                  _buildField(
+                    AppLocalizations.of(context)!.aadhaarNumber,
+                    "aadhaarNumber",
+                  ),
+                  _buildField(AppLocalizations.of(context)!.panCard, "panCard"),
                 ],
               ),
             ),
@@ -893,9 +943,8 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
     try {
       final snapshot =
           await _firestore
-              .collection('Heads')
-              .doc(headUid)
               .collection('courses')
+              .where('headUid', isEqualTo: headUid)
               .get();
 
       if (mounted) {
@@ -950,21 +999,21 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('Male'),
+              title: Text(AppLocalizations.of(context)!.male),
               onTap: () {
                 controller.text = 'Male';
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              title: const Text('Female'),
+              title: Text(AppLocalizations.of(context)!.female),
               onTap: () {
                 controller.text = 'Female';
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              title: const Text('Other'),
+              title: Text(AppLocalizations.of(context)!.other),
               onTap: () {
                 controller.text = 'Other';
                 Navigator.pop(context);
@@ -978,10 +1027,7 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
 
   void _showStatePicker(TextEditingController controller) {
     if (stateList.isEmpty) {
-      CustomPopup.show(
-        context,
-        "State data is still loading. Please try again.",
-      );
+      CustomPopup.show(context, AppLocalizations.of(context)!.stateDataLoading);
       return;
     }
 
@@ -1012,7 +1058,10 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
   void _showDistrictPicker(TextEditingController controller) {
     if (controllers['state']!.text.isEmpty ||
         stateDistrictMap[controllers['state']!.text] == null) {
-      CustomPopup.show(context, "Please select a state first");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.pleaseSelectStateFirst,
+      );
       return;
     }
 
@@ -1047,7 +1096,7 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
     if (courseList.isEmpty) {
       CustomPopup.show(
         context,
-        "Course data is not available. Please try again.",
+        AppLocalizations.of(context)!.noCoursesAvailable,
       );
       return;
     }
@@ -1077,12 +1126,12 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
 
   void _showCourseDurationPicker(TextEditingController controller) {
     List<String> durations = [
-      '1 Year',
-      '2 Years',
-      '3 Years',
-      '4 Years',
-      '5 Years',
-      '6 Years',
+      '1 ${AppLocalizations.of(context)!.year}',
+      '2 ${AppLocalizations.of(context)!.years}',
+      '3 ${AppLocalizations.of(context)!.years}',
+      '4 ${AppLocalizations.of(context)!.years}',
+      '5 ${AppLocalizations.of(context)!.years}',
+      '6 ${AppLocalizations.of(context)!.years}',
     ];
     showModalBottomSheet(
       context: context,
@@ -1208,11 +1257,11 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Update Details',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.updateDetails,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -1222,29 +1271,35 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 20),
         child: Column(
           children: [
-            _buildTextField("Full Name", "fullName"),
+            _buildTextField(AppLocalizations.of(context)!.fullName, "fullName"),
             _buildTextField(
-              "Gender",
+              AppLocalizations.of(context)!.gender,
               "gender",
               readOnly: true,
               onTap: () => _showGenderPicker(controllers['gender']!),
             ),
-            _buildTextField("Father Name", "fatherName"),
-            _buildTextField("Mother Name", "motherName"),
             _buildTextField(
-              "Date of Birth",
+              AppLocalizations.of(context)!.fatherName,
+              "fatherName",
+            ),
+            _buildTextField(
+              AppLocalizations.of(context)!.motherName,
+              "motherName",
+            ),
+            _buildTextField(
+              AppLocalizations.of(context)!.dateOfBirth,
               "dateOfBirth",
               readOnly: true,
               onTap: () => _selectDate(controllers['dateOfBirth']!),
             ),
             _buildTextField(
-              "Course",
+              AppLocalizations.of(context)!.course,
               "course",
               readOnly: true,
               onTap: () => _showCoursePicker(controllers['course']!),
             ),
             _buildTextField(
-              "Course Duration",
+              AppLocalizations.of(context)!.duration,
               "courseDuration",
               readOnly: true,
               onTap:
@@ -1252,32 +1307,37 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
                       _showCourseDurationPicker(controllers['courseDuration']!),
             ),
             _buildTextField(
-              "Academic Year",
+              AppLocalizations.of(context)!.academicYear,
               "academicYear",
               readOnly: true,
               onTap:
                   () => _showAcademicYearPicker(controllers['academicYear']!),
             ),
-            _buildTextField("Address Line 1", "addressLine1"),
-            _buildTextField("Town/City", "townCity"),
             _buildTextField(
-              "State",
+              AppLocalizations.of(context)!.flatBuildingApartment,
+              "addressLine1",
+            ),
+            _buildTextField(AppLocalizations.of(context)!.townCity, "townCity"),
+            _buildTextField(
+              AppLocalizations.of(context)!.state,
               "state",
               readOnly: true,
               onTap: () => _showStatePicker(controllers['state']!),
             ),
             _buildTextField(
-              "District",
+              AppLocalizations.of(context)!.district,
               "district",
               readOnly: true,
               onTap: () => _showDistrictPicker(controllers['district']!),
             ),
-            _buildTextField("Aadhaar Number", "aadhaarNumber"),
-            _buildTextField("PAN Number", "panCard"),
+            _buildTextField(
+              AppLocalizations.of(context)!.aadhaarNumber,
+              "aadhaarNumber",
+            ),
+            _buildTextField(AppLocalizations.of(context)!.panCard, "panCard"),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
@@ -1286,17 +1346,18 @@ class _UpdateStudentPageState extends State<UpdateStudentPage> {
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,
-                    vertical: 14,
+                    vertical: 15,
                   ),
                   elevation: 0,
                 ),
                 onPressed: _updateStudentToFirestore,
-                child: const Text(
-                  'Update',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context)!.update,
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Gilroy-Bold',
-                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    height: 1.2,
                   ),
                 ),
               ),

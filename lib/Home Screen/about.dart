@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -13,7 +14,8 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   bool _isLoading = true;
-  String _versionString = '';
+  String _appVersion = '';
+  String _buildNumber = '';
   final String _founderImageUrl =
       'https://firebasestorage.googleapis.com/v0/b/madarsaconnect-c96d3.firebasestorage.app/o/WhatsApp%20Image%202025-10-03%20at%2019.32.43_52b1d178.jpg?alt=media&token=142af530-fa37-4771-ba00-d81e3a5b2135';
 
@@ -26,19 +28,18 @@ class _AboutScreenState extends State<AboutScreen> {
   Future<void> _loadInitialData() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      await precacheImage(NetworkImage(_founderImageUrl), context);
-
       if (mounted) {
+        await precacheImage(NetworkImage(_founderImageUrl), context);
         setState(() {
-          _versionString =
-              'Version ${packageInfo.version} (${packageInfo.buildNumber})';
+          _appVersion = packageInfo.version;
+          _buildNumber = packageInfo.buildNumber;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _versionString = 'Version info not available';
+          _appVersion = 'Unknown';
           _isLoading = false;
         });
       }
@@ -58,11 +59,11 @@ class _AboutScreenState extends State<AboutScreen> {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'About Us',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.aboutUs,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
             color: Colors.black,
           ),
         ),
@@ -79,16 +80,14 @@ class _AboutScreenState extends State<AboutScreen> {
     final widgets = [
       _buildSectionCard(
         icon: Icons.rocket_launch_rounded,
-        title: 'Our Mission',
-        content:
-            'Madarsa Connect is designed to bridge the gap between traditional education and modern technology. Our mission is to empower Madarsas by providing a seamless digital ecosystem for administration, learning, and community engagement.',
+        title: AppLocalizations.of(context)!.ourMission,
+        content: AppLocalizations.of(context)!.missionDescription,
       ),
       _buildFounderCard(),
       _buildSectionCard(
         icon: Icons.business_center_rounded,
-        title: 'Developed by CoCode Studio',
-        content:
-            'We are a team of passionate developers and designers at CoCode Studio, dedicated to creating innovative solutions that make a real-world impact. We believe in crafting technology that is both powerful and user-centric.',
+        title: AppLocalizations.of(context)!.developedBy,
+        content: AppLocalizations.of(context)!.developedByDesc,
       ),
       _buildFooter(),
     ];
@@ -131,12 +130,14 @@ class _AboutScreenState extends State<AboutScreen> {
             children: [
               Icon(icon, color: Colors.redAccent, size: 28),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy-Bold',
-                  fontSize: 18,
-                  color: Color(0xFF333333),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
+                    fontSize: 18,
+                    color: Color(0xFF333333),
+                  ),
                 ),
               ),
             ],
@@ -145,7 +146,7 @@ class _AboutScreenState extends State<AboutScreen> {
           Text(
             content,
             style: const TextStyle(
-              fontFamily: 'Gilroy-Regular',
+              // Replaced Gilroy-Regular
               fontSize: 15,
               height: 1.6,
               color: Colors.black87,
@@ -186,23 +187,23 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
           const SizedBox(width: 20),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Moh Abuzar',
+                const Text(
+                  'Moh Abuzar', // Name usually stays same, or you can localize it
                   style: TextStyle(
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                     fontSize: 18,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Founder & Visionary',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy-Regular',
+                  AppLocalizations.of(context)!.founderVisionary,
+                  style: const TextStyle(
+                    // Replaced Gilroy-Regular
                     fontSize: 14,
                     color: Colors.white70,
                   ),
@@ -218,10 +219,10 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget _buildFooter() {
     return Column(
       children: [
-        const Text(
-          'Connect with Us',
-          style: TextStyle(
-            fontFamily: 'Gilroy-SemiBold',
+        Text(
+          AppLocalizations.of(context)!.connectWithUs,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600, // Replaced Gilroy-SemiBold
             fontSize: 16,
             color: Colors.black54,
           ),
@@ -245,9 +246,9 @@ class _AboutScreenState extends State<AboutScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          _versionString,
+          '${AppLocalizations.of(context)!.version} $_appVersion ($_buildNumber)',
           style: TextStyle(
-            fontFamily: 'Gilroy-Regular',
+            // Replaced Gilroy-Regular
             fontSize: 14,
             color: Colors.grey[600],
           ),

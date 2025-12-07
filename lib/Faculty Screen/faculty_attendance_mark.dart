@@ -3,10 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
-
-// Asegúrate de que la ruta de importación sea correcta para tu proyecto
 import '../Data/loader.dart';
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class MarkFacultyAttendanceScreen extends StatefulWidget {
   const MarkFacultyAttendanceScreen({super.key});
@@ -38,9 +37,11 @@ class _MarkFacultyAttendanceScreenState
     setState(() => isLoading = true);
     final user = _auth.currentUser;
     if (user == null) {
-      // Si no hay usuario, salir
       if (mounted) {
-        CustomPopup.show(context, '❌ Error: Not logged in.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.userNotLoggedIn,
+        );
         setState(() => isLoading = false);
       }
       return;
@@ -49,17 +50,15 @@ class _MarkFacultyAttendanceScreenState
     try {
       facultyId = user.uid;
 
-      // 1. Obtener datos del profesor y su headUid
       final facultyDoc =
           await _firestore.collection('Faculties').doc(facultyId).get();
       if (facultyDoc.exists) {
         facultyName = facultyDoc.data()?['fullName'] ?? 'No Name';
         headUid = facultyDoc.data()?['headUid'];
       } else {
-        throw Exception("Faculty record not found.");
+        throw Exception(AppLocalizations.of(context)!.facultyRecordNotFound);
       }
 
-      // 2. Obtener la sesión activa usando el headUid
       if (headUid != null) {
         final sessionSnap =
             await _firestore
@@ -72,13 +71,12 @@ class _MarkFacultyAttendanceScreenState
         if (sessionSnap.docs.isNotEmpty) {
           sessionId = sessionSnap.docs.first.id;
         } else {
-          throw Exception("No active session found for your institution.");
+          throw Exception(AppLocalizations.of(context)!.noActiveSession);
         }
       } else {
-        throw Exception("Could not determine the institution (headUid).");
+        throw Exception(AppLocalizations.of(context)!.institutionNotFound);
       }
 
-      // 3. Comprobar si ya se ha marcado la asistencia hoy
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final docId = '${today}_$facultyId';
       final attendanceDoc =
@@ -89,7 +87,10 @@ class _MarkFacultyAttendanceScreenState
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, '❌ Error: ${e.toString()}');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.error}: ${e.toString()}',
+        );
       }
     }
 
@@ -100,7 +101,7 @@ class _MarkFacultyAttendanceScreenState
     if (sessionId == null || facultyId == null) {
       CustomPopup.show(
         context,
-        '❌ Cannot save. Missing session or faculty ID.',
+        AppLocalizations.of(context)!.missingSessionFacultyId,
       );
       return;
     }
@@ -121,17 +122,27 @@ class _MarkFacultyAttendanceScreenState
         'name': facultyName,
         'date': today,
         'status': isPresent ? 'Present' : 'Absent',
-        'marked_by': facultyId, // Marcado por sí mismo
+        'marked_by': facultyId,
         'sessionId': sessionId,
       };
 
       await docRef.set(attendanceData, SetOptions(merge: true));
 
-      Navigator.pop(context); // Cierra el loader
-      CustomPopup.show(context, '✅ Attendance saved successfully!');
+      if (mounted) {
+        Navigator.pop(context);
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.attendanceSaved,
+        );
+      }
     } catch (e) {
-      Navigator.pop(context); // Cierra el loader
-      CustomPopup.show(context, '❌ Error saving attendance: $e');
+      if (mounted) {
+        Navigator.pop(context);
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.errorSavingAttendance}: $e',
+        );
+      }
     }
   }
 
@@ -152,11 +163,11 @@ class _MarkFacultyAttendanceScreenState
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Mark My Attendance',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.markMyAttendance,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -170,7 +181,6 @@ class _MarkFacultyAttendanceScreenState
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
-                      // --- Date Display ---
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -183,7 +193,7 @@ class _MarkFacultyAttendanceScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "TODAY'S DATE",
+                              AppLocalizations.of(context)!.todaysDate,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 12,
@@ -197,14 +207,13 @@ class _MarkFacultyAttendanceScreenState
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 18,
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       Expanded(
                         child: Container(
                           width: double.infinity,
@@ -227,24 +236,27 @@ class _MarkFacultyAttendanceScreenState
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Hello, $facultyName!",
+                                AppLocalizations.of(
+                                  context,
+                                )!.helloFaculty(facultyName),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 24,
-                                  fontFamily: 'Gilroy-Bold',
+                                  fontWeight: FontWeight.bold,
                                   color: Colors.black,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "Please mark your attendance status below.",
+                                AppLocalizations.of(
+                                  context,
+                                )!.markAttendanceStatus,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey.shade600,
                                 ),
                               ),
                               const SizedBox(height: 40),
-                              // --- Animated Toggle Switch ---
                               GestureDetector(
                                 onTap:
                                     () =>
@@ -276,7 +288,6 @@ class _MarkFacultyAttendanceScreenState
                                   ),
                                   child: Stack(
                                     children: [
-                                      // Text for "Present"
                                       AnimatedAlign(
                                         duration: const Duration(
                                           milliseconds: 300,
@@ -287,7 +298,9 @@ class _MarkFacultyAttendanceScreenState
                                             left: 15.0,
                                           ),
                                           child: Text(
-                                            'Present',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.present,
                                             style: TextStyle(
                                               color:
                                                   isPresent
@@ -300,7 +313,6 @@ class _MarkFacultyAttendanceScreenState
                                           ),
                                         ),
                                       ),
-                                      // Text for "Absent"
                                       AnimatedAlign(
                                         duration: const Duration(
                                           milliseconds: 300,
@@ -311,7 +323,9 @@ class _MarkFacultyAttendanceScreenState
                                             right: 15.0,
                                           ),
                                           child: Text(
-                                            'Absent',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.absent,
                                             style: TextStyle(
                                               color:
                                                   !isPresent
@@ -324,7 +338,6 @@ class _MarkFacultyAttendanceScreenState
                                           ),
                                         ),
                                       ),
-                                      // The moving circle
                                       AnimatedAlign(
                                         duration: const Duration(
                                           milliseconds: 300,
@@ -352,8 +365,6 @@ class _MarkFacultyAttendanceScreenState
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // --- Submit Button ---
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -367,10 +378,10 @@ class _MarkFacultyAttendanceScreenState
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'Confirm & Submit',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                          child: Text(
+                            AppLocalizations.of(context)!.confirmSubmit,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),

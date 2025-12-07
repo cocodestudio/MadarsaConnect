@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:http/http.dart' as http;
-
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 
 class ResetStudentPasswordPage extends StatefulWidget {
   const ResetStudentPasswordPage({super.key});
@@ -37,7 +37,10 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
   Future<void> _findStudentBySucId() async {
     _sucIdFocusNode.unfocus();
     if (_sucIdController.text.trim().isEmpty) {
-      CustomPopup.show(context, "Please enter a SUC ID to search.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.enterSucIdToSearch,
+      );
       return;
     }
 
@@ -65,7 +68,12 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
         });
       }
     } catch (e) {
-      CustomPopup.show(context, "Error searching for student: $e");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.errorSearchingStudent}: $e",
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -77,7 +85,10 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
 
   Future<void> _resetPassword() async {
     if (_studentUid == null) {
-      CustomPopup.show(context, "No student selected...");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.noStudentSelected,
+      );
       return;
     }
 
@@ -88,7 +99,7 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        CustomPopup.show(context, "Please sign in first.");
+        CustomPopup.show(context, AppLocalizations.of(context)!.signInFirst);
         return;
       }
 
@@ -108,12 +119,24 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
-        _showSuccessDialog(data['message']);
+        if (mounted) {
+          _showSuccessDialog(data['message']);
+        }
       } else {
-        CustomPopup.show(context, data['error'] ?? "Something went wrong");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            data['error'] ?? AppLocalizations.of(context)!.somethingWentWrong,
+          );
+        }
       }
     } catch (e) {
-      CustomPopup.show(context, "An unexpected error occurred: $e");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          "${AppLocalizations.of(context)!.unexpectedError}: $e",
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -131,13 +154,11 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            title: const Text(
-              "Success!",
-              style: TextStyle(fontFamily: 'Gilroy-Bold'),
+            title: Text(
+              AppLocalizations.of(context)!.success,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            content: const Text(
-              "Password has been reset to the default: 'mc@12345'",
-            ),
+            content: Text(AppLocalizations.of(context)!.passwordResetMessage),
             actions: [
               TextButton(
                 onPressed: () {
@@ -149,9 +170,9 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
                     _searchPerformed = false;
                   });
                 },
-                child: const Text(
-                  "OK",
-                  style: TextStyle(color: Colors.redAccent),
+                child: Text(
+                  AppLocalizations.of(context)!.ok,
+                  style: const TextStyle(color: Colors.redAccent),
                 ),
               ),
             ],
@@ -172,11 +193,11 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Reset Student Password',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.resetStudentPassword,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -199,16 +220,16 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
                         height: 120,
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        "Find and Reset",
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.findAndReset,
+                        style: const TextStyle(
                           fontSize: 24,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Enter the student's SUC ID to find their profile and reset their password to the default.",
+                        AppLocalizations.of(context)!.resetPasswordDescription,
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 30),
@@ -217,7 +238,8 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
                         focusNode: _sucIdFocusNode,
                         textCapitalization: TextCapitalization.characters,
                         decoration: InputDecoration(
-                          hintText: "Enter SUC ID (e.g., suc0000001)",
+                          hintText:
+                              AppLocalizations.of(context)!.enterSucIdHint,
                           prefixIcon: const Icon(Icons.search),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -255,10 +277,10 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                  : const Text(
-                                    "Find Student",
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy-Bold',
+                                  : Text(
+                                    AppLocalizations.of(context)!.findStudent,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
                                   ),
@@ -290,11 +312,11 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Student Found",
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.studentFound,
+                style: const TextStyle(
                   fontSize: 18,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
@@ -302,20 +324,26 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.person, color: Colors.redAccent),
-                title: Text(_studentData!['fullName'] ?? 'N/A'),
-                subtitle: const Text("Full Name"),
+                title: Text(
+                  _studentData!['fullName'] ?? AppLocalizations.of(context)!.na,
+                ),
+                subtitle: Text(AppLocalizations.of(context)!.fullName),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.school, color: Colors.redAccent),
-                title: Text(_studentData!['course'] ?? 'N/A'),
-                subtitle: const Text("Course"),
+                title: Text(
+                  _studentData!['course'] ?? AppLocalizations.of(context)!.na,
+                ),
+                subtitle: Text(AppLocalizations.of(context)!.course),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.email, color: Colors.redAccent),
-                title: Text(_studentData!['email'] ?? 'N/A'),
-                subtitle: const Text("Registered Email"),
+                title: Text(
+                  _studentData!['email'] ?? AppLocalizations.of(context)!.na,
+                ),
+                subtitle: Text(AppLocalizations.of(context)!.registeredEmail),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -334,7 +362,7 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
                             ),
                           )
                           : const Icon(Icons.lock_reset),
-                  label: const Text("Reset Password to Default"),
+                  label: Text(AppLocalizations.of(context)!.resetToDefault),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepOrange,
                     foregroundColor: Colors.white,
@@ -353,9 +381,9 @@ class _ResetStudentPasswordPageState extends State<ResetStudentPasswordPage> {
     }
 
     if (_searchPerformed && _studentData == null && !_isLoading) {
-      return const Center(
+      return Center(
         child: Text(
-          "No student found with this SUC ID. Please check the ID and try again.",
+          AppLocalizations.of(context)!.noStudentFoundSuc,
           textAlign: TextAlign.center,
         ),
       );

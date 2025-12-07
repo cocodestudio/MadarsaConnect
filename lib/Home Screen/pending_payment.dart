@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Data/main_page.dart';
+import '../Data/main_page.dart';
+import '../l10n/app_localizations.dart';
 
 class PendingScreen extends StatelessWidget {
   const PendingScreen({super.key});
@@ -21,10 +22,10 @@ class PendingScreen extends StatelessWidget {
                 color: Colors.redAccent,
               ),
               const SizedBox(height: 32),
-              const Text(
-                'Verification Pending',
+              Text(
+                AppLocalizations.of(context)!.verificationPending,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -39,9 +40,7 @@ class PendingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Your payment request has been submitted successfully.\n\n'
-                'We will notify you as soon as your subscription is verified by the admin.\n\n'
-                'Thank you for your patience.',
+                AppLocalizations.of(context)!.verificationPendingBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -53,7 +52,7 @@ class PendingScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => MainPage()),
+                    MaterialPageRoute(builder: (context) => const MainPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -65,9 +64,12 @@ class PendingScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Back to Homepage',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                child: Text(
+                  AppLocalizations.of(context)!.backToHome,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

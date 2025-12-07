@@ -1,9 +1,9 @@
-name: madarsaConnect
+name: madarsaconnect
 description: "Madarsa Management."
 
 publish_to: 'none'
 
-version: 1.0.3
+version: 1.1.0+18
 
 environment:
   sdk: ^3.7.2
@@ -11,7 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
   flutter_svg: ^2.0.17
   smooth_page_indicator: ^1.2.1
   intl: ^0.20.2
@@ -55,6 +56,7 @@ dependencies:
   google_mobile_ads: ^6.0.0
   flutter_animate: ^4.5.2
   package_info_plus: ^9.0.0
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +65,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/images/
@@ -70,13 +73,27 @@ flutter:
     - assets/india/data.json
     - assets/india/bank.json
     - assets/images/logo.png
+
   fonts:
-    - family: Gilroy-Bold
-      fonts:
-        - asset: assets/fonts/Gilroy-Bold.ttf
-    - family: Gilroy-Regular
+    - family: Gilroy
       fonts:
         - asset: assets/fonts/Gilroy-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Gilroy-Bold.ttf
+          weight: 700
+
+    - family: HindiFont
+      fonts:
+        - asset: assets/fonts/Hindi-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Hindi-Bold.ttf
+          weight: 700
+
+    - family: UrduFont
+      fonts:
+        - asset: assets/fonts/Urdu-Regular.ttf
+        - asset: assets/fonts/Urdu-Bold.ttf
+
         
 flutter_native_splash:
   color: "#ffffff"

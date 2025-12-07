@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Faculty%20Screen/faculty_attendance_mark.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:madarsaConnect/Data/main_page.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../Data/main_page.dart';
 import '../Home Screen/home_screen.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/app_usage_tracker.dart';
+import 'faculty_attendance_mark.dart';
 
 class Course {
   final String id;
@@ -93,7 +94,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      if (mounted) CustomPopup.show(context, 'No user logged in.');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.userNotLoggedIn,
+        );
       return;
     }
 
@@ -110,7 +115,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (headUid == null) {
       if (mounted) {
-        CustomPopup.show(context, 'Could not determine head information.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.couldNotDetermineHead,
+        );
       }
     }
   }
@@ -165,12 +173,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSubjectList(Map<String, dynamic> course, int year) {
-    final yearLabel = () {
-      if (year == 1) return '1st Year';
-      if (year == 2) return '2nd Year';
-      if (year == 3) return '3rd Year';
-      return '${year}th Year';
-    }();
+    // Year labels like '1st Year' are usually kept in English or handled with specific logic.
+    // Here using basic localization helper.
+    final yearLabel =
+        '${year}${_getYearSuffix(year)} ${AppLocalizations.of(context)!.year}';
 
     return StreamBuilder(
       stream:
@@ -194,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Text(
               yearLabel,
-              style: const TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ...subjects.map((subject) {
@@ -218,11 +224,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  String _getYearSuffix(int year) {
+    if (year >= 11 && year <= 13) {
+      return 'th';
+    }
+    switch (year % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
+  }
+
   void _showDurationSelector(
     BuildContext context,
     Map<String, dynamic> course,
   ) {
-    final yearSuffix = ['st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th'];
     final duration = int.tryParse(course['duration'] ?? '1') ?? 1;
 
     showModalBottomSheet(
@@ -255,10 +276,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Center(
+              Center(
                 child: Text(
-                  'Select Course Duration',
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+                  AppLocalizations.of(context)!.selectCourseDuration,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -273,7 +297,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final year = index + 1;
-                    final suffix = yearSuffix[index];
+                    final suffix = _getYearSuffix(year);
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
@@ -289,9 +313,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            '$year$suffix Year',
+                            '$year$suffix ${AppLocalizations.of(context)!.year}',
                             style: const TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             ),
                           ),
@@ -312,11 +336,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (showAttendanceScreen && selectedSubject != null) {
       return selectedSubject!.name;
     } else if (selectedCourse != null && selectedYear != null) {
-      return 'Select Subject';
+      return AppLocalizations.of(context)!.selectSubject;
     } else if (showCourseSelectionOnly) {
-      return 'Select Course';
+      return AppLocalizations.of(context)!.selectCourse;
     } else {
-      return 'Attendance';
+      return AppLocalizations.of(context)!.attendance;
     }
   }
 
@@ -359,7 +383,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _getAppBarTitle(),
             style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
@@ -369,8 +393,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             isLoading
                 ? const Center(child: GradientSpinner())
                 : (headUid == null
-                    ? const Center(
-                      child: Text('Could not load data. Please try again.'),
+                    ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.couldNotLoadData,
+                      ),
                     )
                     : showAttendanceScreen &&
                         selectedSubject != null &&
@@ -397,9 +423,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Column(
                               children: [
                                 DashboardCard(
-                                  title: 'Student Attendance',
+                                  title:
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.studentAttendance,
                                   subtitle:
-                                      'Track and manage daily student attendance easily.',
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.trackStudentAttendance,
                                   gradientColors: const [
                                     Color(0xFFD4E7FE),
                                     Color(0xFFA0C4FF),
@@ -412,9 +443,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(height: 15),
                                 DashboardCard(
-                                  title: 'Faculty Attendance',
+                                  title:
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.facultyAttendance,
                                   subtitle:
-                                      'Track and manage daily faculty attendance easily.',
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.trackFacultyAttendance,
                                   gradientColors: const [
                                     Color(0xFFD1FAE5),
                                     Color(0xFFA7F3D0),
@@ -499,17 +535,13 @@ class _DashboardCardState extends State<DashboardCard> {
                 style: const TextStyle(
                   fontSize: 22,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 widget.subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
           ),
@@ -578,9 +610,9 @@ class _TeachingHourSummaryState extends State<TeachingHourSummary> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Teaching Hour Summary",
-              style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.teachingHourSummary,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 18),
             Row(
@@ -607,17 +639,17 @@ class _TeachingHourSummaryState extends State<TeachingHourSummary> {
                           backgroundColor: Colors.amber.shade600,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          "Today Spend Time",
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          AppLocalizations.of(context)!.todaySpendTime,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                     Text(
-                      "${todayHours.toStringAsFixed(2)} Hrs",
+                      "${todayHours.toStringAsFixed(2)} ${AppLocalizations.of(context)!.hrs}",
                       style: const TextStyle(
                         fontSize: 18,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -628,17 +660,17 @@ class _TeachingHourSummaryState extends State<TeachingHourSummary> {
                           backgroundColor: Colors.blue.shade400,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          "Weekly Spend Time",
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          AppLocalizations.of(context)!.weeklySpendTime,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                     Text(
-                      "${weeklyHours.toStringAsFixed(2)} Hrs",
+                      "${weeklyHours.toStringAsFixed(2)} ${AppLocalizations.of(context)!.hrs}",
                       style: const TextStyle(
                         fontSize: 18,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -730,7 +762,7 @@ class _InfoCardState extends State<InfoCard> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.05,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               SizedBox(height: screenWidth * 0.012),
@@ -742,7 +774,6 @@ class _InfoCardState extends State<InfoCard> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.035,
                   color: Colors.black54,
-                  fontFamily: 'Gilroy-Regular',
                 ),
               ),
             ],
@@ -825,7 +856,6 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
   }
 
   void showSuccessFullScreenDialog(BuildContext context) {
-    bool isButtonActive = true;
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -866,13 +896,13 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            "Successfully Submitted!",
+                            AppLocalizations.of(context)!.successfullySubmitted,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize:
                                   MediaQuery.of(context).size.width * 0.05,
                               color: Colors.black,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -907,9 +937,9 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                   color: Colors.redAccent,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: const Text(
-                                  "Done",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.done,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -948,7 +978,7 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
         setState(() {
           isSessionActive = false;
           isLoading = false;
-          sessionStatusMessage = 'No active session has been set by the head.';
+          sessionStatusMessage = AppLocalizations.of(context)!.noActiveSession;
         });
       }
       return;
@@ -972,8 +1002,12 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
         setState(() {
           isSessionActive = false;
           isLoading = false;
-          sessionStatusMessage =
-              'Attendance can only be marked between ${DateFormat('d MMM').format(startDate)} and ${DateFormat('d MMM').format(endDate)}. The current date is not within this range.';
+          sessionStatusMessage = AppLocalizations.of(
+            context,
+          )!.attendanceDateRangeError(
+            DateFormat('d MMM').format(startDate),
+            DateFormat('d MMM').format(endDate),
+          );
         });
       }
     }
@@ -983,7 +1017,11 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
     final facultyUid = FirebaseAuth.instance.currentUser?.uid;
 
     if (facultyUid == null) {
-      if (mounted) CustomPopup.show(context, 'No faculty user logged in.');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noFacultyLoggedIn,
+        );
       if (mounted) setState(() => isLoading = false);
       return;
     }
@@ -1000,7 +1038,8 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
 
     if (courseName == null || courseName.isEmpty) {
       if (mounted) setState(() => isLoading = false);
-      if (mounted) CustomPopup.show(context, 'Course not found.');
+      if (mounted)
+        CustomPopup.show(context, AppLocalizations.of(context)!.courseNotFound);
       return;
     }
 
@@ -1165,9 +1204,15 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                               (value) => DropdownMenuItem(
                                                 value: value,
                                                 child: Text(
-                                                  value,
+                                                  value == 'Present'
+                                                      ? AppLocalizations.of(
+                                                        context,
+                                                      )!.present
+                                                      : AppLocalizations.of(
+                                                        context,
+                                                      )!.absent,
                                                   style: const TextStyle(
-                                                    fontFamily: 'Gilroy-Bold',
+                                                    fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
@@ -1204,7 +1249,7 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                 Expanded(
                                   flex: 3,
                                   child: Text(
-                                    'Name',
+                                    AppLocalizations.of(context)!.name,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: w * 0.035,
@@ -1214,7 +1259,7 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                 Expanded(
                                   flex: 2,
                                   child: Text(
-                                    'Roll No',
+                                    AppLocalizations.of(context)!.rollNo,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -1225,7 +1270,7 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                 Expanded(
                                   flex: 3,
                                   child: Text(
-                                    'Status',
+                                    AppLocalizations.of(context)!.status,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -1356,8 +1401,12 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                                                     Center(
                                                       child: Text(
                                                         isPresent
-                                                            ? 'Present'
-                                                            : 'Absent',
+                                                            ? AppLocalizations.of(
+                                                              context,
+                                                            )!.present
+                                                            : AppLocalizations.of(
+                                                              context,
+                                                            )!.absent,
                                                         style: TextStyle(
                                                           color: Colors.white,
                                                           fontWeight:
@@ -1465,9 +1514,9 @@ class _AttendanceReviewScreenState extends State<AttendanceReviewScreen> {
                           elevation: 0,
                         ),
                         child: Text(
-                          'Confirm & Submit Attendance',
+                          AppLocalizations.of(context)!.confirmSubmitAttendance,
                           style: TextStyle(
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             fontSize: w * 0.04,
                           ),
                         ),
@@ -1547,12 +1596,12 @@ class _CourseCardState extends State<CourseCard> {
                     '${widget.present} ',
                     style: TextStyle(
                       fontSize: MediaQuery.of(context).size.width * 0.11,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  const Text(
-                    'Present',
+                  Text(
+                    AppLocalizations.of(context)!.present,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -1567,15 +1616,15 @@ class _CourseCardState extends State<CourseCard> {
                     '${widget.absent} ',
                     style: const TextStyle(
                       fontSize: 30,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  const Text(
-                    'Absent',
+                  Text(
+                    AppLocalizations.of(context)!.absent,
                     style: TextStyle(
                       fontSize: 24,
-                      fontFamily: 'Gilroy-Bold',
+                      fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),

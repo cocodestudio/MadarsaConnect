@@ -2,6 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:madarsaconnect/Home%20Screen/personal_details.dart';
+import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../Head Screen/fees_manage.dart';
+import '../Login & Signup Screen/loginpage.dart';
+import '../l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,28 +16,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:madarsaConnect/Head%20Screen/fees_manage.dart';
-import 'package:madarsaConnect/Home%20Screen/change_password.dart';
-import 'package:madarsaConnect/Home%20Screen/madarsa_management.dart';
-import 'package:madarsaConnect/Home%20Screen/notification_settings.dart';
-import 'package:madarsaConnect/Home%20Screen/personal_details.dart';
-import 'package:madarsaConnect/Login%20&%20Signup%20Screen/loginpage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:madarsaConnect/Data/loader.dart';
-import 'package:madarsaConnect/Data/dynamic_popup.dart';
-import '../Data/const.dart';
 import '../Data/fullimageview.dart';
 import '../Data/main_page.dart';
 import '../Head Screen/kitchen_manage.dart';
 import '../Head Screen/student_pass_reset.dart';
 import '../Student Screen/student_signature.dart';
 import 'about.dart';
+import 'change_password.dart';
 import 'home_screen.dart';
+import 'language_change.dart';
+import 'madarsa_management.dart';
+import 'notification_settings.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -66,6 +67,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Timer? _countdownTimer;
   bool _isLoggingOut = false;
 
+  // ----- YAHAN FIX KIYA HAI (BOOLEANS ADD KIYE) -----
+  bool _isHead = false;
+  bool _isFaculty = false;
+  bool _isStudent = false;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -98,8 +104,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final cached = prefs.getString('cachedProfile');
     if (cached == null) return;
     final data = jsonDecode(cached) as Map<String, dynamic>;
+    if (!mounted) return;
+    final appLocalizations = AppLocalizations.of(context)!;
     setState(() {
-      _userName = data['fullName'] ?? 'N/A';
+      _userName = data['fullName'] ?? appLocalizations.na;
       _userBio = data['bio'] ?? '';
       _selectedGender = data['gender'];
       _emailController.text = data['email'] ?? '';
@@ -112,6 +120,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userCourse = data['course'];
       _userDuration = data['courseDuration'];
       _role = data['role'];
+
+      // ----- YAHAN BHI FIX KIYA HAI -----
+      _isHead = prefs.getBool('isHead') ?? false;
+      _isFaculty = prefs.getBool('isFaculty') ?? false;
+      _isStudent = prefs.getBool('isStudent') ?? false;
     });
   }
 
@@ -124,24 +137,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     final user = _auth.currentUser;
     if (user == null) return;
+    if (!mounted) return;
+    final appLocalizations = AppLocalizations.of(context)!;
 
     final isHead = prefs.getBool('isHead') ?? false;
     final isFaculty = prefs.getBool('isFaculty') ?? false;
     final isStudent = prefs.getBool('isStudent') ?? false;
 
+    // ----- YAHAN FIX KIYA HAI (STATE SET KIYA) -----
+    setState(() {
+      _isHead = isHead;
+      _isFaculty = isFaculty;
+      _isStudent = isStudent;
+    });
+
     String collectionName;
     String idPrefix;
     if (isHead) {
       collectionName = 'Heads';
-      _role = 'Head';
+      _role = appLocalizations.roleHead;
       idPrefix = 'HUC';
     } else if (isFaculty) {
       collectionName = 'Faculties';
-      _role = 'Faculty';
+      _role = appLocalizations.roleFaculty;
       idPrefix = 'FUC';
     } else if (isStudent) {
       collectionName = 'Students';
-      _role = 'Student';
+      _role = appLocalizations.roleStudent;
       idPrefix = 'SUC';
     } else {
       return;
@@ -154,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (docSnapshot.exists) {
         final data = docSnapshot.data()!;
         setState(() {
-          _userName = data['fullName'] ?? 'N/A';
+          _userName = data['fullName'] ?? appLocalizations.na;
           _userBio = data['bio'] ?? '';
           _selectedGender = data['gender'];
           _emailController.text = data['email'] ?? '';
@@ -171,19 +193,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : 'sucId'] ??
               '${idPrefix}${user.uid}';
           if (isStudent) {
-            _userCourse = data['course'] ?? 'N/A';
-            _userDuration = data['courseDuration'] ?? 'N/A';
-            _role = 'Student';
+            _userCourse = data['course'] ?? appLocalizations.na;
+            _userDuration = data['courseDuration'] ?? appLocalizations.na;
+            _role = appLocalizations.roleStudent;
           } else {
             _userCourse = null;
             _userDuration = null;
-            _role = data['role'] ?? 'N/A';
+            _role = data['role'] ?? appLocalizations.na;
           }
         });
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
-      CustomPopup.show(context, 'Failed to load profile data.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToLoadProfileData,
+        );
+      }
     }
   }
 
@@ -197,7 +224,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final user = _auth.currentUser;
       if (user == null) {
-        CustomPopup.show(context, 'User not logged in.');
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.userNotLoggedIn,
+          );
+        }
         setState(() => _isUploading = false);
         return;
       }
@@ -241,17 +273,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
       await prefs.setString('cachedProfileUrl', downloadUrl);
 
-      CustomPopup.show(context, 'Profile picture uploaded successfully!');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.profilePicUploaded,
+        );
+      }
     } catch (e) {
       setState(() => _isUploading = false);
       debugPrint('❌ Profile picture upload error: $e');
-      CustomPopup.show(context, 'Failed to upload profile picture.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToUploadProfilePic,
+        );
+      }
     }
   }
 
   Future<void> _deleteProfilePicture() async {
     if (_uploadedImageUrl == null) {
-      CustomPopup.show(context, "No image found to delete.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noImageToDelete,
+        );
+      }
       return;
     }
 
@@ -296,11 +343,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await prefs.remove('cachedProfileUrl');
       }
 
-      CustomPopup.show(context, "Profile picture deleted 🗑️");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.profilePicDeleted,
+        );
+      }
     } catch (e) {
       setState(() => _isUploading = false);
       debugPrint("❌ Profile picture delete error: $e");
-      CustomPopup.show(context, "Failed to delete profile picture.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.failedToDeleteProfilePic,
+        );
+      }
     }
   }
 
@@ -310,7 +367,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        CustomPopup.show(context, 'User not logged in.');
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.userNotLoggedIn,
+          );
+        }
         setState(() => _isUploading = false);
         return;
       }
@@ -361,7 +423,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isUploading = false;
         _showEditDetails = false;
       });
-      CustomPopup.show(context, "Profile updated successfully ✅");
+      if (mounted) {
+        CustomPopup.show(context, AppLocalizations.of(context)!.profileUpdated);
+      }
       widget.onProfileUpdated?.call();
     } catch (e) {
       setState(() => _isUploading = false);
@@ -369,7 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         CustomPopup.show(
           context,
-          "Failed to update profile. Please try again.",
+          AppLocalizations.of(context)!.failedToUpdateProfile,
         );
       }
     }
@@ -419,18 +483,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _imageDataForCropping = imageBytes;
         if (mounted) _showCropper();
       } else {
-        CustomPopup.show(context, "No image selected.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noImageSelected,
+          );
+        }
       }
     } catch (e) {
       debugPrint("❌ Error picking image: $e");
-      CustomPopup.show(context, "Something went wrong while picking image.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorPickingImage,
+        );
+      }
     }
   }
 
   Future<void> _pickImageFromCamera() async {
     final status = await Permission.camera.request();
     if (!status.isGranted) {
-      CustomPopup.show(context, "Camera permission denied");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.cameraPermissionDenied,
+        );
+      }
       return;
     }
     try {
@@ -443,14 +522,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() => _imageDataForCropping = imageBytes);
         _showCropper();
       } else {
-        CustomPopup.show(context, "Camera cancelled");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.cameraCancelled,
+          );
+        }
       }
     } catch (e) {
       debugPrint("❌ Error picking from camera: $e");
-      CustomPopup.show(
-        context,
-        "Something went wrong while picking from camera.",
-      );
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorPickingFromCamera,
+        );
+      }
     }
   }
 
@@ -478,7 +564,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         status = await Permission.storage.request();
       }
       if (!status.isGranted) {
-        CustomPopup.show(context, "Gallery permission denied.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.galleryPermissionDenied,
+          );
+        }
         return false;
       }
     }
@@ -528,9 +619,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildDragHandle(),
-          const Text(
-            "Adjust & Crop Image",
-            style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+          Text(
+            AppLocalizations.of(context)!.adjustCropImage,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -574,7 +665,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Expanded(
                 child: _buildCropperButton(
-                  "Try Again",
+                  AppLocalizations.of(context)!.tryAgain,
                   Icons.refresh,
                   _pickImageFromGallery,
                   isPrimary: false,
@@ -583,7 +674,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildCropperButton(
-                  "Apply",
+                  AppLocalizations.of(context)!.apply,
                   Icons.check_circle_outline,
                   () async {
                     localSetState(() => _isCropping = true);
@@ -654,7 +745,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildDragHandle(),
               _buildImageOptionListTile(
                 iconPath: 'assets/icons/library.svg',
-                title: 'Choose from library',
+                title: AppLocalizations.of(context)!.chooseFromLibrary,
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromGallery();
@@ -662,7 +753,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _buildImageOptionListTile(
                 iconPath: 'assets/icons/camera.svg',
-                title: 'Take photo',
+                title: AppLocalizations.of(context)!.takePhoto,
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromCamera();
@@ -670,7 +761,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _buildImageOptionListTile(
                 iconPath: 'assets/icons/delete.svg',
-                title: 'Delete',
+                title: AppLocalizations.of(context)!.delete,
                 color: Colors.red,
                 onTap: () {
                   Navigator.pop(context);
@@ -700,7 +791,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         title,
-        style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 15, color: color),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          color: color,
+        ),
       ),
       onTap: onTap,
     );
@@ -727,11 +822,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.arrow_back, size: 26),
             onPressed: _handleBackButton,
           ),
-          title: const Text(
-            'Profile',
-            style: TextStyle(
+          title: Text(
+            AppLocalizations.of(context)!.profile,
+            style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
@@ -827,7 +922,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               onTap: _showImageOptionBottomSheet,
               child: Text(
-                "Change Profile Picture",
+                AppLocalizations.of(context)!.changeProfilePicture,
                 style: TextStyle(
                   fontSize: screenWidth * 0.035,
                   color: Colors.blue,
@@ -852,9 +947,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.grey,
               ),
             ),
-            if (_role == 'Student' &&
-                _userCourse != null &&
-                _userDuration != null) ...[
+            // ----- YAHAN FIX KIYA HAI (_role ki jagah _isStudent) -----
+            if (_isStudent && _userCourse != null && _userDuration != null) ...[
               SizedBox(height: 4),
               Text(
                 "$_userCourse | $_userDuration",
@@ -901,12 +995,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Edit Details",
+                  AppLocalizations.of(context)!.editDetails,
                   style: TextStyle(
                     fontSize: screenWidth * 0.040,
                     fontWeight: FontWeight.w600,
                     color: Colors.blue[800],
-                    fontFamily: 'Gilroy-Bold',
                   ),
                 ),
                 SizedBox(width: screenWidth * 0.02),
@@ -950,7 +1043,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       readOnly: true,
       style: const TextStyle(color: Colors.black, fontSize: 14),
       decoration: InputDecoration(
-        labelText: "Email Address",
+        labelText: AppLocalizations.of(context)!.emailAddress,
         labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         prefixIcon: const Icon(Icons.email_outlined),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -967,6 +1060,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildGenderDropdown() {
+    final Map<String, String> genderMap = {
+      "MALE": AppLocalizations.of(context)!.male,
+      "FEMALE": AppLocalizations.of(context)!.female,
+      "OTHER": AppLocalizations.of(context)!.other,
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
@@ -994,16 +1093,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        hint: const Text(
-          "Gender",
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+        hint: Text(
+          AppLocalizations.of(context)!.gender,
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
         ),
         items:
             ["MALE", "FEMALE", "OTHER"]
                 .map(
                   (String value) => DropdownMenuItem<String>(
                     value: value,
-                    child: Text(value),
+                    child: Text(genderMap[value] ?? value),
                   ),
                 )
                 .toList(),
@@ -1019,7 +1118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       maxLines: 1,
       style: const TextStyle(color: Colors.black, fontSize: 14),
       decoration: InputDecoration(
-        labelText: "Bio",
+        labelText: AppLocalizations.of(context)!.bio,
         labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         prefixIcon: const Icon(Icons.note_add_outlined),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -1058,12 +1157,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     strokeWidth: 2,
                   ),
                 )
-                : const Text(
-                  'Save',
-                  style: TextStyle(
+                : Text(
+                  AppLocalizations.of(context)!.save,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
       ),
@@ -1080,20 +1179,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const String inventoryIcon = 'assets/icons/inventory.svg';
     const String aboutIcon = 'assets/icons/info.svg';
     const String logoutIcon = 'assets/icons/logout.svg';
+    const String languageIcon = 'assets/icons/language.svg';
     const String passwordChange = 'assets/icons/password_change.svg';
     final List<Map<String, dynamic>> upiSettings = [
       {
         "icon": userIcons,
-        "title": "Personal Details",
-        "subtitle": "View or manage your personal information",
+        "title": AppLocalizations.of(context)!.personalDetails,
+        "subtitle": AppLocalizations.of(context)!.viewManagePersonalIntro,
         "onTap": () {
           navigateWithPremiumTransition(context, const PersonalDetailsScreen());
         },
       },
       {
         "icon": notificationIcon,
-        "title": "Notification Alerts",
-        "subtitle": "Get alerts before any activity",
+        "title": AppLocalizations.of(context)!.notificationAlerts,
+        "subtitle": AppLocalizations.of(context)!.getAlertsActivity,
         "onTap": () {
           navigateWithPremiumTransition(
             context,
@@ -1101,11 +1201,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
       },
-      if (_role == 'Student')
+      if (_isStudent)
         {
           "icon": signatureIcon,
-          "title": "Signature Upload",
-          "subtitle": "Upload or manage your digital signature.",
+          "title": AppLocalizations.of(context)!.signatureUpload,
+          "subtitle": AppLocalizations.of(context)!.uploadManageSignature,
           "onTap": () {
             navigateWithPremiumTransition(
               context,
@@ -1113,20 +1213,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         },
-      if (_role == "Head")
+      if (_isHead)
         {
           "icon": feesIcon,
-          "title": "Fees Management",
-          "subtitle": "Manage and track all fee-related payments",
+          "title": AppLocalizations.of(context)!.feesQRManagement,
+          "subtitle": AppLocalizations.of(context)!.manageQRTrackPayments,
           "onTap": () {
             navigateWithPremiumTransition(context, AdminQrUpdateScreen());
           },
         },
-      if (_role == "Head")
+      // ----- YAHAN FIX KIYA HAI (_role ki jagah _isHead) -----
+      if (_isHead)
         {
           "icon": passwordResetIcon,
-          "title": "Reset Student Password",
-          "subtitle": "Reset student password to default password",
+          "title": AppLocalizations.of(context)!.resetStudentPassword,
+          "subtitle": AppLocalizations.of(context)!.resetStudentPasswordSub,
           "onTap": () {
             navigateWithPremiumTransition(
               context,
@@ -1134,11 +1235,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         },
-      if (_role == "Head")
+      // ----- YAHAN FIX KIYA HAI (_role ki jagah _isHead) -----
+      if (_isHead)
         {
           "icon": kitchenIcon,
-          "title": "Kitchen Management",
-          "subtitle": "Manage ingredients and recipes for the kitchen",
+          "title": AppLocalizations.of(context)!.kitchenManagement,
+          "subtitle": AppLocalizations.of(context)!.manageIngredientsRecipes,
           "onTap": () {
             navigateWithPremiumTransition(
               context,
@@ -1146,11 +1248,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         },
-      if (_role == "Head")
+      // ----- YAHAN FIX KIYA HAI (_role ki jagah _isHead) -----
+      if (_isHead)
         {
           "icon": inventoryIcon,
-          "title": "Madarsa Management",
-          "subtitle": "Manage expenses and inventory items",
+          "title": AppLocalizations.of(context)!.madarsaManagement,
+          "subtitle": AppLocalizations.of(context)!.manageExpensesInventory,
           "onTap": () {
             navigateWithPremiumTransition(
               context,
@@ -1163,24 +1266,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final List<Map<String, dynamic>> paytmSettings = [
       {
         "icon": passwordChange,
-        "title": "Change Your Password",
-        "subtitle": "Update your credentials securely",
+        "title": AppLocalizations.of(context)!.changeYourPassword,
+        "subtitle": AppLocalizations.of(context)!.updateCredentialsSecurely,
         "onTap": () {
           navigateWithPremiumTransition(context, const ChangePasswordScreen());
         },
       },
       {
+        "icon": languageIcon,
+        "title": AppLocalizations.of(context)!.changeYourLanguage,
+        "subtitle": AppLocalizations.of(context)!.applyMultipleLanguage,
+        "onTap": () {
+          navigateWithPremiumTransition(context, const ChooseLanguageScreen());
+        },
+      },
+      {
         "icon": aboutIcon,
-        "title": "About",
-        "subtitle": "Learn more about the app",
+        "title": AppLocalizations.of(context)!.about,
+        "subtitle": AppLocalizations.of(context)!.learnMoreAboutApp,
         "onTap": () {
           navigateWithPremiumTransition(context, const AboutScreen());
         },
       },
       {
         "icon": logoutIcon,
-        "title": "Logout",
-        "subtitle": "Close your app",
+        "title": AppLocalizations.of(context)!.logout,
+        "subtitle": AppLocalizations.of(context)!.closeYourApp,
         "onTap": _showLogoutDialog,
       },
     ];
@@ -1188,11 +1299,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("PREFERENCES", screenWidth),
+        _buildSectionHeader(
+          AppLocalizations.of(context)!.preferences,
+          screenWidth,
+        ),
         ...upiSettings
             .map((item) => _buildSettingItem(item, screenWidth))
             .toList(),
-        _buildSectionHeader("OTHER SETTINGS", screenWidth),
+        _buildSectionHeader(
+          AppLocalizations.of(context)!.otherSettings,
+          screenWidth,
+        ),
         ...paytmSettings
             .map((item) => _buildSettingItem(item, screenWidth))
             .toList(),
@@ -1210,11 +1327,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         item['title'],
-        style: TextStyle(
-          fontSize: screenWidth * 0.04,
-          color: Colors.black,
-          fontFamily: 'Gilroy-Regular',
-        ),
+        style: TextStyle(fontSize: screenWidth * 0.04, color: Colors.black),
       ),
       subtitle:
           item['subtitle'] != null
@@ -1223,7 +1336,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.034,
                   color: Colors.grey,
-                  fontFamily: 'Gilroy-Regular',
                 ),
               )
               : null,
@@ -1244,11 +1356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: screenWidth * 0.035,
-          fontFamily: 'Gilroy-Regular',
-          color: Colors.grey,
-        ),
+        style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey),
       ),
     );
   }
@@ -1282,7 +1390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: screenHeight * 0.02),
                   Text(
-                    'Are you sure you want to logout?',
+                    AppLocalizations.of(context)!.areYouSureLogout,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: screenWidth * 0.045,
@@ -1356,7 +1464,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               )
               : Text(
-                isConfirm ? 'Logout' : 'Cancel',
+                isConfirm
+                    ? AppLocalizations.of(context)!.logout
+                    : AppLocalizations.of(context)!.cancel,
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
                   fontWeight: FontWeight.w600,

@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
 import '../Data/marksheet_generate.dart';
+import '../l10n/app_localizations.dart';
 
 class CertificateScreen extends StatefulWidget {
   const CertificateScreen({super.key});
@@ -145,9 +145,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Select Course',
-                style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.selectCourse,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               Flexible(
@@ -160,8 +163,8 @@ class _CertificateScreenState extends State<CertificateScreen> {
                       title: Text(enrollment['courseName']),
                       trailing:
                           enrollment['isArchived']
-                              ? const Text("(Completed)")
-                              : const Text("(Current)"),
+                              ? Text(AppLocalizations.of(context)!.completed)
+                              : Text(AppLocalizations.of(context)!.current),
                       onTap: () {
                         Navigator.pop(ctx);
                         if (mounted) {
@@ -192,12 +195,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: const Text('No Exam Data'),
-              content: const Text('No exams found for this course.'),
+              title: Text(AppLocalizations.of(context)!.noExamDataTitle),
+              content: Text(AppLocalizations.of(context)!.noExamsFoundMessage),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('OK'),
+                  child: Text(AppLocalizations.of(context)!.ok),
                 ),
               ],
             ),
@@ -217,9 +220,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Select Exam Type',
-                style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.selectExamType,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               Flexible(
@@ -258,7 +264,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
     if (_selectedExamType == null ||
         _selectedEnrollment == null ||
         _selectedEnrollment!['sucId'] == null) {
-      CustomPopup.show(context, 'Please select a course and exam first.');
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.selectCourseExamFirst,
+      );
       return;
     }
 
@@ -269,14 +278,21 @@ class _CertificateScreenState extends State<CertificateScreen> {
             .doc(sucId)
             .get();
     if (!marksDoc.exists || marksDoc.data() == null) {
-      CustomPopup.show(context, 'No marks found.');
+      if (mounted) {
+        CustomPopup.show(context, AppLocalizations.of(context)!.noMarksFound);
+      }
       return;
     }
     final records = marksDoc.data()!['records'] as Map<String, dynamic>;
     final examRecords = records[_selectedExamType!] as Map<String, dynamic>?;
 
     if (examRecords == null || examRecords.isEmpty) {
-      CustomPopup.show(context, 'No records for this exam.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noRecordsForExam,
+        );
+      }
       return;
     }
 
@@ -286,9 +302,16 @@ class _CertificateScreenState extends State<CertificateScreen> {
             .toList();
 
     if (availableDurations.isEmpty) {
-      CustomPopup.show(context, 'No year/duration found for this exam.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.noYearDurationFound,
+        );
+      }
       return;
     }
+
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -302,9 +325,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Select Year',
-                style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              Text(
+                AppLocalizations.of(context)!.selectYear,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               Flexible(
@@ -339,7 +365,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
         _selectedEnrollment!['sucId'] == null ||
         _selectedExamType == null ||
         durationController.text.isEmpty) {
-      CustomPopup.show(context, 'Please select all fields.');
+      CustomPopup.show(context, AppLocalizations.of(context)!.selectAllFields);
       return;
     }
     if (!mounted) return;
@@ -364,12 +390,22 @@ class _CertificateScreenState extends State<CertificateScreen> {
       );
 
       if (!isApproved) {
-        CustomPopup.show(context, 'Result not yet approved.');
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.resultNotApproved,
+          );
+        }
       } else {
         await _fetchDataAndGenerateMarksheet();
       }
     } catch (e) {
-      CustomPopup.show(context, 'Error checking approval.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorCheckingApproval,
+        );
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -386,7 +422,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
                 .limit(1)
                 .get();
         if (querySnapshot.docs.isEmpty) {
-          CustomPopup.show(context, 'Archived student data not found.');
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              AppLocalizations.of(context)!.archivedDataNotFound,
+            );
+          }
           return;
         }
         studentDataSource = querySnapshot.docs.first;
@@ -412,7 +453,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
 
       if (!studentDataSource.exists || !marksDoc.exists || !headDoc.exists) {
         if (mounted) {
-          CustomPopup.show(context, 'Required data not found.');
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.requiredDataNotFound,
+          );
         }
         return;
       }
@@ -448,7 +492,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
 
       if (marks == null) {
         if (mounted) {
-          CustomPopup.show(context, 'Marks not found for selected year.');
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.marksNotFoundForYear,
+          );
         }
         return;
       }
@@ -479,7 +526,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Error generating marksheet.');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorGeneratingMarksheet,
+        );
       }
     }
   }
@@ -500,11 +550,11 @@ class _CertificateScreenState extends State<CertificateScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Certificate',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.certificateTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -529,21 +579,21 @@ class _CertificateScreenState extends State<CertificateScreen> {
                             SizedBox(height: screenHeight * 0.02),
                             _buildDropdownField(
                               context,
-                              'Select Course',
+                              AppLocalizations.of(context)!.selectCourse,
                               courseController,
                               () => _showCourseSelector(context),
                             ),
                             SizedBox(height: screenHeight * 0.02),
                             _buildDropdownField(
                               context,
-                              'Select Exam Type',
+                              AppLocalizations.of(context)!.selectExamType,
                               examController,
                               () => _showExamSelector(context),
                             ),
                             SizedBox(height: screenHeight * 0.02),
                             _buildDropdownField(
                               context,
-                              'Select Year',
+                              AppLocalizations.of(context)!.selectYear,
                               durationController,
                               () => _showDurationSelector(context),
                             ),
@@ -580,9 +630,11 @@ class _CertificateScreenState extends State<CertificateScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                    : const Text(
-                                      'Generate Marksheet',
-                                      style: TextStyle(
+                                    : Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.generateMarksheetBtn,
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
@@ -612,7 +664,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
           readOnly: true,
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: const TextStyle(fontFamily: 'Gilroy-Bold'),
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             filled: true,
             fillColor: Colors.grey[100],
             contentPadding: const EdgeInsets.symmetric(
@@ -633,8 +685,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
   Widget _buildCertificateCard(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final title = _selectedEnrollment?['courseName'] ?? 'Select a Course';
-    final subtitle = "Download Your Marksheets";
+    final title =
+        _selectedEnrollment?['courseName'] ??
+        AppLocalizations.of(context)!.selectACourse;
+    final subtitle = AppLocalizations.of(context)!.downloadMarksheetsSubtitle;
 
     return Container(
       height: screenHeight * 0.20,
@@ -666,7 +720,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
             style: TextStyle(
               fontSize: screenWidth * 0.055,
               color: Colors.black,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 3),
@@ -677,7 +731,6 @@ class _CertificateScreenState extends State<CertificateScreen> {
             style: TextStyle(
               fontSize: screenWidth * 0.038,
               color: Colors.black.withOpacity(0.65),
-              fontFamily: 'Gilroy-Regular',
             ),
           ),
         ],

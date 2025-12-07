@@ -7,15 +7,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:madarsaConnect/Data/main_page.dart';
-import 'package:madarsaConnect/Login%20&%20Signup%20Screen/create_account.dart';
-import 'package:madarsaConnect/Login%20&%20Signup%20Screen/forgot_password.dart';
-import 'package:madarsaConnect/Main%20Screen/admin_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/main_page.dart';
 import '../Home Screen/home_screen.dart';
+import '../Main Screen/admin_screen.dart';
+import '../l10n/app_localizations.dart';
+import 'create_account.dart';
+import 'forgot_password.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -161,10 +162,12 @@ class _LoginPageState extends State<LoginPage> {
           DateTime.now().millisecondsSinceEpoch < blockedUntil) {
         final remainingTime =
             (blockedUntil - DateTime.now().millisecondsSinceEpoch) ~/ 1000;
-        CustomPopup.show(
-          context,
-          'You are blocked for $remainingTime seconds due to multiple failed attempts.',
-        );
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.userBlocked(remainingTime.toString()),
+          );
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -223,14 +226,18 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
       await _auth.signOut();
-      CustomPopup.show(
-        context,
-        'Access Denied: You do not have the required privileges.',
-      );
+      if (mounted) {
+        CustomPopup.show(context, AppLocalizations.of(context)!.accessDenied);
+      }
     } on FirebaseAuthException catch (e) {
       await _handleAuthError(e);
     } catch (e) {
-      CustomPopup.show(context, 'An unexpected error occurred: $e');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.anErrorOccurred}: $e',
+        );
+      }
     } finally {
       if (context.mounted) {
         setState(() => _isLoading = false);
@@ -271,48 +278,45 @@ class _LoginPageState extends State<LoginPage> {
     switch (e.code) {
       case 'user-not-found':
       case 'wrong-password':
-        message = 'Invalid credentials. Please check your email and password.';
+        message = AppLocalizations.of(context)!.invalidCredentials;
         if (_loginAttempts >= 3) {
           final blockedUntil =
               DateTime.now().millisecondsSinceEpoch + 15 * 60 * 1000;
           await prefs.setInt('blockedUntil', blockedUntil);
-          message = 'Too many failed attempts. You are blocked for 15 minutes.';
+          message = AppLocalizations.of(context)!.tooManyFailedAttempts;
           _loginAttempts = 0;
           await prefs.setInt('loginAttempts', _loginAttempts);
         }
         break;
       case 'user-disabled':
-        message = 'This user account has been disabled.';
+        message = AppLocalizations.of(context)!.accountDisabled;
         break;
       case 'network-request-failed':
-        message = 'Please check your internet connection and try again.';
+        message = AppLocalizations.of(context)!.networkError;
         break;
       default:
-        message = 'An authentication error occurred. Please try again later.';
+        message = AppLocalizations.of(context)!.authError;
         print('Firebase Auth Error: ${e.message}');
     }
 
-    CustomPopup.show(context, (message));
+    if (mounted) {
+      CustomPopup.show(context, (message));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Colors.black),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-        ),
-        child: SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
           child: Stack(
             children: [
               GestureDetector(
@@ -330,27 +334,30 @@ class _LoginPageState extends State<LoginPage> {
                           // Image
                           SizedBox(
                             width: size.width * 0.4,
-                            height: size.height * 0.20,
+                            height: size.height * 0.25,
                             child: Image.asset(image4, fit: BoxFit.contain),
                           ),
 
                           Text(
-                            'Let’s Get You Secured',
+                            AppLocalizations.of(context)!.letsGetSecured,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight:
+                                  FontWeight.bold, // Replaced Gilroy-Bold
                               fontSize: size.width * 0.06,
                               color: Colors.black,
                             ),
                           ),
 
                           Text(
-                            'Safe always with you.',
+                            AppLocalizations.of(context)!.safeAlways,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: size.width * 0.045,
-                              color: Colors.grey.withValues(alpha: 25),
+                              color: Colors.grey.withOpacity(
+                                0.6,
+                              ), // Adjusted opacity method
                             ),
                           ),
 
@@ -376,14 +383,17 @@ class _LoginPageState extends State<LoginPage> {
                               setState(() {
                                 if (!value.contains('@') ||
                                     !value.contains('.')) {
-                                  _emailError = "Please enter a valid email";
+                                  _emailError =
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.invalidEmail;
                                 } else {
                                   _emailError = null;
                                 }
                               });
                             },
                             decoration: InputDecoration(
-                              hintText: "Email",
+                              hintText: AppLocalizations.of(context)!.emailHint,
                               hintStyle: const TextStyle(color: Colors.grey),
                               prefixIcon: Padding(
                                 padding: EdgeInsets.all(size.width * 0.03),
@@ -397,7 +407,9 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                               ),
-                              fillColor: whiteColor.withValues(alpha: 128),
+                              fillColor: whiteColor.withOpacity(
+                                0.5,
+                              ), // Adjusted opacity
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: const BorderSide(
@@ -412,6 +424,7 @@ class _LoginPageState extends State<LoginPage> {
                                   width: 1,
                                 ),
                               ),
+                              errorText: _emailError,
                             ),
                           ),
 
@@ -433,7 +446,9 @@ class _LoginPageState extends State<LoginPage> {
                               setState(() {
                                 if (value.length < 8) {
                                   _passwordError =
-                                      "Password must be at least 8 characters";
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.passwordMinLength;
                                 } else {
                                   _passwordError = null;
                                 }
@@ -441,7 +456,8 @@ class _LoginPageState extends State<LoginPage> {
                             },
                             decoration: InputDecoration(
                               filled: true,
-                              hintText: "Password",
+                              hintText:
+                                  AppLocalizations.of(context)!.passwordHint,
                               hintStyle: const TextStyle(color: Colors.grey),
                               prefixIcon: Padding(
                                 padding: EdgeInsets.all(size.width * 0.03),
@@ -488,6 +504,7 @@ class _LoginPageState extends State<LoginPage> {
                                   width: 1,
                                 ),
                               ),
+                              errorText: _passwordError,
                             ),
                           ),
 
@@ -495,7 +512,8 @@ class _LoginPageState extends State<LoginPage> {
 
                           CupertinoButton(
                             padding: EdgeInsets.zero,
-                            onPressed: isButtonActive ? _login : null,
+                            onPressed:
+                                (isButtonActive && !_isLoading) ? _login : null,
                             child: Container(
                               alignment: Alignment.center,
                               width: double.infinity,
@@ -504,9 +522,7 @@ class _LoginPageState extends State<LoginPage> {
                                 color:
                                     isButtonActive
                                         ? Colors.redAccent
-                                        : Colors.redAccent.withValues(
-                                          alpha: 0.5,
-                                        ), //Continue button opacity
+                                        : Colors.redAccent.withOpacity(0.5),
                                 borderRadius: BorderRadius.circular(15),
                               ),
                               child:
@@ -519,12 +535,13 @@ class _LoginPageState extends State<LoginPage> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                      : const Text(
-                                        "Continue",
-                                        style: TextStyle(
+                                      : Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.continueText,
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w700,
-                                          fontFamily: 'Gilroy-Bold',
                                           fontSize: 18,
                                         ),
                                       ),
@@ -546,7 +563,7 @@ class _LoginPageState extends State<LoginPage> {
                                   padding: EdgeInsets.zero,
                                 ),
                                 child: Text(
-                                  "Forgot Password?",
+                                  AppLocalizations.of(context)!.forgotPassword,
                                   style: TextStyle(
                                     color: Colors.grey.shade600,
                                     fontSize: 14,
@@ -570,7 +587,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      AppLocalizations.of(context)!.dontHaveAccount,
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: size.width * 0.038,
@@ -582,11 +599,11 @@ class _LoginPageState extends State<LoginPage> {
                         navigateWithPremiumTransition(context, CreateAccount());
                       },
                       child: Text(
-                        "Register!",
+                        AppLocalizations.of(context)!.register,
                         style: TextStyle(
                           color: Colors.redAccent,
                           fontSize: size.width * 0.038,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                         ),
                       ),
                     ),

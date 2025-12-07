@@ -6,9 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:madarsaConnect/Head%20Screen/madarsa_management_view.dart';
-import 'package:madarsaConnect/Home%20Screen/kitchen.dart';
-import 'package:madarsaConnect/Home%20Screen/special_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -20,10 +17,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../Faculty Screen/donation_screen.dart';
+import '../Head Screen/madarsa_management_view.dart';
 import '../Home Screen/Inventory_view_widget.dart';
 import '../Home Screen/feed_screen.dart';
 import '../Home Screen/home_screen.dart';
-import '../Home Screen/kitchen_widget.dart';
+import '../Home Screen/kitchen.dart';
 import '../Home Screen/notify_screen.dart';
 import '../Home Screen/pending_payment.dart';
 import '../Home Screen/profile_screen.dart';
@@ -32,6 +30,7 @@ import '../Home Screen/search_screen.dart';
 import '../Home Screen/subscription_screen.dart';
 import '../Home Screen/support_screen.dart';
 import '../Home Screen/upload_screen.dart';
+import '../l10n/app_localizations.dart';
 import 'dynamic_popup.dart';
 
 enum SubscriptionStatus {
@@ -162,21 +161,21 @@ class _MainPageState extends State<MainPage> {
           context: context,
           builder:
               (ctx) => AlertDialog(
-                title: const Text('Permissions required'),
-                content: const Text(
-                  'Please enable required permissions from app settings.',
+                title: Text(AppLocalizations.of(ctx)!.permissionsRequired),
+                content: Text(
+                  AppLocalizations.of(ctx)!.enablePermissionsFromSettings,
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(ctx)!.cancel),
                   ),
                   TextButton(
                     onPressed: () {
                       openAppSettings();
                       Navigator.of(ctx).pop();
                     },
-                    child: const Text('Open Settings'),
+                    child: Text(AppLocalizations.of(ctx)!.openSettings),
                   ),
                 ],
               ),
@@ -224,7 +223,10 @@ class _MainPageState extends State<MainPage> {
         navigateWithPremiumTransition(context, const SubscriptionScreen());
         break;
       case SubscriptionStatus.checking:
-        CustomPopup.show(context, 'Verifying status, please wait...');
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.verifyingStatus,
+        );
         break;
     }
   }
@@ -326,17 +328,14 @@ class _MainPageState extends State<MainPage> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                          await Navigator.push(
+                          navigateWithPremiumTransition(
                             context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => ProfileScreen(
-                                    onProfileUpdated:
-                                        () =>
-                                            context
-                                                .read<ProfileProvider>()
-                                                .loadUserProfile(),
-                                  ),
+                            ProfileScreen(
+                              onProfileUpdated:
+                                  () =>
+                                      context
+                                          .read<ProfileProvider>()
+                                          .loadUserProfile(),
                             ),
                           );
                         },
@@ -347,7 +346,7 @@ class _MainPageState extends State<MainPage> {
                       ),
                       SizedBox(width: screenWidth * 0.02),
                       Text(
-                        'Hi, $firstName',
+                        AppLocalizations.of(context)!.hiFirstName(firstName),
                         style: TextStyle(
                           fontSize: screenWidth * 0.042,
                           fontWeight: FontWeight.w500,
@@ -431,10 +430,12 @@ class _MainPageState extends State<MainPage> {
                                         } else if (snapshot.hasError) {
                                           return SizedBox(
                                             height: screenHeight * 0.2,
-                                            child: const Center(
+                                            child: Center(
                                               child: Text(
-                                                'Error loading images',
-                                                style: TextStyle(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.errorLoadingImages,
+                                                style: const TextStyle(
                                                   color: Colors.red,
                                                 ),
                                               ),
@@ -444,10 +445,12 @@ class _MainPageState extends State<MainPage> {
                                             snapshot.data!.isEmpty) {
                                           return SizedBox(
                                             height: screenHeight * 0.2,
-                                            child: const Center(
+                                            child: Center(
                                               child: Text(
-                                                'No images uploaded yet',
-                                                style: TextStyle(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.noImagesUploadedYet,
+                                                style: const TextStyle(
                                                   color: Colors.grey,
                                                 ),
                                               ),
@@ -655,10 +658,14 @@ class _MainPageState extends State<MainPage> {
                                       ),
                                     InviteCard(
                                       onTap: () {
-                                        const String linkToShare =
-                                            "https://play.google.com/store/apps/details?id=com.cocode.madarsaconnect";
-                                        const String message =
-                                            "Check out Madarsa Connect! It's a great app for our community.";
+                                        final String linkToShare =
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.appShareLink;
+                                        final String message =
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.inviteMessage;
                                         Share.share('$message\n\n$linkToShare');
                                       },
                                     ),

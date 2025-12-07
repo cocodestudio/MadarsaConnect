@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Data/dynamic_popup.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class AskQuestionScreen extends StatefulWidget {
@@ -115,7 +116,6 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
           userEmail = data['email'] ?? '';
           userName = data['fullName'] ?? '';
           userProfileUrl = data['profilePictureUrl'] ?? '';
-          // 🔹 Fetch headUid directly from the user's document
           userHeadUid = data['headUid'];
         });
       }
@@ -134,7 +134,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
         FocusScope.of(context).requestFocus(_pollOptionFocusNodes.last);
       });
     } else {
-      CustomPopup.show(context, "You can add a maximum of 4 options.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.maxPollOptions);
     }
   }
 
@@ -147,7 +147,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
         _pollOptionFocusNodes.removeAt(index);
       });
     } else {
-      CustomPopup.show(context, "You need at least 2 options for a poll.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.minPollOptions);
     }
   }
 
@@ -173,7 +173,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
 
   void _askQuestionOrPoll() async {
     if (userId == null) {
-      CustomPopup.show(context, "User not logged in.");
+      CustomPopup.show(context, AppLocalizations.of(context)!.userNotLoggedIn);
       return;
     }
 
@@ -231,13 +231,16 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
               ? postContentPreview.substring(0, 50)
               : postContentPreview;
 
-      // 🔹 Updated logic to send notifications based on user role and UIDs
-      if (userRole == 'Head' && userId != null) {
-        notificationTitle = 'New Question/Poll from ${userName ?? 'Head'}';
-        notificationMessage =
-            '${userName ?? 'A Head'} has posted a new question/poll: "$postContentPreview..."';
+      String roleDisplay = userRole ?? 'User';
+      // Using localization for notification content sent (Note: Receiver will see sender's language)
+      notificationTitle = AppLocalizations.of(
+        context,
+      )!.newQuestionPollTitle(userName ?? roleDisplay);
+      notificationMessage = AppLocalizations.of(
+        context,
+      )!.newQuestionPollBody(userName ?? roleDisplay, postContentPreview);
 
-        // Fetch all Faculty and Students associated with this Head
+      if (userRole == 'Head' && userId != null) {
         final facultySnapshot =
             await FirebaseFirestore.instance
                 .collection('Faculties')
@@ -274,11 +277,6 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
       } else if (userRole == 'Faculty' &&
           userId != null &&
           userHeadUid != null) {
-        notificationTitle = 'New Question/Poll from ${userName ?? 'Faculty'}';
-        notificationMessage =
-            '${userName ?? 'A Faculty'} has posted a new question/poll: "$postContentPreview..."';
-
-        // Fetch the Head of this Faculty
         final headDoc =
             await FirebaseFirestore.instance
                 .collection('Heads')
@@ -296,7 +294,6 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
           recipientUids.add(headDoc.id);
         }
 
-        // Fetch all Students of this Head
         final studentSnapshot =
             await FirebaseFirestore.instance
                 .collection('Students')
@@ -350,7 +347,10 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
         setState(() {
           _isAsking = false;
         });
-        CustomPopup.show(context, "Failed to post: $e");
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToPost}: $e',
+        );
       }
     }
   }
@@ -371,7 +371,11 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Who can see this ${_isPollActive ? 'poll' : 'question'}?',
+                  AppLocalizations.of(context)!.whoCanSeeThis(
+                    _isPollActive
+                        ? AppLocalizations.of(context)!.poll
+                        : AppLocalizations.of(context)!.question,
+                  ),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -380,14 +384,20 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                 ),
                 const SizedBox(height: 10),
                 _buildPrivacyOption(
-                  'Public',
-                  'Anyone on the platform',
+                  AppLocalizations.of(context)!.public,
+                  AppLocalizations.of(context)!.anyoneOnPlatform,
                   Icons.public,
+                  'Public',
                 ),
                 _buildPrivacyOption(
-                  'Only Me',
-                  'Only you can see this ${_isPollActive ? 'poll' : 'question'}',
+                  AppLocalizations.of(context)!.onlyMe,
+                  AppLocalizations.of(context)!.onlyYouCanSeeThis(
+                    _isPollActive
+                        ? AppLocalizations.of(context)!.poll
+                        : AppLocalizations.of(context)!.question,
+                  ),
                   Icons.lock,
+                  'Only Me',
                 ),
               ],
             ),
@@ -399,18 +409,23 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
     });
   }
 
-  Widget _buildPrivacyOption(String title, String subtitle, IconData icon) {
+  Widget _buildPrivacyOption(
+    String title,
+    String subtitle,
+    IconData icon,
+    String internalValue,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Colors.black),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
       trailing:
-          _privacySetting == title
+          _privacySetting == internalValue
               ? const Icon(Icons.check_circle, color: Colors.redAccent)
               : null,
       onTap: () {
         setState(() {
-          _privacySetting = title;
+          _privacySetting = internalValue;
         });
         Navigator.pop(context);
       },
@@ -488,7 +503,9 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                     ),
                                   )
                                   : Text(
-                                    _isPollActive ? "Post Poll" : "Ask",
+                                    _isPollActive
+                                        ? AppLocalizations.of(context)!.postPoll
+                                        : AppLocalizations.of(context)!.ask,
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: Colors.white,
@@ -569,7 +586,13 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        _privacySetting,
+                                        _privacySetting == 'Public'
+                                            ? AppLocalizations.of(
+                                              context,
+                                            )!.public
+                                            : AppLocalizations.of(
+                                              context,
+                                            )!.onlyMe,
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.blueGrey[700],
@@ -611,7 +634,10 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                       color: Colors.black87,
                                     ),
                                     decoration: InputDecoration(
-                                      hintText: "Your poll question?",
+                                      hintText:
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.yourPollQuestion,
                                       hintStyle: TextStyle(
                                         color: Colors.grey[500],
                                       ),
@@ -640,7 +666,12 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                                       _pollOptionFocusNodes[index],
                                                   decoration: InputDecoration(
                                                     hintText:
-                                                        "Option ${index + 1}",
+                                                        AppLocalizations.of(
+                                                          context,
+                                                        )!.optionHint(
+                                                          (index + 1)
+                                                              .toString(),
+                                                        ),
                                                     filled: true,
                                                     fillColor: Colors.grey[50],
                                                     border: OutlineInputBorder(
@@ -717,9 +748,11 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                           Icons.add_circle_outline,
                                           color: Colors.blueAccent,
                                         ),
-                                        label: const Text(
-                                          "Add Option",
-                                          style: TextStyle(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.addOption,
+                                          style: const TextStyle(
                                             color: Colors.blueAccent,
                                           ),
                                         ),
@@ -738,7 +771,10 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                                   color: Colors.black87,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: "What question do you have?",
+                                  hintText:
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.whatQuestion,
                                   hintStyle: TextStyle(color: Colors.grey[500]),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.zero,
@@ -766,8 +802,8 @@ class _AskQuestionScreenState extends State<AskQuestionScreen>
                     onPressed: _togglePollActive,
                     tooltip:
                         _isPollActive
-                            ? 'Switch to Text Question'
-                            : 'Create Poll',
+                            ? AppLocalizations.of(context)!.switchToText
+                            : AppLocalizations.of(context)!.createPoll,
                   ),
                 ],
               ),

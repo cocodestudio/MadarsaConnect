@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'loader.dart';
 
 class MarksheetPreviewScreen extends StatefulWidget {
   final Map<String, dynamic> studentData;

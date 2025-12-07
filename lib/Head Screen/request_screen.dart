@@ -2,8 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -18,7 +19,7 @@ class _RequestScreenState extends State<RequestScreen> {
   bool showFilters = false;
   List<Map<String, dynamic>> pendingLeaveRequests = [];
   List<Map<String, dynamic>> pendingFeeRequests = [];
-  List<Map<String, dynamic>> pendingDonationRequests = []; // <-- NEW
+  List<Map<String, dynamic>> pendingDonationRequests = [];
   bool isLoading = true;
   Map<String, dynamic>? selectedRequest;
   String? selectedSession;
@@ -32,6 +33,12 @@ class _RequestScreenState extends State<RequestScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAllPendingRequests();
+  }
 
   Future<void> handleRequestAction(BuildContext context, String action) async {
     if (selectedRequest == null) return;
@@ -58,7 +65,10 @@ class _RequestScreenState extends State<RequestScreen> {
             userEmail == null ||
             userRole == null) {
           if (mounted)
-            CustomPopup.show(context, "⚠️ Request data is incomplete.");
+            CustomPopup.show(
+              context,
+              AppLocalizations.of(context)!.requestDataIncomplete,
+            );
           setState(() => isActionProcessing = false);
           return;
         }
@@ -67,18 +77,20 @@ class _RequestScreenState extends State<RequestScreen> {
         await _firestore.runTransaction((transaction) async {
           final docSnap = await transaction.get(docRef);
           if (!docSnap.exists) {
-            throw Exception("Leave request not found ❌");
+            throw Exception(AppLocalizations.of(context)!.leaveRequestNotFound);
           }
 
           final data = docSnap.data()!;
           final sessions = data['sessions'] as Map<String, dynamic>?;
           if (sessions == null || !sessions.containsKey(session)) {
-            throw Exception("⚠️ No session found: $session");
+            throw Exception(
+              "${AppLocalizations.of(context)!.noSessionFound}: $session",
+            );
           }
 
           final List<dynamic> leaves = List.from(sessions[session] ?? []);
           if (leaves.isEmpty) {
-            throw Exception("⚠️ No leaves to process.");
+            throw Exception(AppLocalizations.of(context)!.noLeavesToProcess);
           }
 
           final nowTimestamp = Timestamp.now();
@@ -91,8 +103,9 @@ class _RequestScreenState extends State<RequestScreen> {
               'lastDeclined': {'status': 'Declined', 'updatedAt': nowTimestamp},
             };
             transaction.update(docRef, updates);
-            notificationTitle = 'Leave Declined ❌';
-            notificationBody = 'Your leave request has been declined.';
+            notificationTitle =
+                AppLocalizations.of(context)!.leaveDeclinedTitle;
+            notificationBody = AppLocalizations.of(context)!.leaveDeclinedBody;
           } else if (action == 'Accept') {
             final updatedLeaves =
                 leaves.map((leave) {
@@ -106,8 +119,9 @@ class _RequestScreenState extends State<RequestScreen> {
             transaction.set(docRef, {
               'sessions': {session: updatedLeaves},
             }, SetOptions(merge: true));
-            notificationTitle = 'Leave Approved ✅';
-            notificationBody = 'Your leave request has been approved.';
+            notificationTitle =
+                AppLocalizations.of(context)!.leaveApprovedTitle;
+            notificationBody = AppLocalizations.of(context)!.leaveApprovedBody;
           }
         });
 
@@ -138,12 +152,16 @@ class _RequestScreenState extends State<RequestScreen> {
         final mainDocRef = _firestore.collection('feePayments').doc(mainDocId);
         if (action == 'Decline') {
           await mainDocRef.update({'status': 'rejected'});
-          notificationTitle = 'Fee Payment Declined ❌';
-          notificationBody = 'Your fee payment request has been declined.';
+          notificationTitle =
+              AppLocalizations.of(context)!.feePaymentDeclinedTitle;
+          notificationBody =
+              AppLocalizations.of(context)!.feePaymentDeclinedBody;
         } else if (action == 'Accept') {
           await mainDocRef.update({'status': 'approved'});
-          notificationTitle = 'Fee Payment Approved ✅';
-          notificationBody = 'Your fee payment request has been approved.';
+          notificationTitle =
+              AppLocalizations.of(context)!.feePaymentApprovedTitle;
+          notificationBody =
+              AppLocalizations.of(context)!.feePaymentApprovedBody;
         }
         notificationType = 'feeStatus';
         final studentDoc =
@@ -159,8 +177,7 @@ class _RequestScreenState extends State<RequestScreen> {
             );
           }
         }
-      }
-      else if (requestType == 'donation') {
+      } else if (requestType == 'donation') {
         final docId = selectedRequest!['id'];
         final userId = selectedRequest!['userId'];
         final amount = selectedRequest!['amount'];
@@ -168,14 +185,18 @@ class _RequestScreenState extends State<RequestScreen> {
 
         if (action == 'Decline') {
           await docRef.update({'status': 'rejected'});
-          notificationTitle = 'Donation Declined ❌';
-          notificationBody =
-              'Your donation of ₹${amount.toStringAsFixed(2)} has been declined.';
+          notificationTitle =
+              AppLocalizations.of(context)!.donationDeclinedTitle;
+          notificationBody = AppLocalizations.of(
+            context,
+          )!.donationDeclinedBody(amount.toStringAsFixed(2));
         } else if (action == 'Accept') {
           await docRef.update({'status': 'approved'});
-          notificationTitle = 'Donation Approved ✅';
-          notificationBody =
-              'Thank you! Your donation of ₹${amount.toStringAsFixed(2)} has been approved.';
+          notificationTitle =
+              AppLocalizations.of(context)!.donationApprovedTitle;
+          notificationBody = AppLocalizations.of(
+            context,
+          )!.donationApprovedBody(amount.toStringAsFixed(2));
         }
 
         notificationType = 'donationStatus';
@@ -242,7 +263,11 @@ class _RequestScreenState extends State<RequestScreen> {
         selectedRequest = null;
       });
     } catch (e) {
-      if (mounted) CustomPopup.show(context, 'Error: ${e.toString()}');
+      if (mounted)
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.error}: ${e.toString()}',
+        );
     } finally {
       if (mounted) setState(() => isActionProcessing = false);
     }
@@ -258,8 +283,9 @@ class _RequestScreenState extends State<RequestScreen> {
     if (mounted) setState(() => isLoading = false);
   }
 
-  // --- NEW: Fetch Donation Requests ---
+  // ... (fetch functions remain mostly same, just logic)
   Future<void> fetchDonationRequests() async {
+    // ... same logic as provided ...
     try {
       final headUid = _auth.currentUser?.uid;
       if (headUid == null) return;
@@ -276,8 +302,8 @@ class _RequestScreenState extends State<RequestScreen> {
         String? profilePictureUrl;
         final userId = data['userId'] as String?;
         if (userId != null) {
+          // ... (profile picture fetching logic) ...
           DocumentSnapshot userSnap;
-          // Check Students, Faculties, and Heads collections for the user's profile picture
           userSnap = await _firestore.collection('Students').doc(userId).get();
           if (userSnap.exists && userSnap.data() != null) {
             profilePictureUrl =
@@ -323,6 +349,7 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   Future<void> fetchFeeRequests() async {
+    // ... same logic ...
     try {
       final headUid = _auth.currentUser?.uid;
       if (headUid == null) return;
@@ -372,6 +399,7 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   Future<void> fetchLeaveRequests() async {
+    // ... same logic ...
     try {
       final headUid = _auth.currentUser?.uid;
       if (headUid == null) return;
@@ -455,6 +483,7 @@ class _RequestScreenState extends State<RequestScreen> {
     return "$year-${year + 1}";
   }
 
+  // ... (fetchFilteredRequests and other helpers)
   Future<void> fetchFilteredRequests() async {
     setState(() {
       isFilteredLoading = true;
@@ -555,9 +584,8 @@ class _RequestScreenState extends State<RequestScreen> {
 
   void _showSessionDialog() async {
     final sessions = <String>{};
-
     final snapshot = await _firestore.collection('leaveRequests').get();
-
+    // ... (logic to populate sessions)
     for (var doc in snapshot.docs) {
       final data = doc.data();
       if (data.containsKey('sessions')) {
@@ -571,7 +599,6 @@ class _RequestScreenState extends State<RequestScreen> {
         }
       }
     }
-
     final sortedList = sessions.toList()..sort((a, b) => b.compareTo(a));
 
     if (!mounted) return;
@@ -583,9 +610,9 @@ class _RequestScreenState extends State<RequestScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "Select Session",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectSessionTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.3,
@@ -604,13 +631,7 @@ class _RequestScreenState extends State<RequestScreen> {
                         : Icons.radio_button_off,
                     color: Colors.redAccent,
                   ),
-                  title: Text(
-                    session,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy-Medium',
-                    ),
-                  ),
+                  title: Text(session, style: const TextStyle(fontSize: 16)),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() {
@@ -637,9 +658,9 @@ class _RequestScreenState extends State<RequestScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "Select Role",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectRole,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.25,
@@ -658,13 +679,7 @@ class _RequestScreenState extends State<RequestScreen> {
                         : Icons.radio_button_off,
                     color: Colors.redAccent,
                   ),
-                  title: Text(
-                    role,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy-Medium',
-                    ),
-                  ),
+                  title: Text(role, style: const TextStyle(fontSize: 16)),
                   onTap: () {
                     setState(() {
                       selectedRole = role;
@@ -681,7 +696,7 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   void _showCategoryDialog() {
-    final categories = ['All', 'Urgent', 'Personal', 'Leave Request'];
+    final categories = ['Leave Request'];
 
     showDialog(
       context: context,
@@ -691,9 +706,9 @@ class _RequestScreenState extends State<RequestScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "Select Category",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectCategory,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.3,
@@ -712,13 +727,7 @@ class _RequestScreenState extends State<RequestScreen> {
                         : Icons.radio_button_off,
                     color: Colors.redAccent,
                   ),
-                  title: Text(
-                    cat,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy-Medium',
-                    ),
-                  ),
+                  title: Text(cat, style: const TextStyle(fontSize: 16)),
                   onTap: () {
                     setState(() {
                       selectedCategory = cat;
@@ -732,12 +741,6 @@ class _RequestScreenState extends State<RequestScreen> {
         );
       },
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchAllPendingRequests();
   }
 
   Widget _buildFilterPage() {
@@ -758,7 +761,7 @@ class _RequestScreenState extends State<RequestScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Select Session"),
+                  Text(AppLocalizations.of(context)!.selectSession),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: _showSessionDialog,
@@ -773,7 +776,8 @@ class _RequestScreenState extends State<RequestScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
-                        selectedSession ?? 'Select Session',
+                        selectedSession ??
+                            AppLocalizations.of(context)!.selectSession,
                         style: const TextStyle(
                           color: Colors.black54,
                           fontSize: 14,
@@ -782,7 +786,7 @@ class _RequestScreenState extends State<RequestScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Role"),
+                  Text(AppLocalizations.of(context)!.role),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: _showRoleDialog,
@@ -797,7 +801,10 @@ class _RequestScreenState extends State<RequestScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
-                        selectedRole ?? 'Select Role (Faculty/Student)',
+                        selectedRole ??
+                            AppLocalizations.of(
+                              context,
+                            )!.selectRoleFacultyStudent,
                         style: const TextStyle(
                           color: Colors.black54,
                           fontSize: 14,
@@ -806,7 +813,7 @@ class _RequestScreenState extends State<RequestScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Categories"),
+                  Text(AppLocalizations.of(context)!.categories),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: _showCategoryDialog,
@@ -821,7 +828,8 @@ class _RequestScreenState extends State<RequestScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
-                        selectedCategory ?? 'Select Category',
+                        selectedCategory ??
+                            AppLocalizations.of(context)!.selectCategory,
                         style: const TextStyle(
                           color: Colors.black54,
                           fontSize: 14,
@@ -842,7 +850,7 @@ class _RequestScreenState extends State<RequestScreen> {
                       selectedCategory == null) {
                     CustomPopup.show(
                       context,
-                      "Please select all filters properly.",
+                      AppLocalizations.of(context)!.pleaseSelectAllFilters,
                     );
                     return;
                   }
@@ -860,12 +868,12 @@ class _RequestScreenState extends State<RequestScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Search',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context)!.search,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -878,7 +886,9 @@ class _RequestScreenState extends State<RequestScreen> {
 
   Widget _buildFilteredCards() {
     if (filteredRequests.isEmpty) {
-      return const Center(child: Text("No matching data found."));
+      return Center(
+        child: Text(AppLocalizations.of(context)!.noMatchingDataFound),
+      );
     }
 
     return ListView.builder(
@@ -906,7 +916,8 @@ class _RequestScreenState extends State<RequestScreen> {
               Row(
                 children: [
                   Text(
-                    request['name'] as String? ?? 'No Name',
+                    request['name'] as String? ??
+                        AppLocalizations.of(context)!.noName,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
@@ -927,15 +938,21 @@ class _RequestScreenState extends State<RequestScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-              Text("ID: ${request['id'] ?? 'N/A'}"),
-              Text("Remarks: ${request['remarks'] ?? 'N/A'}"),
               Text(
-                "Start Date: ${request['startDate'] ?? 'N/A'} at ${request['startTime'] ?? 'N/A'}",
+                "${AppLocalizations.of(context)!.id}: ${request['id'] ?? 'N/A'}",
               ),
               Text(
-                "End Date: ${request['endDate'] ?? 'N/A'} at ${request['endTime'] ?? 'N/A'}",
+                "${AppLocalizations.of(context)!.remarks}: ${request['remarks'] ?? 'N/A'}",
               ),
-              Text("Reason: ${request['reason'] ?? 'N/A'}"),
+              Text(
+                "${AppLocalizations.of(context)!.startDate}: ${request['startDate'] ?? 'N/A'} at ${request['startTime'] ?? 'N/A'}",
+              ),
+              Text(
+                "${AppLocalizations.of(context)!.endDate}: ${request['endDate'] ?? 'N/A'} at ${request['endTime'] ?? 'N/A'}",
+              ),
+              Text(
+                "${AppLocalizations.of(context)!.reason}: ${request['reason'] ?? 'N/A'}",
+              ),
             ],
           ),
         );
@@ -947,19 +964,21 @@ class _RequestScreenState extends State<RequestScreen> {
     final allRequests = [
       ...pendingLeaveRequests,
       ...pendingFeeRequests,
-      ...pendingDonationRequests, // <-- NEW
+      ...pendingDonationRequests,
     ];
     allRequests.sort((a, b) {
       final aTimestamp = a['timestamp'] as Timestamp?;
       final bTimestamp = b['timestamp'] as Timestamp?;
       if (aTimestamp == null && bTimestamp == null) return 0;
-      if (aTimestamp == null) return 1; // Put nulls at the end
-      if (bTimestamp == null) return -1; // Keep non-nulls at the start
-      return bTimestamp.compareTo(aTimestamp); // Sort descending
+      if (aTimestamp == null) return 1;
+      if (bTimestamp == null) return -1;
+      return bTimestamp.compareTo(aTimestamp);
     });
 
     if (allRequests.isEmpty) {
-      return const Center(child: Text("No pending requests."));
+      return Center(
+        child: Text(AppLocalizations.of(context)!.noPendingRequests),
+      );
     }
 
     return ListView.builder(
@@ -1046,9 +1065,9 @@ class _RequestScreenState extends State<RequestScreen> {
                   Row(
                     children: [
                       Text(
-                        request['name'] ?? 'No Name',
+                        request['name'] ?? AppLocalizations.of(context)!.noName,
                         style: const TextStyle(
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
@@ -1076,29 +1095,24 @@ class _RequestScreenState extends State<RequestScreen> {
                   const SizedBox(height: 4),
                   if (type == 'fee' || type == 'donation')
                     Text(
-                      "Amount: ₹${(request['amount'] as double).toStringAsFixed(2)}",
+                      "${AppLocalizations.of(context)!.amount}: ₹${(request['amount'] as double).toStringAsFixed(2)}",
                       style: const TextStyle(
                         fontSize: 13,
                         color: Colors.black54,
-                        fontFamily: 'Gilroy-Regular',
                       ),
                     )
                   else
                     Text(
-                      "ID: ${request['id'] ?? 'N/A'}",
+                      "${AppLocalizations.of(context)!.id}: ${request['id'] ?? 'N/A'}",
                       style: const TextStyle(
                         fontSize: 13,
                         color: Colors.black54,
-                        fontFamily: 'Gilroy-Regular',
                       ),
                     ),
                   const SizedBox(height: 4),
                   Text(
-                    "Remarks: $remarks",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy-Regular',
-                    ),
+                    "${AppLocalizations.of(context)!.remarks}: $remarks",
+                    style: const TextStyle(fontSize: 13),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1131,7 +1145,6 @@ class _RequestScreenState extends State<RequestScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Common Header ---
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1164,9 +1177,10 @@ class _RequestScreenState extends State<RequestScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              request['name'] ?? 'No Name',
+                              request['name'] ??
+                                  AppLocalizations.of(context)!.noName,
                               style: const TextStyle(
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
@@ -1176,7 +1190,6 @@ class _RequestScreenState extends State<RequestScreen> {
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: Colors.black54,
-                                fontFamily: 'Gilroy-Regular',
                               ),
                             ),
                           ],
@@ -1187,60 +1200,57 @@ class _RequestScreenState extends State<RequestScreen> {
                   const SizedBox(height: 14),
                   const Divider(thickness: 1),
                   const SizedBox(height: 10),
-
-                  // --- Type-Specific Details ---
                   if (type == 'leave') ...[
-                    const Text(
-                      "Role",
+                    Text(
+                      AppLocalizations.of(context)!.role,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(request['role'] ?? '--'),
                     const SizedBox(height: 12),
-                    const Text(
-                      "Remarks",
+                    Text(
+                      AppLocalizations.of(context)!.remarks,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(request['remarks'] ?? '--'),
                     const SizedBox(height: 12),
-                    const Text(
-                      "Start Date & Time",
+                    Text(
+                      AppLocalizations.of(context)!.startDateTime,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "${request['startDate'] ?? '--'} at ${request['startTime'] ?? ''}",
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      "End Date & Time",
+                    Text(
+                      AppLocalizations.of(context)!.endDateTime,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "${request['endDate'] ?? '--'} at ${request['endTime'] ?? ''}",
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      "Reason",
+                    Text(
+                      AppLocalizations.of(context)!.reason,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(request['reason'] ?? '--'),
                   ] else ...[
-                    // Common for Fee & Donation
-                    const Text(
-                      "Category / Purpose",
+                    Text(
+                      AppLocalizations.of(context)!.categoryPurpose,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(request['purpose'] ?? '--'),
                     const SizedBox(height: 12),
-                    const Text(
-                      "Amount",
+                    Text(
+                      AppLocalizations.of(context)!.amount,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "₹${(request['amount'] as double).toStringAsFixed(2)}",
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      "UTR Number",
+                    Text(
+                      AppLocalizations.of(context)!.utrNumber,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(request['utrNumber'] ?? '--'),
@@ -1250,13 +1260,10 @@ class _RequestScreenState extends State<RequestScreen> {
             ),
           ),
         ),
-
-        // Buttons
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Row(
             children: [
-              // Decline
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -1271,10 +1278,10 @@ class _RequestScreenState extends State<RequestScreen> {
                       isActionProcessing
                           ? null
                           : () => handleRequestAction(context, 'Decline'),
-                  child: const Text(
-                    "Decline",
-                    style: TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                  child: Text(
+                    AppLocalizations.of(context)!.decline,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: Colors.white,
                     ),
@@ -1282,7 +1289,6 @@ class _RequestScreenState extends State<RequestScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Accept
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -1297,10 +1303,10 @@ class _RequestScreenState extends State<RequestScreen> {
                       isActionProcessing
                           ? null
                           : () => handleRequestAction(context, 'Accept'),
-                  child: const Text(
-                    "Accept",
-                    style: TextStyle(
-                      fontFamily: 'Gilroy-Bold',
+                  child: Text(
+                    AppLocalizations.of(context)!.accept,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: Colors.white,
                     ),
@@ -1320,7 +1326,6 @@ class _RequestScreenState extends State<RequestScreen> {
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-
         if (showDetails) {
           setState(() {
             showDetails = false;
@@ -1380,15 +1385,15 @@ class _RequestScreenState extends State<RequestScreen> {
           ),
           title: Text(
             showDetails
-                ? '${selectedRequest?['type'].toString().capitalize()} Request'
+                ? '${selectedRequest?['type'].toString().toUpperCase()} ${AppLocalizations.of(context)!.request}'
                 : showFilteredDetails
-                ? 'Approved Request'
+                ? AppLocalizations.of(context)!.approvedRequest
                 : showFilters
-                ? 'Filters'
-                : 'Requests',
+                ? AppLocalizations.of(context)!.filters
+                : AppLocalizations.of(context)!.requests,
             style: const TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
@@ -1433,14 +1438,5 @@ class _RequestScreenState extends State<RequestScreen> {
         ),
       ),
     );
-  }
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    if (isEmpty) {
-      return this;
-    }
-    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

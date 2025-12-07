@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:madarsaConnect/Data/loader.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class DashboardViewScreen extends StatefulWidget {
   const DashboardViewScreen({super.key});
@@ -57,7 +58,7 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Text("Select Year"),
+            title: Text(AppLocalizations.of(context)!.selectYear),
             content: SizedBox(
               width: 300,
               height: 300,
@@ -93,11 +94,11 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Madarsa Dashboard',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.madarsaDashboard,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -188,7 +189,7 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
                 children: [
                   Expanded(
                     child: _SummaryCard(
-                      title: "Today",
+                      title: AppLocalizations.of(context)!.today,
                       amount: currencyFormat.format(todayTotal),
                       icon: Icons.today,
                       color: Colors.black,
@@ -199,7 +200,7 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
                     child: _SummaryCard(
                       title:
                           isCurrentYear
-                              ? "This Year"
+                              ? AppLocalizations.of(context)!.thisYear
                               : _selectedYear.year.toString(),
                       amount: currencyFormat.format(yearTotal),
                       icon: Icons.calendar_today,
@@ -229,9 +230,9 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Inventory Status",
-          style: TextStyle(fontSize: 22, fontFamily: 'Gilroy-Bold'),
+        Text(
+          AppLocalizations.of(context)!.inventoryStatus,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         StreamBuilder<QuerySnapshot>(
@@ -267,16 +268,16 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.warning_amber_rounded,
                                 color: Colors.redAccent,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
-                                "Low Stock Alerts",
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.lowStockAlerts,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.redAccent,
@@ -294,9 +295,12 @@ class _DashboardViewScreenState extends State<DashboardViewScreen> {
                   ),
                   const Divider(height: 30),
                 ],
-                const Text(
-                  "All Items",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)!.allItems,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ...allItems.map((doc) => _InventoryItemTile(doc: doc)).toList(),
@@ -363,7 +367,7 @@ class _SummaryCard extends StatelessWidget {
             amount,
             style: TextStyle(
               fontSize: 24,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
@@ -470,7 +474,7 @@ class _PieChartCardState extends State<_PieChartCard> {
             widget.totalAmount,
             style: const TextStyle(
               fontSize: 28,
-              fontFamily: 'Gilroy-Bold',
+              fontWeight: FontWeight.bold,
               color: Color(0xFF1B263B),
             ),
           ),

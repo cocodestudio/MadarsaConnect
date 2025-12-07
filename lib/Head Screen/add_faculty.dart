@@ -13,6 +13,7 @@ import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/main_page.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 
 class AddFaculty extends StatefulWidget {
   const AddFaculty({super.key});
@@ -150,7 +151,7 @@ class _AddFacultyState extends State<AddFaculty> {
     try {
       final String? headUid = _auth.currentUser?.uid;
       if (headUid == null) {
-        throw Exception("Head user not logged in.");
+        throw Exception(AppLocalizations.of(context)!.headNotLoggedIn);
       }
 
       const String defaultPassword = 'mc@12345';
@@ -166,7 +167,7 @@ class _AddFacultyState extends State<AddFaculty> {
       if (email == null || email.isEmpty) {
         if (rawPhone.isEmpty) {
           throw Exception(
-            "Either Email or Phone Number is required for student registration.",
+            AppLocalizations.of(context)!.emailOrPhoneRequiredRegistration,
           );
         }
         String cleanPhone = rawPhone.replaceAll(RegExp(r'^\+?91'), '');
@@ -254,9 +255,9 @@ class _AddFacultyState extends State<AddFaculty> {
 
       _showSuccessDialog();
     } on FirebaseAuthException catch (e) {
-      String message = 'An error occurred. Please try again.';
+      String message = AppLocalizations.of(context)!.errorOccurred;
       if (e.code == 'email-already-in-use') {
-        message = 'The email/phone is already in use by another account.';
+        message = AppLocalizations.of(context)!.emailInUse;
       } else {
         message = e.message ?? message;
       }
@@ -267,7 +268,7 @@ class _AddFacultyState extends State<AddFaculty> {
       if (mounted) {
         CustomPopup.show(
           context,
-          'An unexpected error occurred: ${e.toString()}',
+          AppLocalizations.of(context)!.unexpectedError(e.toString()),
         );
       }
     } finally {
@@ -395,13 +396,13 @@ class _AddFacultyState extends State<AddFaculty> {
                             height: 150,
                           ),
                           const SizedBox(height: 20),
-                          const Text(
-                            "Successfully Added!",
+                          Text(
+                            AppLocalizations.of(context)!.successfullyAdded,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 20,
                               color: Colors.black,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -436,9 +437,9 @@ class _AddFacultyState extends State<AddFaculty> {
                                   color: Colors.redAccent,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: const Text(
-                                  "Done",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.done,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -475,11 +476,11 @@ class _AddFacultyState extends State<AddFaculty> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Add Faculty',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.addFacultyTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -512,28 +513,27 @@ class _AddFacultyState extends State<AddFaculty> {
                         ),
                         SizedBox(height: size.height * 0.03),
                         Text(
-                          'Add Faculty',
+                          AppLocalizations.of(context)!.addFacultyTitle,
                           style: TextStyle(
                             fontSize: 28,
                             color: Colors.black.withAlpha(230),
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: size.height * 0.004),
                         Text(
-                          'Please fill in the details below to add faculty information.',
+                          AppLocalizations.of(context)!.fillFacultyDetails,
                           style: TextStyle(
                             fontSize: 13,
-                            fontFamily: 'Gilroy-Regular',
                             color: Colors.black.withAlpha(128),
                           ),
                         ),
                         SizedBox(height: size.height * 0.04),
                         Text(
-                          "PERSONAL DETAILS",
+                          AppLocalizations.of(context)!.personalDetailsHeader,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -555,7 +555,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Full Name",
+                            hintText: AppLocalizations.of(context)!.fullName,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -620,20 +620,19 @@ class _AddFacultyState extends State<AddFaculty> {
                             ),
                             dropdownColor: Colors.white,
                             borderRadius: BorderRadius.circular(15),
-                            hint: const Text(
-                              "Select Gender",
-                              style: TextStyle(
+                            hint: Text(
+                              AppLocalizations.of(context)!.selectGender,
+                              style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14,
                               ),
                             ),
-                            items:
-                                ["MALE", "FEMALE", "OTHER"].map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
+                            items: ["MALE", "FEMALE", "OTHER"].map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
                             onChanged: (String? newValue) {
                               setState(() {
                                 selectedGender = newValue;
@@ -653,10 +652,9 @@ class _AddFacultyState extends State<AddFaculty> {
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 14,
-                            fontFamily: 'Gilroy-Regular',
                           ),
                           decoration: InputDecoration(
-                            hintText: "Date of Birth",
+                            hintText: AppLocalizations.of(context)!.dateOfBirth,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -701,7 +699,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Phone Number",
+                            hintText: AppLocalizations.of(context)!.phoneNumber,
                             counterText: "",
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
@@ -763,7 +761,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Email",
+                            hintText: AppLocalizations.of(context)!.email,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -799,10 +797,12 @@ class _AddFacultyState extends State<AddFaculty> {
                         SizedBox(height: size.height * 0.03),
 
                         Text(
-                          "PROFESSIONAL DETAILS",
+                          AppLocalizations.of(
+                            context,
+                          )!.professionalDetailsHeader,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -823,7 +823,8 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Qualification",
+                            hintText:
+                                AppLocalizations.of(context)!.qualification,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -863,7 +864,8 @@ class _AddFacultyState extends State<AddFaculty> {
                           ),
                           maxLength: 2,
                           decoration: InputDecoration(
-                            hintText: "Experience (in years)",
+                            hintText:
+                                AppLocalizations.of(context)!.experienceYears,
                             counterText: "",
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
@@ -900,7 +902,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Joining Date",
+                            hintText: AppLocalizations.of(context)!.joiningDate,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -928,10 +930,10 @@ class _AddFacultyState extends State<AddFaculty> {
                         SizedBox(height: size.height * 0.03),
 
                         Text(
-                          "ADDRESS",
+                          AppLocalizations.of(context)!.addressHeader,
                           style: TextStyle(
                             fontSize: 17,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                             color: Colors.black.withAlpha(179),
                           ),
                         ),
@@ -952,7 +954,10 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Flat, Building/Apartment",
+                            hintText:
+                                AppLocalizations.of(
+                                  context,
+                                )!.flatBuildingApartment,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -991,7 +996,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Town/City",
+                            hintText: AppLocalizations.of(context)!.townCity,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1058,7 +1063,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "State",
+                            hintText: AppLocalizations.of(context)!.state,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1123,8 +1128,12 @@ class _AddFacultyState extends State<AddFaculty> {
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Please select a state first"),
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.pleaseSelectStateFirst,
+                                  ),
                                 ),
                               );
                             }
@@ -1134,7 +1143,7 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "District",
+                            hintText: AppLocalizations.of(context)!.district,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1164,10 +1173,12 @@ class _AddFacultyState extends State<AddFaculty> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "IDENTIFICATION DETAILS",
+                            AppLocalizations.of(
+                              context,
+                            )!.identificationDetailsHeader,
                             style: TextStyle(
                               fontSize: 17,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -1188,7 +1199,8 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Aadhaar Number",
+                            hintText:
+                                AppLocalizations.of(context)!.aadhaarNumber,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card,
@@ -1230,7 +1242,8 @@ class _AddFacultyState extends State<AddFaculty> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "PAN Card (optional)",
+                            hintText:
+                                AppLocalizations.of(context)!.panCardOptional,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card_outlined,
@@ -1283,9 +1296,9 @@ class _AddFacultyState extends State<AddFaculty> {
                                         strokeWidth: 2.5,
                                       ),
                                     )
-                                    : const Text(
-                                      "Add",
-                                      style: TextStyle(
+                                    : Text(
+                                      AppLocalizations.of(context)!.add,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 17,

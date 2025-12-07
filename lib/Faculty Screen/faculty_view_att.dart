@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class FacultyViewAttendanceScreen extends StatefulWidget {
   const FacultyViewAttendanceScreen({super.key});
@@ -94,9 +95,6 @@ class _FacultyViewAttendanceScreenState
         }
       }
 
-      final daysInYear =
-          DateTime(year + 1, 1, 1).difference(DateTime(year, 1, 1)).inDays;
-
       setState(() {
         _attendanceForYear = fetchedAttendance;
         totalDaysInYear = snap.docs.length;
@@ -105,8 +103,9 @@ class _FacultyViewAttendanceScreenState
             totalDaysInYear == 0 ? 0.0 : presentDaysInYear / totalDaysInYear;
       });
     } catch (e) {
+      debugPrint('Error fetching attendance: $e');
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -123,11 +122,11 @@ class _FacultyViewAttendanceScreenState
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Attendance',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.attendance,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -168,11 +167,7 @@ class _FacultyViewAttendanceScreenState
           animation: true,
           center: Text(
             "${(attendancePercentage * 100).toStringAsFixed(1)}%",
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Gilroy-Bold',
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           circularStrokeCap: CircularStrokeCap.round,
           backgroundColor: const Color(0xFFE1E4EC),
@@ -182,16 +177,22 @@ class _FacultyViewAttendanceScreenState
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Present Days", style: TextStyle(fontSize: 14)),
+            Text(
+              AppLocalizations.of(context)!.presentDays,
+              style: const TextStyle(fontSize: 14),
+            ),
             Text(
               "$presentDaysInYear",
-              style: const TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text("Total Marked Days", style: TextStyle(fontSize: 14)),
+            Text(
+              AppLocalizations.of(context)!.totalMarkedDays,
+              style: const TextStyle(fontSize: 14),
+            ),
             Text(
               "$totalDaysInYear",
-              style: const TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -226,7 +227,7 @@ class _FacultyViewAttendanceScreenState
                 return DropdownMenuItem<int>(
                   value: year,
                   child: Text(
-                    "Year: $year",
+                    "${AppLocalizations.of(context)!.year}: $year",
                     style: const TextStyle(fontSize: 16),
                   ),
                 );
@@ -245,6 +246,9 @@ class _FacultyViewAttendanceScreenState
   }
 
   Widget _buildMonthSelector() {
+    // Get current locale to format months in Hindi/Urdu
+    final locale = Localizations.localeOf(context).toString();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -259,6 +263,7 @@ class _FacultyViewAttendanceScreenState
         final month = index + 1;
         final monthName = DateFormat(
           'MMM',
+          locale,
         ).format(DateTime(_selectedYear, month));
         return GestureDetector(
           onTap: () {
@@ -285,7 +290,11 @@ class _FacultyViewAttendanceScreenState
 
   Widget _buildDateListForMonth(int month) {
     final daysInMonth = DateUtils.getDaysInMonth(_selectedYear, month);
-    final monthName = DateFormat('MMMM').format(DateTime(_selectedYear, month));
+    final locale = Localizations.localeOf(context).toString();
+    final monthName = DateFormat(
+      'MMMM',
+      locale,
+    ).format(DateTime(_selectedYear, month));
 
     return Column(
       children: [
@@ -294,7 +303,7 @@ class _FacultyViewAttendanceScreenState
           children: [
             Text(
               monthName,
-              style: const TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
               icon: const Icon(
@@ -302,9 +311,9 @@ class _FacultyViewAttendanceScreenState
                 size: 14,
                 color: Colors.black,
               ),
-              label: const Text(
-                "Months",
-                style: TextStyle(color: Colors.black),
+              label: Text(
+                AppLocalizations.of(context)!.months,
+                style: const TextStyle(color: Colors.black),
               ),
               onPressed: () => setState(() => _selectedMonth = null),
             ),
@@ -319,18 +328,26 @@ class _FacultyViewAttendanceScreenState
             final day = index + 1;
             final date = DateTime(_selectedYear, month, day);
             final dateStr = DateFormat('yyyy-MM-dd').format(date);
-            final status = _attendanceForYear[dateStr] ?? 'Not Marked';
-
-            return _buildDateListItem(date, status);
+            final rawStatus = _attendanceForYear[dateStr];
+            return _buildDateListItem(date, rawStatus, locale);
           },
         ),
       ],
     );
   }
 
-  Widget _buildDateListItem(DateTime date, String status) {
-    final isPresent = status.toLowerCase() == 'present';
-    final isMarked = status != 'Not Marked';
+  Widget _buildDateListItem(DateTime date, String? rawStatus, String locale) {
+    final isPresent = rawStatus != null && rawStatus.toLowerCase() == 'present';
+    final isMarked = rawStatus != null;
+
+    String displayStatus;
+    if (!isMarked) {
+      displayStatus = AppLocalizations.of(context)!.notMarked;
+    } else if (isPresent) {
+      displayStatus = AppLocalizations.of(context)!.present;
+    } else {
+      displayStatus = AppLocalizations.of(context)!.absent;
+    }
 
     Color statusColor;
     Color statusBgColor;
@@ -356,7 +373,7 @@ class _FacultyViewAttendanceScreenState
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            DateFormat('MMM dd, EEEE').format(date),
+            DateFormat('MMM dd, EEEE', locale).format(date),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           Container(
@@ -366,7 +383,7 @@ class _FacultyViewAttendanceScreenState
               borderRadius: BorderRadius.circular(50),
             ),
             child: Text(
-              status,
+              displayStatus,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

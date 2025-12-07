@@ -3,10 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Head%20Screen/previous_session.dart';
+import 'package:madarsaconnect/Head%20Screen/previous_session.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
 import '../Home Screen/home_screen.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 
 class SessionManagementScreen extends StatefulWidget {
@@ -60,7 +61,10 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       });
     } catch (e) {
       if (mounted) {
-        CustomPopup.show(context, 'Failed to fetch courses: $e');
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.errorFetchingCourses}: $e',
+        );
       }
       print('Error fetching courses: $e');
     } finally {
@@ -101,7 +105,10 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
           }
         } else {
           if (_startDate != null && picked.isBefore(_startDate!)) {
-            CustomPopup.show(context, 'End date cannot be before start date.');
+            CustomPopup.show(
+              context,
+              AppLocalizations.of(context)!.endDateBeforeStartDateError,
+            );
             return;
           }
           _endDate = picked;
@@ -116,7 +123,10 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
         _selectedTerm == null ||
         _startDate == null ||
         _endDate == null) {
-      CustomPopup.show(context, 'Please fill all session details.');
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.fillAllSessionDetails,
+      );
       return;
     }
 
@@ -157,10 +167,16 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       }
 
       if (isOverlapping) {
-        CustomPopup.show(
-          context,
-          'A session for ${sessionData['course']} - ${sessionData['duration']} (${sessionData['term']}) is already overlapping with the selected dates.',
-        );
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.sessionOverlapError(
+              sessionData['course'],
+              sessionData['duration'],
+              sessionData['term'],
+            ),
+          );
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -193,11 +209,13 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
 
       final allUsers = [...studentsSnapshot.docs, ...facultiesSnapshot.docs];
 
+      final notificationTitle =
+          AppLocalizations.of(context)!.newAcademicSessionTitle;
+      final notificationBody =
+          AppLocalizations.of(context)!.newAcademicSessionBody;
+
       for (var userDoc in allUsers) {
         final userId = userDoc.id;
-        final notificationTitle = 'New Academic Session';
-        final notificationBody =
-            'A new academic session has been created by the administration.';
         final settingsDoc =
             await FirebaseFirestore.instance
                 .collection('notificationSettings')
@@ -235,7 +253,12 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
         }
       }
 
-      CustomPopup.show(context, 'Session created successfully!');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.sessionCreatedSuccess,
+        );
+      }
       setState(() {
         _selectedCourse = null;
         _selectedDuration = null;
@@ -244,7 +267,12 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
         _endDate = null;
       });
     } catch (e) {
-      CustomPopup.show(context, 'Failed to create session: $e');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          '${AppLocalizations.of(context)!.failedToCreateSession}: $e',
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -340,11 +368,11 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Session Management',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.sessionManagementTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -363,7 +391,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                   children: [
                     SizedBox(height: screenWidth * 0.02),
                     SelectorCard(
-                      value: _selectedCourse?['name'] ?? 'Select Course',
+                      value:
+                          _selectedCourse?['name'] ??
+                          AppLocalizations.of(context)!.selectCourse,
                       onTap: () {
                         final options =
                             _courses
@@ -377,13 +407,13 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                         if (options.isEmpty) {
                           CustomPopup.show(
                             context,
-                            'No courses found. Please add a course first.',
+                            AppLocalizations.of(context)!.noCoursesAddFirst,
                           );
                           return;
                         }
                         _showSelectorDialog(
                           context: context,
-                          title: 'Select Course',
+                          title: AppLocalizations.of(context)!.selectCourse,
                           options: options,
                           onSelected: (course) {
                             setState(() {
@@ -396,12 +426,16 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                     ),
                     SizedBox(height: screenWidth * 0.04),
                     SelectorCard(
-                      value: _selectedDuration?['name'] ?? 'Select Duration',
+                      value:
+                          _selectedDuration?['name'] ??
+                          AppLocalizations.of(context)!.selectDuration,
                       onTap: () {
                         if (_selectedCourse == null) {
                           CustomPopup.show(
                             context,
-                            'Please select a course first.',
+                            AppLocalizations.of(
+                              context,
+                            )!.pleaseSelectCourseFirst,
                           );
                           return;
                         }
@@ -413,12 +447,16 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                         for (int i = 1; i <= duration; i++) {
                           final suffix =
                               (i <= 3 && i > 0) ? yearSuffixes[i - 1] : 'th';
-                          options.add({'name': '$i$suffix Year', 'number': i});
+                          options.add({
+                            'name':
+                                '$i$suffix ${AppLocalizations.of(context)!.year}',
+                            'number': i,
+                          });
                         }
 
                         _showSelectorDialog(
                           context: context,
-                          title: 'Select Duration',
+                          title: AppLocalizations.of(context)!.selectDuration,
                           options: options,
                           onSelected: (duration) {
                             setState(() {
@@ -430,15 +468,17 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                     ),
                     SizedBox(height: screenWidth * 0.04),
                     SelectorCard(
-                      value: _selectedTerm ?? 'Select Term',
+                      value:
+                          _selectedTerm ??
+                          AppLocalizations.of(context)!.selectTerm,
                       onTap: () {
                         final options = [
-                          {'name': 'Odd Term'},
-                          {'name': 'Even Term'},
+                          {'name': AppLocalizations.of(context)!.oddTerm},
+                          {'name': AppLocalizations.of(context)!.evenTerm},
                         ];
                         _showSelectorDialog(
                           context: context,
-                          title: 'Select Term',
+                          title: AppLocalizations.of(context)!.selectTerm,
                           options: options,
                           onSelected: (term) {
                             setState(() {
@@ -453,14 +493,14 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                       selectedDate: _startDate,
                       onTap: () => _selectDate(context, true),
                       borderColor: Colors.black12,
-                      labelText: 'Select Start Date',
+                      labelText: AppLocalizations.of(context)!.selectStartDate,
                     ),
                     SizedBox(height: screenWidth * 0.04),
                     DateSelectorCard(
                       selectedDate: _endDate,
                       onTap: () => _selectDate(context, false),
                       borderColor: Colors.black12,
-                      labelText: 'Select End Date',
+                      labelText: AppLocalizations.of(context)!.selectEndDate,
                     ),
                     SizedBox(height: screenWidth * 0.08),
                     SizedBox(
@@ -483,9 +523,11 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                                   ? const CircularProgressIndicator(
                                     color: Colors.white,
                                   )
-                                  : const Text(
-                                    'Create Session',
-                                    style: TextStyle(
+                                  : Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.createSessionBtn,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
@@ -515,9 +557,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                             ),
                           ),
                         ),
-                        child: const Text(
-                          'Show Previous Sessions',
-                          style: TextStyle(
+                        child: Text(
+                          AppLocalizations.of(context)!.showPreviousSessions,
+                          style: const TextStyle(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

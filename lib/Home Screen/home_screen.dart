@@ -2,28 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:madarsaConnect/Faculty%20Screen/attendance_f.dart';
-import 'package:madarsaConnect/Faculty%20Screen/add_student.dart';
-import 'package:madarsaConnect/Faculty%20Screen/faculty_view_att.dart';
-import 'package:madarsaConnect/Faculty%20Screen/leave_holiday_screen.dart';
-import 'package:madarsaConnect/Head%20Screen/Examination_screen.dart';
-import 'package:madarsaConnect/Head%20Screen/faculty_attendence.dart';
-import 'package:madarsaConnect/Head%20Screen/promote_screen.dart';
-import 'package:madarsaConnect/Head%20Screen/session_manage.dart';
-import 'package:madarsaConnect/Head%20Screen/staff_panel.dart';
-import 'package:madarsaConnect/Head%20Screen/course_manage.dart';
-import 'package:madarsaConnect/Head%20Screen/student_find.dart';
-import 'package:madarsaConnect/Head%20Screen/subject_manage.dart';
-import 'package:madarsaConnect/Student%20Screen/attendence_view.dart';
-import 'package:madarsaConnect/Student%20Screen/certificate_screen.dart';
-import 'package:madarsaConnect/Student%20Screen/fees_screen.dart';
-import 'package:madarsaConnect/Student%20Screen/quiz_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../Faculty Screen/add_student.dart';
+import '../Faculty Screen/attendance_f.dart';
+import '../Faculty Screen/faculty_view_att.dart';
+import '../Faculty Screen/leave_holiday_screen.dart';
 import '../Faculty Screen/marks_screen.dart';
 import '../Faculty Screen/student_manage.dart';
+import '../Head Screen/Examination_screen.dart';
 import '../Head Screen/add_faculty.dart';
 import '../Head Screen/analytics.dart';
+import '../Head Screen/course_manage.dart';
+import '../Head Screen/faculty_attendence.dart';
+import '../Head Screen/promote_screen.dart';
 import '../Head Screen/request_screen.dart';
+import '../Head Screen/session_manage.dart';
+import '../Head Screen/staff_panel.dart';
+import '../Head Screen/student_find.dart';
+import '../Head Screen/subject_manage.dart';
+import '../Student Screen/attendence_view.dart';
+import '../Student Screen/certificate_screen.dart';
+import '../Student Screen/fees_screen.dart';
+import '../Student Screen/quiz_screen.dart';
+import '../l10n/app_localizations.dart';
 
 typedef SubscriptionCheckOnTap =
     void Function(BuildContext context, Widget destinationPage);
@@ -48,7 +49,7 @@ class AcademicAndToolsSection extends StatelessWidget {
       children: [
         _buildSection(
           context: context,
-          title: 'Academic Tools',
+          title: AppLocalizations.of(context)!.academicTools,
           tileSize: tileSize,
           children: [
             Row(
@@ -56,7 +57,7 @@ class AcademicAndToolsSection extends StatelessWidget {
               children: [
                 customSizedTile(
                   'assets/images/staff.png',
-                  'Staff Panel',
+                  AppLocalizations.of(context)!.staffPanel,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -65,7 +66,7 @@ class AcademicAndToolsSection extends StatelessWidget {
                 ),
                 customSizedTile(
                   'assets/images/course.png',
-                  'Course Manage',
+                  AppLocalizations.of(context)!.courseManage,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -77,7 +78,7 @@ class AcademicAndToolsSection extends StatelessWidget {
                 ),
                 customSizedTile(
                   'assets/images/subject.png',
-                  'Subject Manage',
+                  AppLocalizations.of(context)!.subjectManage,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -95,7 +96,7 @@ class AcademicAndToolsSection extends StatelessWidget {
               children: [
                 customSizedTile(
                   'assets/images/marks_manage.png',
-                  'Marks Manage',
+                  AppLocalizations.of(context)!.marksManage,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -104,7 +105,7 @@ class AcademicAndToolsSection extends StatelessWidget {
                 ),
                 customSizedTile(
                   'assets/images/exam.png',
-                  'Exam Manage',
+                  AppLocalizations.of(context)!.examManage,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -113,7 +114,7 @@ class AcademicAndToolsSection extends StatelessWidget {
                 ),
                 customSizedTile(
                   'assets/images/promote.png',
-                  'Promote Students',
+                  AppLocalizations.of(context)!.promoteStudents,
                   size: tileSize,
                   imageColor: imageColor,
                   onTap: () {
@@ -148,11 +149,7 @@ class AcademicAndToolsSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gilroy-Bold',
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 8),
@@ -200,7 +197,7 @@ Widget customSizedTile(
                       title,
                       style: const TextStyle(
                         fontSize: 14,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
@@ -293,16 +290,22 @@ class _DashboardCardsState extends State<DashboardCards> {
                   context: context,
                   title:
                       userRole == 'faculty'
-                          ? 'Add Student'
+                          ? AppLocalizations.of(context)!.addStudent
                           : userRole == 'head'
-                          ? 'Add Faculty'
-                          : 'View Attendance',
+                          ? AppLocalizations.of(context)!.addFaculty
+                          : AppLocalizations.of(context)!.viewAttendance,
                   subtitle:
                       userRole == 'faculty'
-                          ? 'Student Adding, Management, View'
+                          ? AppLocalizations.of(
+                            context,
+                          )!.studentAddingManagementView
                           : userRole == 'head'
-                          ? 'Faculty Adding, Management, View'
-                          : 'View Attendance Only For Student',
+                          ? AppLocalizations.of(
+                            context,
+                          )!.facultyAddingManagementView
+                          : AppLocalizations.of(
+                            context,
+                          )!.viewAttendanceOnlyForStudent,
                   imagePath:
                       userRole == 'head'
                           ? 'assets/images/faculty.png'
@@ -332,18 +335,15 @@ class _DashboardCardsState extends State<DashboardCards> {
                 child: Column(
                   children: [
                     _buildSmallCard(
-                      title:
-                          userRole == 'head'
-                              ? 'Analytics'
-                              : userRole == 'faculty'
-                              ? 'Analytics'
-                              : 'Analytics',
+                      title: AppLocalizations.of(context)!.analytics,
                       subtitle:
                           userRole == 'head'
-                              ? 'Overall Data Management'
-                              : userRole == 'faculty'
-                              ? 'Student Performance & Records'
-                              : 'Student Performance & Records',
+                              ? AppLocalizations.of(
+                                context,
+                              )!.overallDataManagement
+                              : AppLocalizations.of(
+                                context,
+                              )!.studentPerformanceRecords,
                       imagePath: 'assets/images/analytics.png',
                       imageColor:
                           userRole == 'head'
@@ -359,16 +359,20 @@ class _DashboardCardsState extends State<DashboardCards> {
                     _buildSmallCard(
                       title:
                           userRole == 'head'
-                              ? 'Requests'
+                              ? AppLocalizations.of(context)!.requests
                               : userRole == 'faculty'
-                              ? 'View Attendance'
-                              : 'Quiz',
+                              ? AppLocalizations.of(context)!.viewAttendance
+                              : AppLocalizations.of(context)!.quiz,
                       subtitle:
                           userRole == 'head'
-                              ? 'Manage Student & Faculty Requests'
+                              ? AppLocalizations.of(
+                                context,
+                              )!.manageStudentFacultyRequests
                               : userRole == 'faculty'
-                              ? 'View Staff Attendance'
-                              : 'Daily Quiz Attempt',
+                              ? AppLocalizations.of(
+                                context,
+                              )!.viewStaffAttendance
+                              : AppLocalizations.of(context)!.dailyQuizAttempt,
                       imagePath:
                           userRole == 'head'
                               ? 'assets/images/request.png'
@@ -412,16 +416,22 @@ class _DashboardCardsState extends State<DashboardCards> {
                     _buildSmallCard(
                       title:
                           userRole == 'head'
-                              ? 'Student Manage'
+                              ? AppLocalizations.of(context)!.studentManage
                               : userRole == 'faculty'
-                              ? 'Leave Request'
-                              : 'Certificate',
+                              ? AppLocalizations.of(context)!.leaveRequest
+                              : AppLocalizations.of(context)!.certificate,
                       subtitle:
                           userRole == 'head'
-                              ? 'Any Student Access Data'
+                              ? AppLocalizations.of(
+                                context,
+                              )!.anyStudentAccessData
                               : userRole == 'faculty'
-                              ? 'Request for leave (holiday)'
-                              : 'View Your Certificates',
+                              ? AppLocalizations.of(
+                                context,
+                              )!.requestForLeaveHoliday
+                              : AppLocalizations.of(
+                                context,
+                              )!.viewYourCertificates,
                       imagePath:
                           userRole == 'head'
                               ? 'assets/images/student_manage.png'
@@ -449,16 +459,22 @@ class _DashboardCardsState extends State<DashboardCards> {
                     _buildSmallCard(
                       title:
                           userRole == 'head'
-                              ? 'Session Control'
+                              ? AppLocalizations.of(context)!.sessionControl
                               : userRole == 'faculty'
-                              ? 'Marks Management'
-                              : 'Leave Request',
+                              ? AppLocalizations.of(context)!.marksManagement
+                              : AppLocalizations.of(context)!.leaveRequest,
                       subtitle:
                           userRole == 'head'
-                              ? 'Manage Session & Examination'
+                              ? AppLocalizations.of(
+                                context,
+                              )!.manageSessionExamination
                               : userRole == 'faculty'
-                              ? 'Manage & Update Student Marks'
-                              : 'Request for leave (holiday)',
+                              ? AppLocalizations.of(
+                                context,
+                              )!.manageUpdateStudentMarks
+                              : AppLocalizations.of(
+                                context,
+                              )!.requestForLeaveHoliday,
                       imagePath:
                           userRole == 'head'
                               ? 'assets/images/session.png'
@@ -491,16 +507,20 @@ class _DashboardCardsState extends State<DashboardCards> {
                   context: context,
                   title:
                       userRole == 'head'
-                          ? 'Attendance'
+                          ? AppLocalizations.of(context)!.attendance
                           : userRole == 'faculty'
-                          ? 'Student Attendance'
-                          : 'Fees Management',
+                          ? AppLocalizations.of(context)!.studentAttendance
+                          : AppLocalizations.of(context)!.feesManagement,
                   subtitle:
                       userRole == 'head'
-                          ? 'Faculty Attendance Overview'
+                          ? AppLocalizations.of(
+                            context,
+                          )!.facultyAttendanceOverview
                           : userRole == 'faculty'
-                          ? 'Mark Attendance'
-                          : 'Organize, collect, and analyze fees easily',
+                          ? AppLocalizations.of(context)!.markAttendance
+                          : AppLocalizations.of(
+                            context,
+                          )!.organizeCollectAnalyzeFees,
                   imagePath:
                       userRole == 'head'
                           ? 'assets/images/attendance.png'
@@ -569,7 +589,7 @@ class _DashboardCardsState extends State<DashboardCards> {
                           title,
                           style: const TextStyle(
                             fontSize: 14,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -578,7 +598,6 @@ class _DashboardCardsState extends State<DashboardCards> {
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.grey,
-                            fontFamily: 'Gilroy-Regular',
                           ),
                         ),
                       ],
@@ -643,7 +662,7 @@ class _DashboardCardsState extends State<DashboardCards> {
                           title,
                           style: const TextStyle(
                             fontSize: 14,
-                            fontFamily: 'Gilroy-Bold',
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 1),
@@ -652,7 +671,6 @@ class _DashboardCardsState extends State<DashboardCards> {
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.grey,
-                            fontFamily: 'Gilroy-Regular',
                           ),
                         ),
                       ],
@@ -682,15 +700,15 @@ class _DashboardCardsState extends State<DashboardCards> {
 
 class SubscriptionCard extends StatelessWidget {
   final VoidCallback onTap;
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
   final String iconPath;
 
   const SubscriptionCard({
     super.key,
     required this.onTap,
-    this.title = 'Subscription',
-    this.subtitle = 'Your access to exclusive features',
+    this.title,
+    this.subtitle,
     this.iconPath = 'assets/images/subscription.png',
   });
 
@@ -698,6 +716,11 @@ class SubscriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     const cardHeight = 80.0;
+
+    final String finalTitle =
+        title ?? AppLocalizations.of(context)!.subscription;
+    final String finalSubtitle =
+        subtitle ?? AppLocalizations.of(context)!.exclusiveFeatures;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
@@ -747,29 +770,26 @@ class SubscriptionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        finalTitle,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Gilroy-Bold',
                           color: Colors.black87,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        finalSubtitle,
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.grey,
-                          fontFamily: 'Gilroy-Regular',
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -824,29 +844,28 @@ class InviteCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "You ❤️ Madarsa",
+                  AppLocalizations.of(context)!.youLoveMadarsa,
                   style: TextStyle(
                     fontSize: width * 0.05,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Gilroy-Bold',
                   ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 6),
                 Text(
-                  "Your friends are going to love us too!",
+                  AppLocalizations.of(context)!.friendsWillLoveUs,
                   style: TextStyle(
                     fontSize: width * 0.045,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 6),
                 Text(
-                  "Invite a friend to join Madarsa Connect ➟",
+                  AppLocalizations.of(context)!.inviteAFriend,
                   style: TextStyle(
                     fontSize: width * 0.038,
-                    fontFamily: 'Gilroy-Bold',
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -890,13 +909,9 @@ class ImageCarouselSlider extends StatelessWidget {
         itemCount: imagePaths.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: width * 0.01,
-            ), // responsive padding
+            padding: EdgeInsets.symmetric(horizontal: width * 0.01),
             child: Material(
-              borderRadius: BorderRadius.circular(
-                width * 0.04,
-              ), // responsive radius
+              borderRadius: BorderRadius.circular(width * 0.04),
               child: InkWell(
                 borderRadius: BorderRadius.circular(width * 0.04),
                 onTap: onTap,
@@ -971,15 +986,15 @@ class ResponsiveImageCarousel extends StatelessWidget {
 
 class DonationCard extends StatelessWidget {
   final VoidCallback onTap;
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
   final String imagePath;
 
   const DonationCard({
     Key? key,
     required this.onTap,
-    this.title = 'Donate Charity',
-    this.subtitle = 'Help us build a better community',
+    this.title,
+    this.subtitle,
     this.imagePath = 'assets/icons/donation.svg',
   }) : super(key: key);
 
@@ -987,6 +1002,11 @@ class DonationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     const cardHeight = 80.0;
+
+    final String finalTitle =
+        title ?? AppLocalizations.of(context)!.donateCharity;
+    final String finalSubtitle =
+        subtitle ?? AppLocalizations.of(context)!.helpBuildCommunity;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
@@ -1019,7 +1039,6 @@ class DonationCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Icon with circular background
                 Container(
                   height: 50,
                   width: 50,
@@ -1030,7 +1049,7 @@ class DonationCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(10.0),
                     child: SvgPicture.asset(
-                      imagePath, // Using the parameter here
+                      imagePath,
                       fit: BoxFit.contain,
                       colorFilter: ColorFilter.mode(
                         Colors.redAccent.shade200,
@@ -1040,30 +1059,26 @@ class DonationCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-
-                // Title and Subtitle
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        finalTitle,
                         style: const TextStyle(
-                          fontSize: 16, // Font size matched
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Gilroy-Bold',
                           color: Colors.black87,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        finalSubtitle,
                         style: const TextStyle(
-                          fontSize: 13, // Font size matched
+                          fontSize: 13,
                           color: Colors.grey,
-                          fontFamily: 'Gilroy-Regular',
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -1071,8 +1086,6 @@ class DonationCard extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // Forward arrow icon
                 Container(
                   height: 35,
                   width: 35,

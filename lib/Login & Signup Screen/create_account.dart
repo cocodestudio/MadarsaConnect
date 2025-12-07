@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/const.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/uppercase.dart';
+import '../l10n/app_localizations.dart';
 import 'loginpage.dart';
 
 class CreateAccount extends StatefulWidget {
@@ -59,7 +60,6 @@ class _CreateAccountState extends State<CreateAccount> {
   @override
   void initState() {
     super.initState();
-    // Add listeners to validate fields and update button state
     _madarsaNameController.addListener(updateButtonState);
     _fullNameController.addListener(updateButtonState);
     _emailController.addListener(updateButtonState);
@@ -85,7 +85,6 @@ class _CreateAccountState extends State<CreateAccount> {
 
   @override
   void dispose() {
-    // Dispose all controllers to prevent memory leaks
     _madarsaNameController.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
@@ -104,7 +103,6 @@ class _CreateAccountState extends State<CreateAccount> {
     _bannerAd?.dispose();
   }
 
-  // This function checks all mandatory fields and updates the button state
   void updateButtonState() {
     setState(() {
       isButtonActive =
@@ -203,22 +201,22 @@ class _CreateAccountState extends State<CreateAccount> {
 
       _showSuccessDialog();
     } on FirebaseAuthException catch (e) {
-      String message = 'An error occurred. Please try again.';
+      String message = AppLocalizations.of(context)!.errorOccurred;
       if (e.code == 'weak-password') {
-        message = 'The password provided is too weak.';
+        message = AppLocalizations.of(context)!.weakPassword;
       } else if (e.code == 'email-already-in-use') {
-        message = 'The account already exists for that email.';
+        message = AppLocalizations.of(context)!.emailAlreadyInUse;
       } else {
         message = e.message ?? message;
       }
       if (mounted) {
-        CustomPopup.show(context, (message));
+        CustomPopup.show(context, message);
       }
     } catch (e) {
       if (mounted) {
         CustomPopup.show(
           context,
-          'An unexpected error occurred: ${e.toString()}',
+          AppLocalizations.of(context)!.unexpectedError(e.toString()),
         );
       }
     } finally {
@@ -252,7 +250,6 @@ class _CreateAccountState extends State<CreateAccount> {
     _bannerAd?.load();
   }
 
-  // --- NEW FUNCTION ---
   void _showSuccessDialog() {
     showGeneralDialog(
       context: context,
@@ -289,13 +286,15 @@ class _CreateAccountState extends State<CreateAccount> {
                             height: 150,
                           ),
                           const SizedBox(height: 20),
-                          const Text(
-                            "Registration Successful!",
+                          Text(
+                            AppLocalizations.of(
+                              context,
+                            )!.registrationSuccessful,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 20,
                               color: Colors.black,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -330,9 +329,9 @@ class _CreateAccountState extends State<CreateAccount> {
                                   color: Colors.redAccent,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: const Text(
-                                  "Done",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.done,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -410,9 +409,12 @@ class _CreateAccountState extends State<CreateAccount> {
           child: Column(
             children: [
               const SizedBox(height: 16),
-              const Text(
-                "Select Year of Establishment",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                AppLocalizations.of(context)!.selectYearEstablishment,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               Expanded(
                 child: CupertinoPicker(
@@ -443,9 +445,9 @@ class _CreateAccountState extends State<CreateAccount> {
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Text(
-                    "Done",
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.done,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 17,
@@ -476,11 +478,11 @@ class _CreateAccountState extends State<CreateAccount> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Create Account',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.createAccountTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -505,20 +507,18 @@ class _CreateAccountState extends State<CreateAccount> {
                           child: SizedBox(
                             width: 150,
                             height: 150,
-                            child: Image.asset(
-                              'assets/images/form.webp',
-                            ), // Your image path
+                            child: Image.asset('assets/images/form.webp'),
                           ),
                         ),
                         SizedBox(height: size.height * 0.03),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Create Account',
+                            AppLocalizations.of(context)!.createAccountTitle,
                             style: TextStyle(
                               fontSize: 25,
                               color: Colors.black.withOpacity(0.9),
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -526,7 +526,7 @@ class _CreateAccountState extends State<CreateAccount> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Please fill in the details below to create your account (all details are mandatory).',
+                            AppLocalizations.of(context)!.fillDetailsMandatory,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black.withOpacity(0.5),
@@ -537,10 +537,10 @@ class _CreateAccountState extends State<CreateAccount> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "PERSONAL DETAILS",
+                            AppLocalizations.of(context)!.personalDetailsHeader,
                             style: TextStyle(
                               fontSize: 15,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -562,7 +562,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Legal Full Name",
+                            hintText:
+                                AppLocalizations.of(context)!.legalFullName,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -629,9 +630,9 @@ class _CreateAccountState extends State<CreateAccount> {
                             ),
                             dropdownColor: Colors.white,
                             borderRadius: BorderRadius.circular(15),
-                            hint: const Text(
-                              "Select Gender",
-                              style: TextStyle(
+                            hint: Text(
+                              AppLocalizations.of(context)!.selectGender,
+                              style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14,
                               ),
@@ -661,10 +662,9 @@ class _CreateAccountState extends State<CreateAccount> {
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 14,
-                            fontFamily: 'Gilroy-Regular',
                           ),
                           decoration: InputDecoration(
-                            hintText: "Date of Birth",
+                            hintText: AppLocalizations.of(context)!.dateOfBirth,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -702,7 +702,7 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Email",
+                            hintText: AppLocalizations.of(context)!.emailHint,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -735,9 +735,7 @@ class _CreateAccountState extends State<CreateAccount> {
                           ),
                         ),
 
-                        SizedBox(
-                          height: size.height * 0.02,
-                        ), // Spacing between fields
+                        SizedBox(height: size.height * 0.02),
                         // Phone Number Input Field
                         TextField(
                           onChanged: (text) {
@@ -755,7 +753,7 @@ class _CreateAccountState extends State<CreateAccount> {
                             LengthLimitingTextInputFormatter(10),
                           ],
                           decoration: InputDecoration(
-                            hintText: "Phone Number",
+                            hintText: AppLocalizations.of(context)!.phoneNumber,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -811,10 +809,10 @@ class _CreateAccountState extends State<CreateAccount> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "MADARSA DETAILS",
+                            AppLocalizations.of(context)!.madarsaDetailsHeader,
                             style: TextStyle(
                               fontSize: 15,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -835,7 +833,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Enter Madarsa Name",
+                            hintText:
+                                AppLocalizations.of(context)!.enterMadarsaName,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -879,7 +878,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Year of Establishment",
+                            hintText:
+                                AppLocalizations.of(context)!.yearEstablishment,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -918,10 +918,10 @@ class _CreateAccountState extends State<CreateAccount> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "ADDRESS",
+                            AppLocalizations.of(context)!.addressHeader,
                             style: TextStyle(
                               fontSize: 15,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -943,7 +943,10 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Flat, Building/Apartment",
+                            hintText:
+                                AppLocalizations.of(
+                                  context,
+                                )!.flatBuildingApartment,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -983,7 +986,7 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Town/City",
+                            hintText: AppLocalizations.of(context)!.townCity,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1048,7 +1051,7 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "State",
+                            hintText: AppLocalizations.of(context)!.state,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1115,7 +1118,9 @@ class _CreateAccountState extends State<CreateAccount> {
                             } else {
                               CustomPopup.show(
                                 context,
-                                "Please select a state first",
+                                AppLocalizations.of(
+                                  context,
+                                )!.pleaseSelectStateFirst,
                               );
                             }
                           },
@@ -1124,7 +1129,7 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "District",
+                            hintText: AppLocalizations.of(context)!.district,
                             hintStyle: const TextStyle(color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
@@ -1154,10 +1159,12 @@ class _CreateAccountState extends State<CreateAccount> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "IDENTIFICATION DETAILS",
+                            AppLocalizations.of(
+                              context,
+                            )!.identificationDetailsHeader,
                             style: TextStyle(
                               fontSize: 15,
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               color: Colors.black.withOpacity(0.7),
                             ),
                           ),
@@ -1178,7 +1185,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Aadhaar Number",
+                            hintText:
+                                AppLocalizations.of(context)!.aadhaarNumber,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card,
@@ -1220,7 +1228,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "PAN Card (optional)",
+                            hintText:
+                                AppLocalizations.of(context)!.panCardOptional,
                             counterText: "",
                             prefixIcon: Icon(
                               Icons.credit_card_outlined,
@@ -1259,7 +1268,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Password",
+                            hintText:
+                                AppLocalizations.of(context)!.passwordHint,
                             prefixIcon: Icon(
                               Icons.lock_outline,
                               color: Colors.black.withOpacity(0.8),
@@ -1308,7 +1318,8 @@ class _CreateAccountState extends State<CreateAccount> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Confirm Password",
+                            hintText:
+                                AppLocalizations.of(context)!.confirmPassword,
                             prefixIcon: Icon(
                               Icons.lock_open_outlined,
                               color: Colors.black.withOpacity(0.8),
@@ -1376,9 +1387,9 @@ class _CreateAccountState extends State<CreateAccount> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                    : const Text(
-                                      "Submit",
-                                      style: TextStyle(
+                                    : Text(
+                                      AppLocalizations.of(context)!.submitBtn,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 17,

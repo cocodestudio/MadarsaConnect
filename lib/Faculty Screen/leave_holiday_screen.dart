@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
-import 'package:madarsaConnect/Data/loader.dart';
 import '../Data/check_internet.dart';
 import '../Data/dynamic_popup.dart';
+import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/firebase_notification_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -39,11 +40,10 @@ class _LeaveScreenState extends State<LeaveScreen> {
   String remainingLeaveLabel = '';
   String userName = '';
   String userId = '';
-  String userRole = ''; // Added a variable to store the user's role
+  String userRole = '';
   bool buttonLocked = false;
   String leaveStatus = 'None';
   DateTime? leaveUpdatedAt;
-  String buttonText = 'Submit Request';
   bool isExtendedRequest = false;
   DateTime? lastLeaveEndDate;
   List<Map<String, dynamic>> pastRequests = [];
@@ -200,12 +200,14 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
       String formatDays(double hours) {
         double days = hours / 24;
+        final daysStr = AppLocalizations.of(context)!.daysUnit;
         return days.truncateToDouble() == days
-            ? '${days.toInt()} days'
-            : '${days.toStringAsFixed(1)} days';
+            ? '${days.toInt()} $daysStr'
+            : '${days.toStringAsFixed(1)} $daysStr';
       }
 
       if (mounted) {
+        final hrsStr = AppLocalizations.of(context)!.hrsUnit;
         setState(() {
           if (!hasApprovedLeave) {
             usedLeaveLabel = '';
@@ -213,11 +215,11 @@ class _LeaveScreenState extends State<LeaveScreen> {
           } else {
             usedLeaveLabel =
                 usedHours <= 24
-                    ? '${usedHours.toInt()} hrs'
+                    ? '${usedHours.toInt()} $hrsStr'
                     : formatDays(usedHours);
             remainingLeaveLabel =
                 remainingHours <= 24
-                    ? '${remainingHours.toInt()} hrs'
+                    ? '${remainingHours.toInt()} $hrsStr'
                     : formatDays(remainingHours);
           }
         });
@@ -270,12 +272,15 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   Future<void> _submitLeaveRequest() async {
     if (leaveType.trim().isEmpty || reasonController.text.trim().isEmpty) {
-      CustomPopup.show(context, "Please fill all required fields");
+      CustomPopup.show(context, AppLocalizations.of(context)!.fillAllFields);
       return;
     }
 
     if (userRole == 'head') {
-      CustomPopup.show(context, "Heads cannot submit leave requests.");
+      CustomPopup.show(
+        context,
+        AppLocalizations.of(context)!.headCannotSubmitLeave,
+      );
       return;
     }
 
@@ -284,7 +289,8 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
     try {
       final user = _auth.currentUser;
-      if (user == null) throw Exception('User not logged in');
+      if (user == null)
+        throw Exception(AppLocalizations.of(context)!.userNotLoggedIn);
 
       final session = getCurrentSession();
 
@@ -399,14 +405,16 @@ class _LeaveScreenState extends State<LeaveScreen> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) Navigator.pop(context);
       if (mounted)
-        CustomPopup.show(context, "Leave request submitted successfully");
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.leaveRequestSubmitted,
+        );
 
       if (mounted) {
         setState(() {
           leaveStatus = 'Pending';
           leaveUpdatedAt = DateTime.now();
           buttonLocked = true;
-          buttonText = 'Pending';
         });
       }
     } catch (e) {
@@ -450,7 +458,10 @@ class _LeaveScreenState extends State<LeaveScreen> {
       );
 
       if (selectedDateTime.isBefore(now)) {
-        CustomPopup.show(context, "Cannot select past time.");
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.cannotSelectPastTime,
+        );
         return;
       }
 
@@ -476,21 +487,56 @@ class _LeaveScreenState extends State<LeaveScreen> {
     );
   }
 
+  // Helper to get localized button text
+  String _getButtonText() {
+    if (leaveStatus == 'Pending') {
+      return AppLocalizations.of(context)!.pendingStatus;
+    } else if (leaveStatus == 'Approved') {
+      if (isExtendedRequest) {
+        if (lastLeaveEndDate != null &&
+            DateTime.now().isAfter(lastLeaveEndDate!)) {
+          return AppLocalizations.of(context)!.submitRequestBtn;
+        } else {
+          return AppLocalizations.of(context)!.approvedExtendedStatus;
+        }
+      } else {
+        final diff =
+            leaveUpdatedAt != null
+                ? DateTime.now().difference(leaveUpdatedAt!)
+                : Duration.zero;
+        if (diff.inMinutes >= 15) {
+          return AppLocalizations.of(context)!.extendLeaveBtn;
+        } else {
+          return AppLocalizations.of(context)!.approvedWaitingStatus;
+        }
+      }
+    } else if (leaveStatus == 'Declined') {
+      final diff =
+          leaveUpdatedAt != null
+              ? DateTime.now().difference(leaveUpdatedAt!)
+              : Duration.zero;
+      if (diff.inMinutes >= 5) {
+        return AppLocalizations.of(context)!.submitRequestBtn;
+      } else {
+        return AppLocalizations.of(context)!.declinedWaitStatus;
+      }
+    } else {
+      return AppLocalizations.of(context)!.submitRequestBtn;
+    }
+  }
+
   void updateButtonStateBasedOnStatus() {
     if (leaveStatus == 'Pending') {
       buttonLocked = true;
-      buttonText = 'Pending';
     } else if (leaveStatus == 'Approved') {
       if (isExtendedRequest) {
         if (lastLeaveEndDate != null &&
             DateTime.now().isAfter(lastLeaveEndDate!)) {
           buttonLocked = false;
-          buttonText = 'Submit Request';
           isExtendedRequest = false;
           leaveStatus = 'None';
         } else {
           buttonLocked = true;
-          buttonText = 'Approved (extended)';
         }
       } else {
         final diff =
@@ -499,11 +545,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
                 : Duration.zero;
         if (diff.inMinutes >= 15) {
           buttonLocked = false;
-          buttonText = 'Extend Leave';
           isExtendedRequest = true;
         } else {
           buttonLocked = true;
-          buttonText = 'Approved (waiting...)';
         }
       }
     } else if (leaveStatus == 'Declined') {
@@ -513,15 +557,12 @@ class _LeaveScreenState extends State<LeaveScreen> {
               : Duration.zero;
       if (diff.inMinutes >= 5) {
         buttonLocked = false;
-        buttonText = 'Submit Request';
         isExtendedRequest = false;
       } else {
         buttonLocked = true;
-        buttonText = 'Declined (wait 5 min)';
       }
     } else {
       buttonLocked = false;
-      buttonText = 'Submit Request';
       isExtendedRequest = false;
     }
   }
@@ -695,9 +736,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "Select Session",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectSession,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.25,
@@ -720,7 +761,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                     session,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontFamily: 'Gilroy-Medium',
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   onTap: () {
@@ -743,7 +784,10 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   void _showLeaveTypeDialog() {
     String? tempSelected = leaveType;
-    final types = ['Annual Leave', 'Quarterly Leave'];
+    final types = [
+      AppLocalizations.of(context)!.annualLeave,
+      AppLocalizations.of(context)!.quarterlyLeave,
+    ];
 
     showDialog(
       context: context,
@@ -753,9 +797,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "Select Leave Type",
-            style: TextStyle(fontFamily: 'Gilroy-Bold', fontSize: 20),
+          title: Text(
+            AppLocalizations.of(context)!.selectLeaveType,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SizedBox(
             height: MediaQuery.of(context).size.height * 0.25,
@@ -799,11 +843,11 @@ class _LeaveScreenState extends State<LeaveScreen> {
           icon: const Icon(Icons.arrow_back, size: 26, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Leave Request',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.leaveRequest,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -857,10 +901,12 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                     Text(
                                       userName.isNotEmpty
                                           ? userName
-                                          : 'Loading...',
+                                          : AppLocalizations.of(
+                                            context,
+                                          )!.loading,
                                       style: const TextStyle(
                                         fontSize: 16,
-                                        fontFamily: 'Gilroy-Bold',
+                                        fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -885,22 +931,20 @@ class _LeaveScreenState extends State<LeaveScreen> {
                               if (usedLeaveLabel.isNotEmpty)
                                 Expanded(
                                   child: Text(
-                                    'Used: $usedLeaveLabel',
+                                    '${AppLocalizations.of(context)!.usedLabel} $usedLeaveLabel',
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: Colors.white70,
-                                      fontFamily: 'Gilroy-Regular',
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               if (remainingLeaveLabel.isNotEmpty)
                                 Text(
-                                  'Remaining: $remainingLeaveLabel',
+                                  '${AppLocalizations.of(context)!.remainingLabel} $remainingLeaveLabel',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.white70,
-                                    fontFamily: 'Gilroy-Regular',
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -960,7 +1004,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                         child: Container(
                                           alignment: Alignment.center,
                                           child: Text(
-                                            'New Request',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.newRequest,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color:
@@ -984,7 +1030,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                         child: Container(
                                           alignment: Alignment.center,
                                           child: Text(
-                                            'Past Requests',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.pastRequests,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color:
@@ -1003,7 +1051,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                           ),
                           const SizedBox(height: 20),
                           if (!isPastRequestSelected) ...[
-                            const Text('Type *'),
+                            Text(AppLocalizations.of(context)!.leaveTypeLabel),
                             const SizedBox(height: 6),
                             InkWell(
                               onTap: _showLeaveTypeDialog,
@@ -1027,7 +1075,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text('Start Date *'),
+                            Text(AppLocalizations.of(context)!.startDateLabel),
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -1067,7 +1115,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            const Text('End Date *'),
+                            Text(AppLocalizations.of(context)!.endDateLabel),
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -1107,7 +1155,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            const Text('Reason *'),
+                            Text(AppLocalizations.of(context)!.reasonLabel),
                             const SizedBox(height: 6),
                             TextField(
                               controller: reasonController,
@@ -1116,7 +1164,10 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                 fontSize: 14,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Enter your reason',
+                                hintText:
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.enterReasonHint,
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
                                   borderSide: BorderSide(
@@ -1154,7 +1205,10 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        selectedSession ?? 'Select Session',
+                                        selectedSession ??
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.selectSession,
                                         style: const TextStyle(fontSize: 15),
                                       ),
                                     ),
@@ -1165,7 +1219,11 @@ class _LeaveScreenState extends State<LeaveScreen> {
                             ),
                             const SizedBox(height: 16),
                             if (sessionLeaves.isNotEmpty) ...[
-                              const Text("Total Leaves in this session:"),
+                              Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.totalLeavesSession,
+                              ),
                               const SizedBox(height: 5),
                               ...sessionLeaves.map((leave) {
                                 final int totalDays =
@@ -1198,14 +1256,16 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                         children: [
                                           const SizedBox(height: 30),
                                           Text(
-                                            "Start: ${DateFormat('dd MMM yyyy').format(leave['startDate'])} ${leave['startTime'] ?? ''}",
+                                            "${AppLocalizations.of(context)!.startLabel} ${DateFormat('dd MMM yyyy').format(leave['startDate'])} ${leave['startTime'] ?? ''}",
                                           ),
                                           Text(
-                                            "End: ${DateFormat('dd MMM yyyy').format(leave['endDate'])} ${leave['endTime'] ?? ''}",
+                                            "${AppLocalizations.of(context)!.endLabel} ${DateFormat('dd MMM yyyy').format(leave['endDate'])} ${leave['endTime'] ?? ''}",
                                           ),
-                                          Text("Reason: ${leave['reason']}"),
                                           Text(
-                                            "Remarks: ${leave['remarks'] ?? 'Leave Request'}",
+                                            "${AppLocalizations.of(context)!.reasonDisplayLabel} ${leave['reason']}",
+                                          ),
+                                          Text(
+                                            "${AppLocalizations.of(context)!.remarksLabel} ${leave['remarks'] ?? 'Leave Request'}",
                                           ),
                                         ],
                                       ),
@@ -1224,7 +1284,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            "Leaves: $totalDays",
+                                            "${AppLocalizations.of(context)!.leavesCountLabel} $totalDays",
                                             style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
@@ -1298,9 +1358,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
                                     );
                                   },
                           child: Text(
-                            buttonText,
+                            _getButtonText(),
                             style: const TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               fontSize: 15,
                               color: Colors.white,
                             ),

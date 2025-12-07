@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Data/main_page.dart';
 import '../Login & Signup Screen/loginpage.dart';
+import '../l10n/app_localizations.dart';
+import 'admin_screen.dart';
 import 'on_boarding.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../main.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 enum SplashScreenState { loading, noInternet, error }
 
@@ -42,8 +46,9 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       final hasInternet = await _hasInternet();
       if (!hasInternet) {
-        if (mounted)
+        if (mounted) {
           setState(() => _currentState = SplashScreenState.noInternet);
+        }
         return;
       }
 
@@ -69,16 +74,70 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
+  Future<void> _initializeNotifications() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      debugPrint('User granted notification permission');
+
+      try {
+        await messaging.subscribeToTopic("all_users");
+        debugPrint("Successfully subscribed to 'all_users' topic");
+      } catch (e) {
+        debugPrint("Failed to subscribe to 'all_users' topic: $e");
+      }
+
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('Got a message whilst in the foreground!');
+        RemoteNotification? notification = message.notification;
+        AndroidNotification? android = message.notification?.android;
+
+        if (notification != null && android != null) {
+          flutterLocalNotificationsPlugin.show(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                channel.id,
+                channel.name,
+                channelDescription: channel.description,
+                icon: '@drawable/notification_icon',
+                importance: Importance.high,
+                priority: Priority.high,
+              ),
+            ),
+          );
+        }
+      });
+    } else {
+      debugPrint('User declined or has not accepted permission');
+    }
+  }
+
   Future<void> _initializeAppServices() async {
-    await Firebase.initializeApp();
     _auth = FirebaseAuth.instance;
     _firestore = FirebaseFirestore.instance;
     analytics = FirebaseAnalytics.instance;
     analyticsObserver = FirebaseAnalyticsObserver(analytics: analytics);
     usageTracker.startTracking();
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.playIntegrity,
-    );
+    await _initializeNotifications();
+
+    if (kReleaseMode) {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.playIntegrity,
+      );
+    } else {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.debug,
+      );
+    }
   }
 
   Future<bool> _hasInternet() async {
@@ -120,6 +179,9 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (role != null) {
+      if (role == 'Admin') {
+        return const AdminSupportScreen();
+      }
       return MainPage(userRole: role);
     } else {
       await _auth.signOut();
@@ -130,9 +192,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget _buildErrorUI() {
     String message;
     if (_currentState == SplashScreenState.noInternet) {
-      message = 'No Internet Connection';
+      message = AppLocalizations.of(context)!.noInternet;
     } else {
-      message = 'Something went wrong. Please try again.';
+      message = AppLocalizations.of(context)!.somethingWentWrongSplash;
     }
 
     return Column(
@@ -141,18 +203,17 @@ class _SplashScreenState extends State<SplashScreen> {
         SizedBox(height: MediaQuery.of(context).size.height * 0.4),
         Text(
           message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy-Regular',
-            fontSize: 16,
-            color: Colors.black54,
-          ),
+          style: const TextStyle(fontSize: 16, color: Colors.black54),
         ),
         const SizedBox(height: 20),
         ElevatedButton.icon(
           icon: const Icon(Icons.refresh, color: Colors.white),
-          label: const Text(
-            'RETRY',
-            style: TextStyle(fontFamily: 'Gilroy-Bold', color: Colors.white),
+          label: Text(
+            AppLocalizations.of(context)!.retry,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           onPressed: _initializeAndNavigate,
           style: ElevatedButton.styleFrom(
@@ -205,19 +266,23 @@ class _SplashScreenState extends State<SplashScreen> {
                     const SizedBox(width: 8),
                     RichText(
                       textAlign: TextAlign.left,
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontFamily: 'Gilroy-Regular',
+                      text: TextSpan(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                         ),
                         children: <TextSpan>[
-                          TextSpan(text: 'from\n'),
                           TextSpan(
+                            text: '${AppLocalizations.of(context)!.from}\n',
+                          ),
+                          const TextSpan(
                             text: 'CoCode Studio',
                             style: TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight: FontWeight.bold,
                               fontSize: 14,
+                              color:
+                                  Colors
+                                      .black54, // Explicitly set color to avoid default white in some themes
                             ),
                           ),
                         ],

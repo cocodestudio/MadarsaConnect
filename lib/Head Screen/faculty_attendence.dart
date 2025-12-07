@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
 import '../Faculty Screen/attendance_f.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/app_usage_tracker.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -28,11 +28,11 @@ class AdminDashboardScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Attendance',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.attendance,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
             color: Colors.black,
           ),
         ),
@@ -48,9 +48,8 @@ class AdminDashboardScreen extends StatelessWidget {
                 child: ListView(
                   children: [
                     // DashboardCard(
-                    //   title: 'Faculty Attendance',
-                    //   subtitle:
-                    //       'Mark daily attendance for all your faculty members',
+                    //   title: AppLocalizations.of(context)!.facultyAttendance,
+                    //   subtitle: AppLocalizations.of(context)!.markDailyAttendance,
                     //   gradientColors: const [
                     //     Color(0xFFE3E4E5),
                     //     Color(0xFFB5B5B5),
@@ -66,9 +65,11 @@ class AdminDashboardScreen extends StatelessWidget {
                     // ),
                     const SizedBox(height: 20),
                     DashboardCard(
-                      title: 'Student View',
+                      title: AppLocalizations.of(context)!.studentView,
                       subtitle:
-                          'Allows admin to view individual student attendance records',
+                          AppLocalizations.of(
+                            context,
+                          )!.viewStudentAttendanceRecords,
                       gradientColors: const [
                         Color(0xFFFFE4E1),
                         Color(0xFFB76E79),
@@ -155,7 +156,7 @@ class _DashboardCardState extends State<DashboardCard> {
                 style: const TextStyle(
                   fontSize: 20,
                   color: Colors.black,
-                  fontFamily: 'Gilroy-Bold',
+                  fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                 ),
               ),
               const SizedBox(height: 8),
@@ -164,7 +165,7 @@ class _DashboardCardState extends State<DashboardCard> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.black87,
-                  fontFamily: 'Gilroy-Regular',
+                  // Replaced Gilroy-Regular
                 ),
               ),
             ],
@@ -190,7 +191,7 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
   bool isHeaderChecked = false;
   String selectedHeaderStatus = 'Present';
   String? headUid;
-  String? sessionId; // Added sessionId variable
+  String? sessionId;
 
   int presentCount = 0;
   int absentCount = 0;
@@ -209,12 +210,11 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
     _bootstrap();
   }
 
-  // New bootstrap function to handle all async calls in order
   Future<void> _bootstrap() async {
     setState(() => isLoading = true);
     await _loadHeadUid();
     if (headUid != null) {
-      await _fetchCurrentSession(); // New function to fetch session ID
+      await _fetchCurrentSession();
       await fetchFaculty();
     }
     setState(() {
@@ -230,7 +230,6 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
     }
   }
 
-  // New function to fetch the current active session ID
   Future<void> _fetchCurrentSession() async {
     if (headUid == null) return;
     try {
@@ -246,7 +245,10 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
         sessionId = sessionSnap.docs.first.id;
       }
     } catch (e) {
-      CustomPopup.show(context, '❌ Error fetching session: $e');
+      CustomPopup.show(
+        context,
+        '${AppLocalizations.of(context)!.errorFetchingSession}: $e',
+      );
     }
   }
 
@@ -260,7 +262,6 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
     try {
       final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-      // 🟢 Step 1: Fetch today's saved attendance from Firestore
       final attendanceSnapshot =
           await _firestore
               .collection('faculty_attendance')
@@ -283,10 +284,9 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
       facultyList =
           snapshot.docs.map((doc) {
             final data = doc.data();
-            final fucId = doc.id; // Use the document ID as fucId
+            final fucId = doc.id;
             final name = data['fullName'] ?? '';
 
-            // ✅ Mark attendance as before
             attendance[fucId] =
                 statusMap.containsKey(fucId)
                     ? (statusMap[fucId] == 'Present')
@@ -295,7 +295,10 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
             return {'id': fucId, 'name': name};
           }).toList();
     } catch (e) {
-      CustomPopup.show(context, '❌ Error fetching faculty: $e');
+      CustomPopup.show(
+        context,
+        '${AppLocalizations.of(context)!.errorFetchingFaculty}: $e',
+      );
     }
 
     setState(() {
@@ -384,9 +387,17 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                                           (value) => DropdownMenuItem(
                                             value: value,
                                             child: Text(
-                                              value,
+                                              value == 'Present'
+                                                  ? AppLocalizations.of(
+                                                    context,
+                                                  )!.present
+                                                  : AppLocalizations.of(
+                                                    context,
+                                                  )!.absent,
                                               style: const TextStyle(
-                                                fontFamily: 'Gilroy-Bold',
+                                                fontWeight:
+                                                    FontWeight
+                                                        .bold, // Replaced Gilroy-Bold
                                               ),
                                             ),
                                           ),
@@ -420,9 +431,10 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                             Expanded(
                               flex: 5,
                               child: Text(
-                                'Name',
+                                AppLocalizations.of(context)!.name,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight:
+                                      FontWeight.bold, // Replaced Gilroy-Bold
                                   fontSize: w * 0.035,
                                 ),
                               ),
@@ -430,10 +442,11 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                             Expanded(
                               flex: 5,
                               child: Text(
-                                'Status',
+                                AppLocalizations.of(context)!.status,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight:
+                                      FontWeight.bold, // Replaced Gilroy-Bold
                                   fontSize: w * 0.035,
                                 ),
                               ),
@@ -517,11 +530,17 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                                             Center(
                                               child: Text(
                                                 isPresent
-                                                    ? 'Present'
-                                                    : 'Absent',
+                                                    ? AppLocalizations.of(
+                                                      context,
+                                                    )!.present
+                                                    : AppLocalizations.of(
+                                                      context,
+                                                    )!.absent,
                                                 style: TextStyle(
                                                   color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontWeight:
+                                                      FontWeight
+                                                          .bold, // Replaced Gilroy-Bold
                                                   fontSize: w * 0.03,
                                                 ),
                                               ),
@@ -545,7 +564,9 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                             if (sessionId == null) {
                               CustomPopup.show(
                                 context,
-                                '❌ No active session found. Cannot save attendance.',
+                                AppLocalizations.of(
+                                  context,
+                                )!.noActiveSessionSave,
                               );
                               return;
                             }
@@ -575,8 +596,7 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                               if (docSnapshot.exists) {
                                 await docRef.update({
                                   'status': isPresent ? 'Present' : 'Absent',
-                                  'sessionId':
-                                      sessionId, // Added sessionId to update
+                                  'sessionId': sessionId,
                                 });
                               } else {
                                 await docRef.set({
@@ -585,8 +605,7 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                                   'date': date,
                                   'status': isPresent ? 'Present' : 'Absent',
                                   'marked_by': headUid,
-                                  'sessionId':
-                                      sessionId, // Added sessionId to set
+                                  'sessionId': sessionId,
                                 });
                               }
                             }
@@ -594,7 +613,7 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                             Navigator.pop(context);
                             CustomPopup.show(
                               context,
-                              '✅ Attendance saved successfully!',
+                              AppLocalizations.of(context)!.attendanceSaved,
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -606,9 +625,12 @@ class _FacultyAttendanceScreenState extends State<FacultyAttendanceScreen> {
                             ),
                           ),
                           child: Text(
-                            'Confirm & Submit Attendance',
+                            AppLocalizations.of(
+                              context,
+                            )!.confirmSubmitAttendance,
                             style: TextStyle(
-                              fontFamily: 'Gilroy-Bold',
+                              fontWeight:
+                                  FontWeight.bold, // Replaced Gilroy-Bold
                               fontSize: w * 0.04,
                             ),
                           ),
@@ -686,9 +708,10 @@ class _AdminHourSummaryState extends State<AdminHourSummary>
   @override
   Widget build(BuildContext context) {
     const double totalHoursInDay = 24;
-    final double workingPercent = (todayHours / totalHoursInDay).isNaN
-        ? 0.0
-        : (todayHours / totalHoursInDay);
+    final double workingPercent =
+        (todayHours / totalHoursInDay).isNaN
+            ? 0.0
+            : (todayHours / totalHoursInDay);
 
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -700,9 +723,12 @@ class _AdminHourSummaryState extends State<AdminHourSummary>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Teaching Hour Summary",
-              style: TextStyle(fontSize: 20, fontFamily: 'Gilroy-Bold'),
+            Text(
+              AppLocalizations.of(context)!.teachingHourSummary,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ), // Replaced Gilroy-Bold
             ),
             const SizedBox(height: 18),
             Row(
@@ -729,17 +755,17 @@ class _AdminHourSummaryState extends State<AdminHourSummary>
                           backgroundColor: Colors.amber.shade600,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          "Today Spend Time",
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          AppLocalizations.of(context)!.todaySpendTime,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                     Text(
-                      "${todayHours.toStringAsFixed(2)} Hrs",
+                      "${todayHours.toStringAsFixed(2)} ${AppLocalizations.of(context)!.hrs}",
                       style: const TextStyle(
                         fontSize: 18,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -750,17 +776,17 @@ class _AdminHourSummaryState extends State<AdminHourSummary>
                           backgroundColor: Colors.blue.shade400,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          "Weekly Spend Time",
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          AppLocalizations.of(context)!.weeklySpendTime,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                     Text(
-                      "${weeklyHours.toStringAsFixed(2)} Hrs",
+                      "${weeklyHours.toStringAsFixed(2)} ${AppLocalizations.of(context)!.hrs}",
                       style: const TextStyle(
                         fontSize: 18,
-                        fontFamily: 'Gilroy-Bold',
+                        fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
                       ),
                     ),
                   ],
@@ -806,7 +832,6 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
 
     try {
       final lowercaseInputId = inputId.toLowerCase();
-      // First, try to find a student
       final studentSnap =
           await _firestore
               .collection('Students')
@@ -818,7 +843,6 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
         studentData = studentSnap.docs.first.data();
         final studentUid = studentSnap.docs.first.id;
 
-        // Use student's UID to get attendance
         final attendanceSnap =
             await _firestore
                 .collection('attendance')
@@ -831,7 +855,6 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                 .where((doc) => doc.data()['status'] == 'Present')
                 .length;
       } else {
-        // If no student, try to find a faculty
         final facultySnap =
             await _firestore
                 .collection('Faculties')
@@ -879,11 +902,11 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Student Attendance',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.studentAttendance,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold, // Replaced Gilroy-Bold
             color: Colors.black,
           ),
         ),
@@ -903,9 +926,12 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Overall Attendance Summary",
-                      style: TextStyle(fontSize: 19, fontFamily: 'Gilroy-Bold'),
+                    Text(
+                      AppLocalizations.of(context)!.overallAttendanceSummary,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                      ), // Replaced Gilroy-Bold
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -928,27 +954,31 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "Total Present Lectures",
-                              style: TextStyle(fontSize: 14),
+                            Text(
+                              AppLocalizations.of(
+                                context,
+                              )!.totalPresentLectures,
+                              style: const TextStyle(fontSize: 14),
                             ),
                             Text(
-                              "$presentLectures Lectures",
+                              "$presentLectures ${AppLocalizations.of(context)!.lectures}",
                               style: const TextStyle(
                                 fontSize: 18,
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight:
+                                    FontWeight.bold, // Replaced Gilroy-Bold
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              "Total Lectures",
-                              style: TextStyle(fontSize: 14),
+                            Text(
+                              AppLocalizations.of(context)!.totalLectures,
+                              style: const TextStyle(fontSize: 14),
                             ),
                             Text(
-                              "$totalLectures Lectures",
+                              "$totalLectures ${AppLocalizations.of(context)!.lectures}",
                               style: const TextStyle(
                                 fontSize: 18,
-                                fontFamily: 'Gilroy-Bold',
+                                fontWeight:
+                                    FontWeight.bold, // Replaced Gilroy-Bold
                               ),
                             ),
                           ],
@@ -976,7 +1006,8 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                               fontSize: 14,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Enter Student Unique Code (SUC)',
+                              hintText:
+                                  AppLocalizations.of(context)!.enterSucId,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: const BorderSide(
@@ -1018,10 +1049,12 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                      : const Text(
-                                        "Search",
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy-Bold',
+                                      : Text(
+                                        AppLocalizations.of(context)!.search,
+                                        style: const TextStyle(
+                                          fontWeight:
+                                              FontWeight
+                                                  .bold, // Replaced Gilroy-Bold
                                           fontSize: 15,
                                           color: Colors.white,
                                         ),
@@ -1034,7 +1067,6 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
 
                     const SizedBox(height: 20),
 
-                    // 🔁 Student Info Card
                     if (studentData != null)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
@@ -1083,21 +1115,23 @@ class _StudentAttScreenState extends State<StudentAttScreen> {
                                   Text(
                                     studentData!['fullName'] ?? '',
                                     style: const TextStyle(
-                                      fontFamily: 'Gilroy-Bold',
+                                      fontWeight:
+                                          FontWeight
+                                              .bold, // Replaced Gilroy-Bold
                                       fontSize: 16,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   if (studentData!.containsKey('rollNo'))
                                     Text(
-                                      "Roll No: ${studentData!['rollNo'] ?? ''}",
+                                      "${AppLocalizations.of(context)!.rollNo}: ${studentData!['rollNo'] ?? ''}",
                                       style: const TextStyle(
                                         color: Colors.black54,
                                       ),
                                     ),
                                   if (studentData!.containsKey('sucId'))
                                     Text(
-                                      "SUC ID: ${studentData!['sucId'] ?? ''}",
+                                      "${AppLocalizations.of(context)!.sucId}: ${studentData!['sucId'] ?? ''}",
                                       style: const TextStyle(
                                         color: Colors.black54,
                                       ),

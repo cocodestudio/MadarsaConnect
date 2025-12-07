@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../Data/dynamic_popup.dart';
 import '../Data/loader.dart';
+import '../l10n/app_localizations.dart';
 
 class SignatureUploadScreen extends StatefulWidget {
   final String studentSucId;
@@ -69,7 +70,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
       if (image == null) {
-        CustomPopup.show(context, "No image selected.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.noImageSelected,
+          );
+        }
         return;
       }
 
@@ -79,7 +85,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
       if (mounted) _showCropper();
     } catch (e) {
       debugPrint('Error picking/cropping image: $e');
-      CustomPopup.show(context, "Error picking/cropping image.");
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorPickingImage,
+        );
+      }
     }
   }
 
@@ -94,7 +105,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
         status = await Permission.storage.request();
       }
       if (!status.isGranted) {
-        CustomPopup.show(context, "Gallery permission denied.");
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            AppLocalizations.of(context)!.galleryPermissionDenied,
+          );
+        }
         return false;
       }
     }
@@ -144,9 +160,9 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildDragHandle(),
-          const Text(
-            "Crop Signature",
-            style: TextStyle(fontSize: 18, fontFamily: 'Gilroy-Bold'),
+          Text(
+            AppLocalizations.of(context)!.cropSignature,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -189,7 +205,7 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
             children: [
               Expanded(
                 child: _buildCropperButton(
-                  "Try Again",
+                  AppLocalizations.of(context)!.tryAgain,
                   Icons.refresh,
                   _pickAndCropImage,
                   isPrimary: false,
@@ -198,7 +214,7 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildCropperButton(
-                  "Apply",
+                  AppLocalizations.of(context)!.apply,
                   Icons.check_circle_outline,
                   () async {
                     localSetState(() => _isCropping = true);
@@ -268,7 +284,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
   // Upload signature securely
   Future<void> _uploadSignature() async {
     if (_selectedSignatureFile == null) {
-      CustomPopup.show(context, 'Please select a signature to upload.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.selectSignatureToUpload,
+        );
+      }
       return;
     }
 
@@ -297,7 +318,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
 
-      CustomPopup.show(context, 'Signature uploaded successfully!');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.signatureUploadedSuccess,
+        );
+      }
 
       setState(() {
         _selectedSignatureFile = null;
@@ -305,7 +331,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
       });
     } catch (e) {
       debugPrint('Upload error: $e');
-      CustomPopup.show(context, 'Error uploading signature.');
+      if (mounted) {
+        CustomPopup.show(
+          context,
+          AppLocalizations.of(context)!.errorUploadingSignature,
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -326,11 +357,11 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
           icon: const Icon(Icons.arrow_back, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Upload Signature',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.uploadSignatureTitle,
+          style: const TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy-Bold',
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -346,9 +377,9 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildCardSection(
-                      title: 'Digital Signature',
+                      title: AppLocalizations.of(context)!.digitalSignature,
                       description:
-                          'Please sign a plain paper, take a picture of it, and upload it here.',
+                          AppLocalizations.of(context)!.digitalSignatureDesc,
                       child: Container(
                         height: 200,
                         decoration: BoxDecoration(
@@ -403,15 +434,17 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Icon(
+                                            const Icon(
                                               Icons.error_outline,
                                               size: 50,
                                               color: Colors.red,
                                             ),
-                                            SizedBox(height: 8),
+                                            const SizedBox(height: 8),
                                             Text(
-                                              'Error loading image',
-                                              style: TextStyle(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.errorLoadingImage,
+                                              style: const TextStyle(
                                                 color: Colors.red,
                                               ),
                                             ),
@@ -432,7 +465,9 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'No signature selected',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.noSignatureSelected,
                                         style: TextStyle(
                                           color: Colors.grey[600],
                                         ),
@@ -443,11 +478,12 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     ElevatedButton.icon(
                       onPressed: _pickAndCropImage,
                       icon: const Icon(Icons.upload_file),
-                      label: const Text('Select Signature'),
+                      label: Text(
+                        AppLocalizations.of(context)!.selectSignatureBtn,
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
                         foregroundColor: Colors.white,
@@ -459,7 +495,6 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     ElevatedButton(
                       onPressed:
                           _isLoading || _selectedSignatureFile == null
@@ -487,7 +522,7 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                              : const Text('Upload'),
+                              : Text(AppLocalizations.of(context)!.uploadBtn),
                     ),
                   ],
                 ),
@@ -516,7 +551,7 @@ class _SignatureUploadScreenState extends State<SignatureUploadScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           const SizedBox(height: 4),
           Text(

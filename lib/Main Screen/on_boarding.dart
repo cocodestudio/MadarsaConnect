@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../Data/data.dart';
 import '../Login & Signup Screen/loginpage.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart';
 
 class Onboarding extends StatefulWidget {
   const Onboarding({super.key});
@@ -17,7 +20,7 @@ class _OnboardingState extends State<Onboarding> {
   @override
   void initState() {
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      const SystemUiOverlayStyle(
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
@@ -32,10 +35,98 @@ class _OnboardingState extends State<Onboarding> {
     super.dispose();
   }
 
+  String _getTitle(BuildContext context, int index) {
+    if (index == 0) return AppLocalizations.of(context)!.onboardingTitle1;
+    if (index == 1) return AppLocalizations.of(context)!.onboardingTitle2;
+    return AppLocalizations.of(context)!.onboardingTitle3;
+  }
+
+  String _getDescription(BuildContext context, int index) {
+    if (index == 0) return AppLocalizations.of(context)!.onboardingDesc1;
+    if (index == 1) return AppLocalizations.of(context)!.onboardingDesc2;
+    return AppLocalizations.of(context)!.onboardingDesc3;
+  }
+
+  String _getButtonText(BuildContext context, int index) {
+    if (index == 0) return AppLocalizations.of(context)!.welcomeBtn;
+    if (index == 1) return AppLocalizations.of(context)!.learnMoreBtn;
+    return AppLocalizations.of(context)!.getStartedBtn;
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Select Language",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildLanguageOption(context, "English", "en"),
+                const Divider(),
+                _buildLanguageOption(context, "हिंदी (Hindi)", "hi"),
+                const Divider(),
+                _buildLanguageOption(context, "اردو (Urdu)", "ur"),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(BuildContext context, String label, String code) {
+    return InkWell(
+      onTap: () {
+        Provider.of<LanguageProvider>(
+          context,
+          listen: false,
+        ).changeLocale(code);
+        Navigator.pop(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            if (Localizations.localeOf(context).languageCode == code)
+              const Icon(Icons.check_circle, color: Colors.redAccent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCurrentLanguageName(BuildContext context) {
+    final code = Localizations.localeOf(context).languageCode;
+    if (code == 'hi') return 'हिंदी';
+    if (code == 'ur') return 'اردو';
+    return 'English';
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -69,10 +160,10 @@ class _OnboardingState extends State<Onboarding> {
                       ),
                       const Spacer(),
                       Text(
-                        contents[index].title,
+                        _getTitle(context, index),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: "Gilroy-Bold",
+                          fontWeight: FontWeight.bold,
                           fontSize: screenWidth * 0.07,
                           color: Colors.black,
                         ),
@@ -81,12 +172,11 @@ class _OnboardingState extends State<Onboarding> {
                       SizedBox(
                         width: screenWidth * 0.8,
                         child: Text(
-                          contents[index].discription,
+                          _getDescription(context, index),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 14.0,
-                            fontFamily: "Gilroy-Regular",
                           ),
                         ),
                       ),
@@ -100,6 +190,49 @@ class _OnboardingState extends State<Onboarding> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(flex: 2),
+
+                  // --- LANGUAGE SELECTOR BUTTON ADDED HERE ---
+                  GestureDetector(
+                    onTap: () => _showLanguageDialog(context),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.language,
+                            size: 20,
+                            color: Colors.black54,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _getCurrentLanguageName(context),
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_drop_down,
+                            size: 20,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // -------------------------------------------
                   ElevatedButton(
                     onPressed: () async {
                       if (currentIndex == contents.length - 1) {
@@ -148,15 +281,11 @@ class _OnboardingState extends State<Onboarding> {
                         vertical: screenHeight * 0.015,
                       ),
                       child: Text(
-                        currentIndex == 0
-                            ? "Welcome"
-                            : currentIndex == 1
-                            ? "Learn More"
-                            : "Get Started",
-                        style: TextStyle(
+                        _getButtonText(context, currentIndex),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontFamily: 'Gilroy-Bold',
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
